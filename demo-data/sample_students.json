@@ -1,0 +1,22 @@
+﻿[
+  {
+    "id": 1,
+    "name": "学生A",
+    "concept_score": 82,
+    "mechanism_score": 68,
+    "application_score": 61,
+    "literature_score": 55,
+    "research_design_score": 42,
+    "transfer_score": 58
+  },
+  {
+    "id": 2,
+    "name": "学生B",
+    "concept_score": 76,
+    "mechanism_score": 72,
+    "application_score": 70,
+    "literature_score": 60,
+    "research_design_score": 50,
+    "transfer_score": 63
+  }
+]

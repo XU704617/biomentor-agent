@@ -1,0 +1,215 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sidebar-width: 220px;
+  --header-height: 56px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #f5f5f7;
+  color: #1a1a1a;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+@layer base {
+  body {
+    @apply text-[14.5px] antialiased leading-relaxed;
+  }
+
+  h1 {
+    @apply text-2xl font-semibold tracking-tight text-gray-900;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    @apply text-lg font-semibold text-gray-900;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    @apply text-sm font-semibold text-gray-700;
+    letter-spacing: 0.02em;
+  }
+
+  ::selection {
+    background: rgba(37, 99, 235, 0.12);
+    color: #1a1a1a;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.18);
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl bg-white;
+    border: 1px solid #e5e5e7;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    border-color: #d4d4d8;
+    box-shadow: 0 1px 16px rgba(0, 0, 0, 0.04);
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer active:scale-[0.995];
+  }
+
+  .input {
+    @apply px-4 py-2.5 rounded-lg text-sm w-full bg-white;
+    border: 1px solid #e5e5e7;
+    color: #1a1a1a;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .input::placeholder {
+    color: #9ca3af;
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .select {
+    @apply px-4 py-2.5 rounded-lg text-sm appearance-none cursor-pointer bg-white;
+    border: 1px solid #e5e5e7;
+    color: #1a1a1a;
+    transition: border-color 0.2s ease;
+  }
+
+  .select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .btn-primary:hover {
+    background: #1d4ed8;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  }
+
+  .btn-primary:active {
+    background: #1e40af;
+  }
+
+  .btn-success {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium;
+    background: #059669;
+    color: #ffffff;
+    border: none;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .btn-success:hover {
+    background: #047857;
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.12);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm;
+    color: #6b7280;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .btn-ghost:hover {
+    color: #1a1a1a;
+    background: #f3f4f6;
+    border-color: #e5e5e7;
+  }
+
+  .divider {
+    height: 1px;
+    background: #e5e5e7;
+    border: none;
+    margin: 0;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium;
+  }
+
+  .badge-primary {
+    background: rgba(37, 99, 235, 0.08);
+    color: #2563eb;
+  }
+
+  .badge-success {
+    background: rgba(5, 150, 105, 0.08);
+    color: #059669;
+  }
+
+  .badge-danger {
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+  }
+
+  .badge-muted {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  .stat-number {
+    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page-header {
+    @apply mb-8;
+  }
+
+  .page-header h1 {
+    @apply mb-1;
+  }
+
+  .page-header p {
+    color: #6b7280;
+    font-size: 13.5px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
