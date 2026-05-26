@@ -134,3 +134,66 @@ uvicorn app.main:app --reload
 | 题目教师可接受率 | ≥ 70% |
 | AI评分与教师相关性 | ≥ 0.75 |
 | 教师备题时间节省 | ≥ 50% |
+
+---
+
+## Stage 1: 科研训练基础架构 (Research Training Foundation)
+
+> **定位升级**：BioMentor Agent 从"AI 问答 + 刷题 + 诊断"升级为面向生命科学/生物制造课程的**科研能力训练平台**。
+
+### 新增内容
+
+| 类别 | 文件 | 说明 |
+|------|------|------|
+| 文档 | `docs/BIOMENTOR_RESEARCH_TRAINING_WORKFLOW.md` | 三条闭环工作流（基础学习/文献探索/科研案例） |
+| 文档 | `docs/BIOMENTOR_EVIDENCE_CARD_DESIGN.md` | 文献证据卡核心中间层设计 |
+| 文档 | `docs/BIOMENTOR_AGENT_ROLES.md` | 8 个多角色 AI 科研导师定义 |
+| 文档 | `docs/BIOMENTOR_BIOTOOLBOX_ROADMAP.md` | BioToolBox P0/P1 工具接入路线 |
+| 文档 | `docs/BIOMENTOR_STAGE1_SUMMARY.md` | 本阶段总结 |
+| 文档 | `docs/PR_DESCRIPTION_DRAFT.md` | PR 描述草稿 |
+| Schema | `schemas/*.schema.json` (7个) | KnowledgePoint / EvidenceCard / EvidenceMatrix / ResearchCase / AgentRole / ResearchReport / StudentProfile |
+| Demo | `examples/demo_topics/cell_apoptosis.demo.json` | 细胞凋亡完整示例数据 |
+| 测试 | `tests/test_research_training_schemas.py` | Schema 结构验证（32 项测试） |
+| 测试 | `tests/test_cell_apoptosis_demo.py` | Demo 数据合规性验证 |
+| 前端 | `frontend/app/student/research/page.tsx` | 科研训练静态展示页 |
+| 修复 | `backend/app/routers/ai_generate.py` | 补充缺失的 Session 导入 |
+| 修复 | `backend/app/routers/rag.py` | 补充缺失的 Session 导入 |
+
+### 核心对象
+
+- **KnowledgePoint** — 三层知识展开（基础/前沿/产业）
+- **EvidenceCard** — 结构化文献证据卡（含证据强度分级）
+- **EvidenceMatrix** — 多篇文献证据矩阵
+- **ResearchCase** — 科研案例与实验设计
+- **AgentRole** — 多角色 AI 科研导师
+- **ResearchReport** — 学生调研报告
+- **StudentProfile** — 科研能力画像（7 个维度）
+
+### 运行测试
+
+```bash
+python -m pytest tests/test_research_training_schemas.py tests/test_cell_apoptosis_demo.py -v
+```
+
+### 查看科研训练页面
+
+```bash
+cd frontend && npm ci && npm run dev
+# 访问 http://localhost:3000/student/research
+```
+
+### 当前边界
+
+- **未**真实调用 PubMed / PMC
+- **未**真实抓取论文全文
+- **未**真实接入 AlphaFold / RCSB / Reactome / pLannotate
+- **未**进行真实学生评分
+- 所有 evidence card 均为 **demo/mock 数据**（标记 `demo_only: true`）
+- 所有 demo 文献使用 `mock_pmid`，不代表真实论文
+
+### 下一阶段建议
+
+1. 接入 PubMed E-utilities metadata 检索
+2. 生成真实 evidence card 草稿（仍需教师审核）
+3. 引入教师审核工作流
+4. 接入 BioToolBox P0 工具（AlphaFold/RCSB、Reactome、pLannotate）

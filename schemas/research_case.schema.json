@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ResearchCase",
+  "description": "研究案例 schema，定义面向学生的研究型学习案例，包含研究背景、任务设计和评分标准。",
+  "type": "object",
+  "required": [
+    "case_id",
+    "title",
+    "scenario",
+    "background",
+    "linked_knowledge_points",
+    "linked_evidence_cards",
+    "student_tasks",
+    "experiment_design_prompts",
+    "industry_context",
+    "rubric",
+    "demo_only",
+    "not_real_benchmark",
+    "requires_teacher_review"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "研究案例唯一标识符"
+    },
+    "title": {
+      "type": "string",
+      "description": "研究案例标题"
+    },
+    "scenario": {
+      "type": "string",
+      "description": "案例的研究场景描述"
+    },
+    "background": {
+      "type": "string",
+      "description": "案例的研究背景介绍"
+    },
+    "linked_knowledge_points": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "关联的知识点标识符列表"
+    },
+    "linked_evidence_cards": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "关联的证据卡片标识符列表"
+    },
+    "student_tasks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "学生需要完成的研究任务列表"
+    },
+    "experiment_design_prompts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "引导学生设计实验的提示问题列表"
+    },
+    "industry_context": {
+      "type": "string",
+      "description": "案例所对应的行业应用背景说明"
+    },
+    "rubric": {
+      "type": "string",
+      "description": "案例的评分标准与评价维度说明"
+    },
+    "demo_only": {
+      "type": "boolean",
+      "description": "是否仅用于演示目的"
+    },
+    "not_real_benchmark": {
+      "type": "boolean",
+      "description": "是否非真实基准数据"
+    },
+    "requires_teacher_review": {
+      "type": "boolean",
+      "description": "是否需要教师审核"
+    }
+  }
+}

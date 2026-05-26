@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AgentRole",
+  "description": "智能体角色 schema，定义系统中各智能体的职责、输入输出、工具权限及行为约束。",
+  "type": "object",
+  "required": [
+    "role_id",
+    "name",
+    "responsibility",
+    "inputs",
+    "outputs",
+    "tools",
+    "evidence_rules",
+    "forbidden_behaviors",
+    "fallback_strategy"
+  ],
+  "properties": {
+    "role_id": {
+      "type": "string",
+      "description": "智能体角色唯一标识符"
+    },
+    "name": {
+      "type": "string",
+      "description": "智能体角色名称"
+    },
+    "responsibility": {
+      "type": "string",
+      "description": "智能体的核心职责描述"
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "智能体接受的输入数据类型列表"
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "智能体产生的输出数据类型列表"
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "智能体可使用的工具列表"
+    },
+    "evidence_rules": {
+      "type": "string",
+      "description": "智能体在处理证据时须遵循的规则说明"
+    },
+    "forbidden_behaviors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "智能体被禁止执行的行为列表"
+    },
+    "fallback_strategy": {
+      "type": "string",
+      "description": "智能体在异常情况下的回退策略说明"
+    }
+  }
+}

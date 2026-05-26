@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ResearchReport",
+  "description": "研究报告 schema，定义学生基于证据矩阵撰写的研究报告结构，包含机制总结、实验设计和行业转化等内容。",
+  "type": "object",
+  "required": [
+    "report_id",
+    "student_id",
+    "knowledge_point_id",
+    "title",
+    "research_question",
+    "selected_evidence_cards",
+    "evidence_matrix_id",
+    "mechanism_summary",
+    "experiment_design",
+    "limitations",
+    "industry_translation",
+    "tutor_feedback",
+    "reviewer_questions",
+    "status",
+    "demo_only",
+    "not_real_benchmark",
+    "requires_teacher_review"
+  ],
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "description": "研究报告唯一标识符"
+    },
+    "student_id": {
+      "type": "string",
+      "description": "提交报告的学生标识符"
+    },
+    "knowledge_point_id": {
+      "type": "string",
+      "description": "报告所关联的知识点标识符"
+    },
+    "title": {
+      "type": "string",
+      "description": "研究报告标题"
+    },
+    "research_question": {
+      "type": "string",
+      "description": "报告聚焦的研究问题"
+    },
+    "selected_evidence_cards": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "报告中引用的证据卡片标识符列表"
+    },
+    "evidence_matrix_id": {
+      "type": "string",
+      "description": "报告所基于的证据矩阵标识符"
+    },
+    "mechanism_summary": {
+      "type": "string",
+      "description": "学生撰写的作用机制总结"
+    },
+    "experiment_design": {
+      "type": "string",
+      "description": "学生设计的实验方案描述"
+    },
+    "limitations": {
+      "type": "string",
+      "description": "学生对该研究局限性的分析"
+    },
+    "industry_translation": {
+      "type": "string",
+      "description": "学生对该研究向行业应用转化的思考"
+    },
+    "tutor_feedback": {
+      "type": "string",
+      "description": "导师对报告的反馈意见"
+    },
+    "reviewer_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "审阅者提出的问题列表"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "draft_requires_review", "under_review", "revised", "teacher_approved", "final"],
+      "description": "报告的审核状态，从草稿到最终定稿共六个阶段"
+    },
+    "demo_only": {
+      "type": "boolean",
+      "description": "是否仅用于演示目的"
+    },
+    "not_real_benchmark": {
+      "type": "boolean",
+      "description": "是否非真实基准数据"
+    },
+    "requires_teacher_review": {
+      "type": "boolean",
+      "description": "是否需要教师审核"
+    }
+  }
+}

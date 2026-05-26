@@ -17,6 +17,7 @@ import {
   FileBarChart,
   BookX,
   ArrowLeft,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ const studentToolNav = [
 ];
 
 const studentAuxNav = [
+  { href: "/student/research", label: "科研训练", icon: FlaskConical },
   { href: "/student/report", label: "学习诊断", icon: FileBarChart },
   { href: "/student/wrong-questions", label: "错题本", icon: BookX },
 ];

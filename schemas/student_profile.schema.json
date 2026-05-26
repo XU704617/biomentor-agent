@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StudentProfile",
+  "description": "学生画像 schema，定义学生的研究能力评估档案，涵盖知识掌握、文献检索、论文理解、证据判断、机制解释、实验设计和行业转化七个能力维度。",
+  "type": "object",
+  "required": [
+    "student_id",
+    "knowledge_mastery",
+    "literature_search",
+    "paper_understanding",
+    "evidence_judgment",
+    "mechanism_explanation",
+    "experiment_design",
+    "industry_transfer",
+    "updated_at"
+  ],
+  "definitions": {
+    "ability_dimension": {
+      "type": "object",
+      "description": "能力维度评估结构，包含分数和等级",
+      "required": ["score", "level"],
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "能力维度得分，范围为 0 到 100"
+        },
+        "level": {
+          "type": "string",
+          "enum": ["beginner", "intermediate", "advanced"],
+          "description": "能力等级，分为初级、中级和高级"
+        }
+      }
+    }
+  },
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "学生唯一标识符"
+    },
+    "knowledge_mastery": {
+      "$ref": "#/definitions/ability_dimension",
+      "description": "知识掌握能力维度评估"
+    },
+    "literature_search": {
+      "$ref": "#/definitions/ability_dimension",
+      "description": "文献检索能力维度评估"
+    },
+    "paper_understanding": {
+      "$ref": "#/definitions/ability_dimension",
+      "description": "论文理解能力维度评估"
+    },
+    "evidence_judgment": {
+      "$ref": "#/definitions/ability_dimension",
+      "description": "证据判断能力维度评估"
+    },
+    "mechanism_explanation": {
+      "$ref": "#/definitions/ability_dimension",
+      "description": "机制解释能力维度评估"
+    },
+    "experiment_design": {
+      "$ref": "#/definitions/ability_dimension",
+      "description": "实验设计能力维度评估"
+    },
+    "industry_transfer": {
+      "$ref": "#/definitions/ability_dimension",
+      "description": "行业转化能力维度评估"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "画像最后更新时间，ISO 8601 格式"
+    }
+  }
+}

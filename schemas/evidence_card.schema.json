@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EvidenceCard",
+  "description": "证据卡片 schema，定义从文献中提取的结构化研究证据，用于支撑知识点的科学论证。",
+  "type": "object",
+  "required": [
+    "card_id",
+    "knowledge_point_id",
+    "query_intent",
+    "title",
+    "paper_identifier",
+    "paper_type",
+    "study_system",
+    "research_question",
+    "core_methods",
+    "key_findings",
+    "evidence_anchor",
+    "relation_to_course",
+    "relation_to_industry",
+    "limitations",
+    "evidence_strength",
+    "source_refs",
+    "extraction_status",
+    "demo_only",
+    "not_real_benchmark",
+    "requires_teacher_review"
+  ],
+  "properties": {
+    "card_id": {
+      "type": "string",
+      "description": "证据卡片唯一标识符"
+    },
+    "knowledge_point_id": {
+      "type": "string",
+      "description": "关联的知识点标识符"
+    },
+    "query_intent": {
+      "type": "string",
+      "description": "检索该文献时的查询意图描述"
+    },
+    "title": {
+      "type": "string",
+      "description": "论文标题"
+    },
+    "paper_identifier": {
+      "type": "object",
+      "description": "论文标识信息，包含标识类型和具体值",
+      "required": ["type", "value"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["mock_pmid", "demo_paper_id"],
+          "description": "论文标识类型，mock_pmid 为模拟 PMID，demo_paper_id 为演示论文标识"
+        },
+        "value": {
+          "type": "string",
+          "description": "论文标识的具体值"
+        }
+      }
+    },
+    "paper_type": {
+      "type": "string",
+      "description": "论文类型，如原始研究、综述、Meta分析等"
+    },
+    "study_system": {
+      "type": "string",
+      "description": "研究所使用的实验系统或模型描述"
+    },
+    "research_question": {
+      "type": "string",
+      "description": "论文的核心研究问题"
+    },
+    "core_methods": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "论文使用的核心研究方法列表"
+    },
+    "key_findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "论文的关键发现列表"
+    },
+    "evidence_anchor": {
+      "type": "string",
+      "description": "该证据如何锚定到知识点的核心概念上"
+    },
+    "relation_to_course": {
+      "type": "string",
+      "description": "该证据与课程教学内容的关系说明"
+    },
+    "relation_to_industry": {
+      "type": "string",
+      "description": "该证据与行业应用的关系说明"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "该研究的主要局限性列表"
+    },
+    "evidence_strength": {
+      "type": "string",
+      "enum": ["background", "preliminary", "moderate", "strong", "teacher_review_required"],
+      "description": "证据强度等级，从背景知识到强证据共五个等级"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "参考来源列表"
+    },
+    "extraction_status": {
+      "type": "string",
+      "description": "证据提取状态，如待提取、已提取、已审核等"
+    },
+    "demo_only": {
+      "type": "boolean",
+      "description": "是否仅用于演示目的"
+    },
+    "not_real_benchmark": {
+      "type": "boolean",
+      "description": "是否非真实基准数据"
+    },
+    "requires_teacher_review": {
+      "type": "boolean",
+      "description": "是否需要教师审核"
+    }
+  }
+}

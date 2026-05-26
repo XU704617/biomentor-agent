@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EvidenceMatrix",
+  "description": "证据矩阵 schema，汇总多个证据卡片的研究发现，形成针对某一知识点的综合证据分析。",
+  "type": "object",
+  "required": [
+    "matrix_id",
+    "knowledge_point_id",
+    "research_question",
+    "card_ids",
+    "consensus_findings",
+    "conflicting_findings",
+    "evidence_strength_summary",
+    "limitations_summary",
+    "course_mapping",
+    "report_outline",
+    "demo_only",
+    "not_real_benchmark",
+    "requires_teacher_review"
+  ],
+  "properties": {
+    "matrix_id": {
+      "type": "string",
+      "description": "证据矩阵唯一标识符"
+    },
+    "knowledge_point_id": {
+      "type": "string",
+      "description": "关联的知识点标识符"
+    },
+    "research_question": {
+      "type": "string",
+      "description": "该证据矩阵聚焦的研究问题"
+    },
+    "card_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "纳入该矩阵的证据卡片标识符列表"
+    },
+    "consensus_findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "各证据卡片间的一致性发现列表"
+    },
+    "conflicting_findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "各证据卡片间的矛盾或分歧发现列表"
+    },
+    "evidence_strength_summary": {
+      "type": "string",
+      "description": "证据强度综合评估总结"
+    },
+    "limitations_summary": {
+      "type": "string",
+      "description": "整体研究局限性的综合总结"
+    },
+    "course_mapping": {
+      "type": "string",
+      "description": "证据矩阵与课程知识体系的映射关系说明"
+    },
+    "report_outline": {
+      "type": "string",
+      "description": "基于该证据矩阵的研究报告大纲建议"
+    },
+    "demo_only": {
+      "type": "boolean",
+      "description": "是否仅用于演示目的"
+    },
+    "not_real_benchmark": {
+      "type": "boolean",
+      "description": "是否非真实基准数据"
+    },
+    "requires_teacher_review": {
+      "type": "boolean",
+      "description": "是否需要教师审核"
+    }
+  }
+}

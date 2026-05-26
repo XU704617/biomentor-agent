@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KnowledgePoint",
+  "description": "知识点 schema，定义课程中的核心知识点结构，包含基础解释、研究前沿和行业应用等信息。",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "course_id",
+    "chapter",
+    "basic_explanation",
+    "research_frontiers",
+    "industry_applications",
+    "prerequisite_ids",
+    "related_ids",
+    "source_refs"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "知识点唯一标识符"
+    },
+    "name": {
+      "type": "string",
+      "description": "知识点名称"
+    },
+    "course_id": {
+      "type": "string",
+      "description": "所属课程标识符"
+    },
+    "chapter": {
+      "type": "string",
+      "description": "知识点所属章节"
+    },
+    "basic_explanation": {
+      "type": "string",
+      "description": "知识点的基础解释说明"
+    },
+    "research_frontiers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "该知识点相关的研究前沿方向列表"
+    },
+    "industry_applications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "该知识点在行业中的实际应用场景列表"
+    },
+    "prerequisite_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "前置知识点的标识符列表"
+    },
+    "related_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "相关联知识点的标识符列表"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "参考来源列表，如教材章节、论文等"
+    }
+  }
+}

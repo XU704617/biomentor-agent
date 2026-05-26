@@ -1,0 +1,572 @@
+{
+  "topic_id": "demo_cell_apoptosis_001",
+  "title": "细胞凋亡：从分子机制到肿瘤治疗",
+  "demo_only": true,
+  "not_real_benchmark": true,
+  "requires_teacher_review": true,
+
+  "knowledge_point": {
+    "id": "kp_apoptosis_001",
+    "name": "细胞凋亡",
+    "course_id": "demo_course_001",
+    "chapter": "细胞死亡与存活调控",
+    "basic_explanation": "细胞凋亡（apoptosis）是一种程序性细胞死亡方式，在维持组织稳态、胚胎发育和免疫防御中发挥关键作用。其核心分子机制主要包括两条经典通路：（1）线粒体途径（内源性途径）：由细胞内应激信号（如DNA损伤、氧化应激）触发，Bcl-2家族蛋白中的促凋亡成员（如Bax、Bak）在线粒体外膜形成孔隙，导致细胞色素c（Cytochrome c）释放至细胞质，与Apaf-1结合形成凋亡体（apoptosome），激活caspase-9，进而启动caspase级联反应；（2）死亡受体途径（外源性途径）：由FasL、TNF-α等配体与细胞表面死亡受体（如Fas/CD95、TNFR1）结合，通过FADD/TRADD衔接蛋白招募并激活caspase-8，再直接或通过Bid切割间接激活线粒体途径。两条通路最终汇聚于执行caspase（caspase-3/7），导致细胞有序解体。此外，caspase级联反应还受到IAP家族蛋白（如XIAP）的负调控，形成精密的凋亡调控网络。",
+    "research_frontiers": [
+      "肿瘤细胞凋亡逃逸机制：Bcl-2家族蛋白异常表达与肿瘤耐药性的关系",
+      "新型细胞死亡形式（如焦亡、铁死亡、坏死性凋亡）与凋亡的串扰（crosstalk）",
+      "免疫检查点治疗中T细胞凋亡调控与肿瘤免疫逃逸",
+      "靶向蛋白降解（PROTAC）技术在凋亡调控蛋白干预中的应用",
+      "单细胞水平下细胞死亡异质性与肿瘤微环境的关系"
+    ],
+    "industry_applications": [
+      "抗肿瘤药物研发：BH3模拟物（如Venetoclax）靶向Bcl-2的临床转化",
+      "分子诊断：凋亡标志物（如cleaved caspase-3、Annexin V）用于肿瘤预后评估",
+      "细胞治疗：CAR-T细胞凋亡调控以改善持久性和安全性",
+      "药物筛选：基于caspase活性的高通量筛选平台用于抗肿瘤先导化合物发现"
+    ],
+    "prerequisite_ids": [],
+    "related_ids": [],
+    "source_refs": [
+      {
+        "type": "textbook",
+        "title": "分子生物学（参考）",
+        "authors": "Demo Authors",
+        "year": 2024,
+        "note": "此为演示数据，非真实文献引用"
+      }
+    ],
+    "demo_only": true,
+    "not_real_benchmark": true,
+    "requires_teacher_review": true
+  },
+
+  "evidence_cards": [
+    {
+      "card_id": "ec_apoptosis_001",
+      "knowledge_point_id": "kp_apoptosis_001",
+      "query_intent": "Bcl-2家族蛋白如何调控线粒体途径的细胞凋亡？其在肿瘤中的异常表达有何治疗意义？",
+      "title": "Bcl-2家族蛋白在线粒体途径凋亡调控中的分子机制及肿瘤靶向治疗策略",
+      "paper_identifier": {
+        "type": "mock_pmid",
+        "value": "MOCK-APOP-001"
+      },
+      "paper_type": "mechanism_review",
+      "study_system": "人源肿瘤细胞系（白血病、淋巴瘤）及小鼠肿瘤模型",
+      "research_question": "Bcl-2家族中抗凋亡蛋白（Bcl-2、Bcl-xL、Mcl-1）与促凋亡蛋白（Bax、Bak、Bim、Bad）之间的平衡如何决定线粒体外膜通透性（MOMP）和细胞命运？",
+      "core_methods": [
+        "蛋白质-蛋白质相互作用分析（Co-IP、SPR）",
+        "线粒体膜电位检测（JC-1染色、TMRM）",
+        "流式细胞术检测Annexin V/PI双染色",
+        "CRISPR-Cas9基因敲除验证Bcl-2家族成员功能",
+        "小鼠异种移植瘤模型评估体内药效"
+      ],
+      "key_findings": [
+        "Bcl-2与Bcl-xL通过疏水沟槽结合Bim/Bad的BH3结构域，阻断Bax/Bak寡聚化，维持线粒体外膜完整性",
+        "在B细胞淋巴瘤中，Bcl-2过表达使肿瘤细胞对化疗诱导的凋亡产生显著耐受（IC50提高约8-15倍）",
+        "BH3模拟物ABT-199（Venetoclax）选择性抑制Bcl-2，在体外能恢复淋巴瘤细胞对凋亡信号的敏感性，EC50达到纳摩尔级别",
+        "Mcl-1的高表达是Venetoclax获得性耐药的主要机制之一，联合靶向Mcl-1和Bcl-2可产生协同效应",
+        "结构生物学分析揭示了Bcl-2蛋白家族成员间相互作用的构象选择机制"
+      ],
+      "evidence_anchor": "Bcl-2家族蛋白通过BH3结构域介导的蛋白质相互作用网络精确调控MOMP，是线粒体途径凋亡的核心检查点",
+      "relation_to_course": "本证据直接支撑知识体系中'线粒体途径凋亡'和'Bcl-2家族蛋白功能'的核心概念，可作为理解凋亡调控分子开关的关键案例",
+      "relation_to_industry": "Venetoclax（Bcl-2抑制剂）已获FDA批准用于慢性淋巴细胞白血病（CLL）和急性髓系白血病（AML）治疗，年销售额超过20亿美元，是靶向凋亡通路药物研发的成功范例",
+      "limitations": [
+        "本研究主要基于体外细胞系和动物模型，人体内的药效和安全性可能存在差异",
+        "BH3模拟物的选择性仍有限，脱靶效应可能导致血小板减少等副作用",
+        "肿瘤微环境中的旁分泌信号对凋亡的影响未在模型中充分体现",
+        "此为演示数据，所有实验结果均为模拟生成"
+      ],
+      "evidence_strength": "strong",
+      "source_refs": [
+        {
+          "type": "mock_pmid",
+          "value": "MOCK-APOP-001",
+          "title": "Bcl-2 family proteins in mitochondrial apoptosis regulation and cancer therapy (DEMO)",
+          "note": "此为演示数据，非真实文献"
+        }
+      ],
+      "extraction_status": "completed",
+      "demo_only": true,
+      "not_real_benchmark": true,
+      "requires_teacher_review": true
+    },
+    {
+      "card_id": "ec_apoptosis_002",
+      "knowledge_point_id": "kp_apoptosis_001",
+      "query_intent": "死亡受体途径如何影响肿瘤免疫逃逸？Fas/FasL系统在肿瘤微环境中的作用是什么？",
+      "title": "死亡受体Fas/FasL信号轴在肿瘤免疫逃逸中的双重角色与调控机制",
+      "paper_identifier": {
+        "type": "mock_pmid",
+        "value": "MOCK-APOP-002"
+      },
+      "paper_type": "mechanism_study",
+      "study_system": "人源肿瘤细胞系（黑色素瘤、肺癌）与原代T细胞共培养体系",
+      "research_question": "肿瘤细胞如何通过调控Fas/FasL死亡受体系统实现免疫逃逸？Fas信号在肿瘤杀伤与免疫抑制中的双重作用机制是什么？",
+      "core_methods": [
+        "肿瘤细胞-T细胞共培养体系建立",
+        "流式细胞术检测Fas/FasL表达水平",
+        "ELISA检测可溶性FasL（sFasL）浓度",
+        "Western blot分析caspase-8切割及下游信号",
+        "免疫组化分析临床肿瘤样本中Fas表达模式"
+      ],
+      "key_findings": [
+        "肿瘤细胞表面Fas表达下调（约60%的黑色素瘤样本中Fas表达显著低于正常组织），导致对FasL介导的T细胞杀伤不敏感",
+        "肿瘤细胞可分泌可溶性FasL（sFasL），诱导浸润性T细胞凋亡，形成免疫抑制微环境",
+        "Fas信号在特定条件下可激活NF-κB通路，促进肿瘤细胞存活和炎症因子释放，呈现非凋亡性信号转导",
+        "IFN-γ预处理可部分恢复肿瘤细胞Fas表达，增强其对T细胞杀伤的敏感性",
+        "临床样本分析显示，Fas高表达与黑色素瘤患者较好预后相关（HR=0.62，模拟数据）"
+      ],
+      "evidence_anchor": "Fas/FasL死亡受体系统在肿瘤免疫监视中具有双重角色：一方面介导免疫细胞对肿瘤的杀伤，另一方面被肿瘤利用以清除效应T细胞",
+      "relation_to_course": "本证据支撑'死亡受体途径'和'凋亡与免疫'的交叉知识点，帮助学生理解凋亡通路在免疫调控中的复杂性",
+      "relation_to_industry": "Fas/FasL通路调控策略与PD-1/PD-L1免疫检查点抑制剂存在协同潜力，为联合免疫治疗方案的优化提供理论依据",
+      "limitations": [
+        "共培养体系难以完全模拟体内复杂的肿瘤免疫微环境",
+        "可溶性FasL的检测方法在临床转化中存在标准化问题",
+        "Fas信号的非凋亡功能（如NF-κB激活）的分子开关尚不明确",
+        "样本量较小，临床相关性结论需更大规模队列验证",
+        "此为演示数据，所有实验结果均为模拟生成"
+      ],
+      "evidence_strength": "moderate",
+      "source_refs": [
+        {
+          "type": "mock_pmid",
+          "value": "MOCK-APOP-002",
+          "title": "Dual role of Fas/FasL death receptor signaling in tumor immune evasion (DEMO)",
+          "note": "此为演示数据，非真实文献"
+        }
+      ],
+      "extraction_status": "completed",
+      "demo_only": true,
+      "not_real_benchmark": true,
+      "requires_teacher_review": true
+    },
+    {
+      "card_id": "ec_apoptosis_003",
+      "knowledge_point_id": "kp_apoptosis_001",
+      "query_intent": "如何基于caspase活性设计高通量药物筛选策略？有哪些新兴的靶向caspase药物开发方向？",
+      "title": "基于caspase活性的高通量筛选平台构建及新型凋亡诱导先导化合物发现",
+      "paper_identifier": {
+        "type": "mock_pmid",
+        "value": "MOCK-APOP-003"
+      },
+      "paper_type": "methodology_preliminary",
+      "study_system": "高通量筛选平台（384孔板）+ 人源肿瘤细胞系（结肠癌HCT-116、乳腺癌MDA-MB-231）",
+      "research_question": "如何构建基于caspase-3/7活性的高通量筛选体系？能否从中发现具有选择性凋亡诱导活性的新型先导化合物？",
+      "core_methods": [
+        "Caspase-Glo 3/7发光法建立高通量筛选体系",
+        "384孔板自动化液体处理系统",
+        "化合物库筛选（约20,000个模拟化合物）",
+        "剂量-效应曲线拟合与IC50/EC50计算",
+        "RNA-seq分析筛选命中化合物的转录组效应"
+      ],
+      "key_findings": [
+        "成功构建了Z'因子为0.72（>0.5为合格）的caspase-3/7高通量筛选体系，适用于大规模化合物筛选",
+        "初级筛选命中率为1.8%（约360个化合物），经二次验证后获得23个候选先导化合物",
+        "其中3个候选化合物（编号DCA-001、DCA-007、DCA-015）在结肠癌细胞中表现出选择性凋亡诱导活性，且对正常肠上皮细胞的毒性显著较低（选择性指数>5）",
+        "RNA-seq分析显示DCA-001主要影响p53通路和内质网应激相关基因表达",
+        "初步构效关系分析表明，含吲哚骨架的化合物在caspase激活方面具有较好潜力"
+      ],
+      "evidence_anchor": "基于caspase活性的高通量筛选是发现凋亡诱导先导化合物的有效策略，吲哚骨架化合物展现出作为新型凋亡诱导剂的潜力",
+      "relation_to_course": "本证据连接'caspase级联反应'基础概念与'药物筛选'应用技术，展示基础研究向应用转化的完整思路",
+      "relation_to_industry": "高通量筛选是制药行业药物发现的核心环节，caspase活性检测已被广泛应用于抗肿瘤药物研发管线中",
+      "limitations": [
+        "筛选仅覆盖约20,000个化合物，化合物库多样性有限",
+        "体外筛选结果尚未在动物模型中验证体内药效",
+        "候选化合物的药代动力学性质和毒性谱尚未系统评估",
+        "Caspase-Glo检测可能存在非特异性信号干扰",
+        "此为演示数据，所有实验结果均为模拟生成"
+      ],
+      "evidence_strength": "preliminary",
+      "source_refs": [
+        {
+          "type": "mock_pmid",
+          "value": "MOCK-APOP-003",
+          "title": "High-throughput caspase-based screening platform for apoptosis-inducing lead compound discovery (DEMO)",
+          "note": "此为演示数据，非真实文献"
+        }
+      ],
+      "extraction_status": "completed",
+      "demo_only": true,
+      "not_real_benchmark": true,
+      "requires_teacher_review": true
+    }
+  ],
+
+  "evidence_matrix": {
+    "matrix_id": "matrix_apoptosis_001",
+    "knowledge_point_id": "kp_apoptosis_001",
+    "research_question": "细胞凋亡分子机制如何应用于肿瘤治疗策略设计？",
+    "card_ids": ["ec_apoptosis_001", "ec_apoptosis_002", "ec_apoptosis_003"],
+    "consensus_findings": [
+      {
+        "id": "cf_001",
+        "statement": "细胞凋亡的核心调控节点（Bcl-2家族蛋白、死亡受体、caspase级联）是抗肿瘤药物研发的关键靶点，多条证据支持靶向这些节点的治疗策略具有临床转化价值",
+        "supporting_cards": ["ec_apoptosis_001", "ec_apoptosis_002", "ec_apoptosis_003"],
+        "confidence": "high"
+      },
+      {
+        "id": "cf_002",
+        "statement": "肿瘤细胞通过多种机制逃逸凋亡（Bcl-2过表达、Fas下调、IAP上调），联合靶向多个凋亡调控节点可能是克服耐药性的有效策略",
+        "supporting_cards": ["ec_apoptosis_001", "ec_apoptosis_002"],
+        "confidence": "moderate"
+      }
+    ],
+    "conflicting_findings": [
+      {
+        "id": "ctf_001",
+        "statement": "Fas信号在肿瘤中的角色存在矛盾：部分证据表明Fas激活促进肿瘤细胞凋亡（免疫监视），而另一些证据显示Fas信号可激活NF-κB促进肿瘤存活和炎症",
+        "conflicting_cards": ["ec_apoptosis_002"],
+        "possible_explanation": "Fas信号转导的结局可能取决于细胞类型、Fas表达水平、共信号分子及肿瘤微环境上下文",
+        "resolution_suggestion": "需要通过单细胞水平的多组学分析，结合原位检测技术，系统解析Fas信号在不同肿瘤亚型中的功能异质性"
+      }
+    ],
+    "evidence_strength_summary": "当前证据体系中，Bcl-2靶向治疗的机制研究最为成熟（strong），已有临床获批药物（Venetoclax）；死亡受体途径与免疫逃逸的研究提供了有价值的机制见解（moderate），但临床转化尚需更多验证；基于caspase的药物筛选策略处于早期阶段（preliminary），展现了良好的方法学潜力，但候选化合物的成药性有待进一步评估。整体而言，从基础机制到临床应用存在明确的转化路径，但各环节的证据强度不均衡。",
+    "limitations_summary": "（1）多数研究基于体外细胞系和动物模型，人体内的复杂性和个体差异未充分体现；（2）肿瘤微环境（免疫细胞、基质细胞、血管等）对凋亡调控的影响在简化模型中被低估；（3）凋亡通路与其他细胞死亡形式（焦亡、铁死亡等）的串扰机制研究尚不充分；（4）靶向凋亡药物的长期安全性和耐药演变规律缺乏系统数据；（5）所有证据均为演示数据，不代表真实科研成果。",
+    "course_mapping": {
+      "core_concepts": [
+        "线粒体途径凋亡（内源性途径）",
+        "死亡受体途径（外源性途径）",
+        "Caspase级联反应",
+        "Bcl-2家族蛋白调控网络",
+        "凋亡与免疫的交叉调控"
+      ],
+      "skill_objectives": [
+        "能够描述细胞凋亡的两条经典通路及其分子机制",
+        "能够分析凋亡调控异常与肿瘤发生发展的关系",
+        "能够评价靶向凋亡通路的药物研发策略",
+        "能够设计基于凋亡机制的实验方案"
+      ],
+      "difficulty_level": "intermediate"
+    },
+    "report_outline": {
+      "title": "细胞凋亡分子机制在肿瘤治疗中的应用：文献调研与实验思路分析",
+      "sections": [
+        {
+          "order": 1,
+          "title": "引言：细胞凋亡的概念、历史与研究意义",
+          "key_points": ["凋亡的定义与特征", "Kerr等人的开创性工作", "凋亡在肿瘤生物学中的核心地位"]
+        },
+        {
+          "order": 2,
+          "title": "细胞凋亡的分子机制",
+          "key_points": ["线粒体途径", "死亡受体途径", "Caspase级联反应", "调控网络"]
+        },
+        {
+          "order": 3,
+          "title": "凋亡调控异常与肿瘤",
+          "key_points": ["Bcl-2家族蛋白异常", "死亡受体系统失调", "IAP蛋白过表达", "凋亡逃逸与耐药"]
+        },
+        {
+          "order": 4,
+          "title": "靶向凋亡通路的肿瘤治疗策略",
+          "key_points": ["BH3模拟物", "死亡受体激动剂", "IAP拮抗剂", "联合治疗策略"]
+        },
+        {
+          "order": 5,
+          "title": "实验设计思路",
+          "key_points": ["验证性实验设计", "药物筛选方案", "体内模型选择", "生物标志物开发"]
+        },
+        {
+          "order": 6,
+          "title": "总结与展望",
+          "key_points": ["当前进展总结", "未解决的关键问题", "未来研究方向"]
+        }
+      ]
+    },
+    "demo_only": true,
+    "not_real_benchmark": true,
+    "requires_teacher_review": true
+  },
+
+  "research_case": {
+    "case_id": "case_apoptosis_001",
+    "title": "围绕细胞凋亡与肿瘤治疗设计一个小型文献调研和实验思路分析任务",
+    "scenario": "你是一名生物技术专业的研究生，正在参与导师的抗肿瘤药物研发项目。导师希望你对细胞凋亡的分子机制进行系统调研，并基于现有文献证据，设计一套验证Bcl-2靶向药物联合免疫治疗策略的实验方案。你需要完成文献调研、证据整合和实验设计三个核心任务。",
+    "background": "细胞凋亡是程序性细胞死亡的重要形式，其调控异常与肿瘤的发生发展密切相关。Bcl-2家族蛋白是线粒体途径凋亡的核心调控因子，Venetoclax作为首个获批的Bcl-2选择性抑制剂，在血液肿瘤治疗中取得了显著疗效。然而，实体瘤中Bcl-2靶向治疗的效果有限，且耐药问题突出。近年来，免疫检查点抑制剂（如PD-1/PD-L1抗体）在多种实体瘤中展现了良好前景，但响应率仍需提高。探索Bcl-2靶向药物与免疫治疗的联合策略，有望通过恢复肿瘤细胞凋亡敏感性来增强免疫治疗效果。",
+    "linked_knowledge_points": ["kp_apoptosis_001"],
+    "linked_evidence_cards": ["ec_apoptosis_001", "ec_apoptosis_002", "ec_apoptosis_003"],
+    "student_tasks": [
+      {
+        "task_id": "task_001",
+        "order": 1,
+        "title": "文献调研与证据整理",
+        "description": "阅读提供的三篇模拟文献（evidence_cards），提取关于细胞凋亡分子机制的关键信息，填写证据整理表格，标注各证据的强度等级和局限性。",
+        "deliverables": ["证据整理表格（含核心发现、证据强度、局限性）", "凋亡通路机制总结图（手绘或软件绘制）"],
+        "max_score": 30,
+        "evaluation_criteria": [
+          "核心发现的提取是否准确完整",
+          "证据强度评估是否合理",
+          "局限性分析是否深入",
+          "机制总结图是否清晰准确"
+        ]
+      },
+      {
+        "task_id": "task_002",
+        "order": 2,
+        "title": "证据整合与科学问题凝练",
+        "description": "基于文献调研结果，整合三条证据的核心发现，识别共识与冲突，凝练出一个可检验的科学问题，并撰写200字左右的研究假设。",
+        "deliverables": ["证据整合报告（含共识、冲突分析）", "科学问题陈述与研究假设"],
+        "max_score": 25,
+        "evaluation_criteria": [
+          "共识与冲突的识别是否准确",
+          "科学问题是否具有可检验性和创新性",
+          "研究假设是否逻辑清晰、有文献支撑"
+        ]
+      },
+      {
+        "task_id": "task_003",
+        "order": 3,
+        "title": "实验方案设计",
+        "description": "围绕凝练的科学问题，设计一套包含体外和体内实验的完整研究方案。方案需包含：实验目的、实验材料与方法、预期结果、可能的问题与替代方案。",
+        "deliverables": ["完整实验方案（含体外和体内实验）", "实验流程图", "预期结果与数据分析计划"],
+        "max_score": 35,
+        "evaluation_criteria": [
+          "实验设计是否逻辑严密、层次清晰",
+          "方法选择是否合理可行",
+          "对照组设置是否完善",
+          "预期结果分析是否科学",
+          "替代方案是否考虑周全"
+        ]
+      },
+      {
+        "task_id": "task_004",
+        "order": 4,
+        "title": "产业转化分析",
+        "description": "分析所设计实验方案的产业转化潜力，讨论可能的合作方向（如药企合作、技术转移）、市场前景和监管考量。",
+        "deliverables": ["产业转化分析报告（500-800字）"],
+        "max_score": 10,
+        "evaluation_criteria": [
+          "市场分析是否基于实际数据",
+          "合作方向是否合理可行",
+          "监管考量是否全面"
+        ]
+      }
+    ],
+    "experiment_design_prompts": [
+      "请设计体外实验验证Bcl-2抑制剂与PD-1抗体的联合效应，考虑使用哪些细胞模型和检测指标？",
+      "如何建立合适的动物模型来评估联合治疗的体内药效？需要设置哪些对照组？",
+      "如果联合治疗未显示协同效应，你会从哪些角度分析原因并调整实验方案？",
+      "如何利用高通量筛选平台发现增强Bcl-2抑制剂敏感性的辅助化合物？"
+    ],
+    "industry_context": {
+      "market_size": "全球抗肿瘤药物市场规模超过2000亿美元，靶向凋亡通路的药物是重要增长点",
+      "key_players": ["AbbVie（Venetoclax开发商）", "Novartis", "Roche", "多家中国生物技术公司"],
+      "regulatory_considerations": "抗肿瘤药物需经过I-III期临床试验，联合用药方案需特别关注药物相互作用和安全性",
+      "career_relevance": "掌握凋亡机制和药物研发流程，可胜任制药企业R&D、CRO公司、学术研究机构等岗位"
+    },
+    "rubric": {
+      "total_score": 100,
+      "grade_levels": {
+        "excellent": {"range": [90, 100], "description": "文献调研全面深入，证据整合逻辑清晰，实验设计创新可行，产业分析有深度"},
+        "good": {"range": [75, 89], "description": "文献调研较为全面，证据整合基本合理，实验设计可行但创新性一般，产业分析基本到位"},
+        "pass": {"range": [60, 74], "description": "完成基本调研任务，证据整合存在明显不足，实验设计可行但不够完善"},
+        "fail": {"range": [0, 59], "description": "文献调研不充分，证据整合混乱，实验设计存在重大缺陷"}
+      }
+    },
+    "demo_only": true,
+    "not_real_benchmark": true,
+    "requires_teacher_review": true
+  },
+
+  "agent_roles": [
+    {
+      "role_id": "role_basic_teacher",
+      "name": "基础课老师",
+      "responsibility": "负责评估学生对细胞凋亡基础概念的理解程度，包括线粒体途径、死亡受体途径、caspase级联反应等核心知识点的掌握情况。引导学生建立正确的分子生物学思维框架。",
+      "inputs": ["学生的证据整理表格", "凋亡通路机制总结图", "知识点的描述和解释"],
+      "outputs": ["基础概念掌握度评分", "概念理解偏差纠正建议", "进阶学习方向推荐"],
+      "tools": ["知识图谱查询", "概念关系分析", "基础概念题库"],
+      "evidence_rules": [
+        "引用教材和经典综述中的标准定义",
+        "区分已确立的科学共识与尚存争议的假说",
+        "引导学生使用准确的科学术语"
+      ],
+      "forbidden_behaviors": [
+        "不得直接给出实验设计答案",
+        "不得代替学生进行文献分析",
+        "不得使用真实PMID或声称数据为真实科研成果"
+      ],
+      "fallback_strategy": "当学生基础概念存在较大偏差时，先回到教材核心概念进行回顾性讲解，再逐步引导至应用层面"
+    },
+    {
+      "role_id": "role_literature_mentor",
+      "name": "文献导师",
+      "responsibility": "指导学生进行文献调研和证据提取，帮助学生评估文献质量、识别研究方法的优缺点、理解实验设计的逻辑。培养学生的批判性阅读能力。",
+      "inputs": ["学生填写的证据整理表格", "学生对文献方法学的评价", "学生提出的疑问"],
+      "outputs": ["文献阅读方法指导", "证据强度评估反馈", "研究方法学建议", "补充文献推荐"],
+      "tools": ["文献检索模拟", "证据评估框架", "研究方法学数据库"],
+      "evidence_rules": [
+        "强调区分证据强度等级（strong/moderate/preliminary）",
+        "引导学生关注研究的样本量、实验设计和统计分析",
+        "提醒学生注意研究局限性和潜在偏倚"
+      ],
+      "forbidden_behaviors": [
+        "不得替学生完成文献综述写作",
+        "不得声称模拟文献为真实发表的研究",
+        "不得跳过批判性分析直接给出结论"
+      ],
+      "fallback_strategy": "当学生难以理解某篇文献时，引导其先理解研究背景和核心问题，再逐步深入方法和结果分析"
+    },
+    {
+      "role_id": "role_experiment_mentor",
+      "name": "实验导师",
+      "responsibility": "指导学生设计实验方案，评估实验的可行性、严谨性和创新性。帮助学生完善对照组设置、选择合适的实验方法和技术路线。",
+      "inputs": ["学生的实验方案", "实验流程图", "预期结果与数据分析计划"],
+      "outputs": ["实验设计评审意见", "技术路线优化建议", "对照组设置建议", "潜在问题预警"],
+      "tools": ["实验方法数据库", "技术路线评估工具", "统计分析指导"],
+      "evidence_rules": [
+        "实验设计必须包含适当的阳性对照和阴性对照",
+        "样本量需基于统计功效分析进行估算",
+        "实验条件需考虑可重复性"
+      ],
+      "forbidden_behaviors": [
+        "不得提供可直接提交的标准实验方案",
+        "不得忽略安全性评估和伦理考量",
+        "不得推荐未经充分验证的实验方法"
+      ],
+      "fallback_strategy": "当学生实验设计存在重大缺陷时，先帮助其明确实验目的和核心假设，再从实验逻辑层面逐步完善设计"
+    },
+    {
+      "role_id": "role_industry_mentor",
+      "name": "产业导师",
+      "responsibility": "帮助学生理解科研成果的产业转化路径，分析市场前景、合作模式和监管要求。培养学生的产业思维和商业意识。",
+      "inputs": ["学生的产业转化分析报告", "实验方案的商业可行性评估需求"],
+      "outputs": ["产业转化路径分析", "市场前景评估反馈", "监管合规建议", "职业发展指导"],
+      "tools": ["行业报告数据库", "药物研发管线查询", "监管政策数据库"],
+      "evidence_rules": [
+        "产业分析需基于公开可查的市场数据和行业报告",
+        "区分已上市药物、临床在研药物和临床前研究阶段",
+        "强调知识产权和专利布局的重要性"
+      ],
+      "forbidden_behaviors": [
+        "不得提供内幕信息或未公开的商业数据",
+        "不得做出确定性的市场预测或投资建议",
+        "不得忽视药物研发的高失败率风险"
+      ],
+      "fallback_strategy": "当学生缺乏产业背景知识时，先介绍药物研发的基本流程和关键里程碑，再逐步引导至具体项目的转化分析"
+    },
+    {
+      "role_id": "role_reviewer_mentor",
+      "name": "审稿人导师",
+      "responsibility": "模拟学术期刊审稿人视角，对学生的研究报告和实验方案进行严格审查，提出尖锐但建设性的问题。培养学生的学术写作和答辩能力。",
+      "inputs": ["学生的完整研究报告", "实验方案", "证据整合报告"],
+      "outputs": ["审稿意见（major/minor revision）", "关键问题清单", "修改建议优先级排序", "学术写作改进建议"],
+      "tools": ["学术写作规范检查", "逻辑一致性分析", "统计方法审查"],
+      "evidence_rules": [
+        "审稿意见需具体、有针对性，避免笼统评价",
+        "区分致命缺陷（fatal flaws）和可改进之处",
+        "要求学生回应每一条审稿意见"
+      ],
+      "forbidden_behaviors": [
+        "不得进行人身攻击或过度负面评价",
+        "不得替学生修改论文",
+        "不得接受不充分的数据支撑或逻辑论证"
+      ],
+      "fallback_strategy": "当学生报告质量较差时，先指出最关键的2-3个问题，要求学生优先修改后再进行下一轮评审"
+    }
+  ],
+
+  "research_report": {
+    "report_id": "report_apoptosis_001",
+    "student_id": "demo_student_001",
+    "knowledge_point_id": "kp_apoptosis_001",
+    "title": "Bcl-2靶向治疗与免疫检查点抑制剂联合策略的文献调研与实验设计",
+    "research_question": "Bcl-2选择性抑制剂能否通过恢复肿瘤细胞凋亡敏感性来增强PD-1/PD-L1免疫检查点抑制剂的抗肿瘤效果？其联合作用的分子机制是什么？",
+    "selected_evidence_cards": ["ec_apoptosis_001", "ec_apoptosis_002", "ec_apoptosis_003"],
+    "evidence_matrix_id": "matrix_apoptosis_001",
+    "mechanism_summary": "基于三篇模拟文献的证据整合，我们提出以下机制假设：（1）Bcl-2过表达导致肿瘤细胞对T细胞介导的凋亡杀伤产生耐受（MOCK-APOP-001）；（2）肿瘤细胞通过下调Fas表达和分泌sFasL实现免疫逃逸（MOCK-APOP-002）；（3）Bcl-2抑制剂（如Venetoclax）可恢复肿瘤细胞对凋亡信号的敏感性（MOCK-APOP-001）。因此，我们假设Bcl-2抑制剂与PD-1抗体联合使用，可通过双重机制增强抗肿瘤免疫效应：一方面直接诱导肿瘤细胞凋亡，另一方面通过恢复Fas表达增强T细胞杀伤功能。",
+    "experiment_design": {
+      "aim": "验证Bcl-2抑制剂与PD-1抗体联合使用的协同抗肿瘤效应及分子机制",
+      "in_vitro": {
+        "cell_models": ["人源结肠癌细胞系HCT-116（Bcl-2高表达）", "人源黑色素瘤细胞系A375（Fas低表达）"],
+        "co_culture_system": "肿瘤细胞与活化T细胞（CD8+）共培养体系（E:T=5:1）",
+        "treatment_groups": ["对照组", "Venetoclax单药组", "PD-1抗体单药组", "联合用药组"],
+        "readouts": [
+          "Caspase-3/7活性检测（Caspase-Glo法）",
+          "流式细胞术检测Annexin V/PI双染色",
+          "T细胞杀伤活性检测（LDH释放法）",
+          "Western blot检测Bcl-2、Fas、cleaved caspase-3/8/9蛋白表达",
+          "ELISA检测IFN-γ、TNF-α细胞因子释放"
+        ],
+        "analysis": "采用Bliss独立模型和Loewe加和模型评估药物协同效应"
+      },
+      "in_vivo": {
+        "animal_model": "BALB/c裸鼠皮下移植瘤模型（HCT-116细胞）",
+        "group_design": "每组8只小鼠，随机分为4组（对照组、单药组x2、联合组）",
+        "treatment_schedule": "Venetoclax 50mg/kg/d口服，PD-1抗体 10mg/kg ip qw，共3周",
+        "endpoints": [
+          "肿瘤体积曲线（每周测量2次）",
+          "肿瘤重量（实验终点）",
+          "TUNEL染色检测肿瘤组织凋亡",
+          "免疫组化检测CD8+ T细胞浸润",
+          "流式细胞术分析肿瘤浸润淋巴细胞（TIL）表型"
+        ]
+      }
+    },
+    "limitations": [
+      "裸鼠模型缺乏完整免疫系统，无法完全模拟PD-1抗体的免疫调节效应，后续需考虑使用人源化免疫小鼠模型",
+      "体外共培养体系仅模拟了CD8+ T细胞的杀伤功能，未纳入NK细胞、巨噬细胞等其他免疫细胞",
+      "Bcl-2表达水平在不同肿瘤类型中差异较大，单一细胞系的结果外推性有限",
+      "联合用药的剂量优化和给药顺序未在本方案中充分探讨",
+      "所有引用文献均为模拟演示数据，实验设计基于假设性证据"
+    ],
+    "industry_translation": {
+      "therapeutic_potential": "Bcl-2抑制剂与免疫检查点抑制剂的联合策略具有明确的转化潜力。Venetoclax已在血液肿瘤中获批，其与PD-1抑制剂（如Pembrolizumab）的联合方案已进入多项临床试验阶段。如果本研究能够证实协同效应并阐明机制，将为实体瘤的联合治疗提供新的理论依据。",
+      "market_opportunity": "全球PD-1/PD-L1抑制剂市场规模超过400亿美元，但实体瘤响应率仅20-30%。联合Bcl-2抑制剂有望提高响应率，市场潜力巨大。",
+      "development_pathway": "先在临床前模型中验证联合效应和安全性，再推进至I期临床试验评估安全性和推荐剂量，最终在II/III期试验中验证临床疗效。",
+      "ip_considerations": "联合用药方案本身通常难以获得强专利保护，但新型Bcl-2降解剂（PROTAC）或新型联合给药策略可能具有知识产权价值。"
+    },
+    "tutor_feedback": {
+      "overall_evaluation": "本报告结构完整，逻辑较为清晰，能够基于提供的文献证据提出合理的科学假设和实验方案。证据整合部分较好地识别了共识与冲突，实验设计考虑了体外和体内两个层面。",
+      "strengths": [
+        "科学假设具有逻辑性和可检验性",
+        "实验设计层次清晰，包含多种检测指标",
+        "局限性分析较为客观全面",
+        "产业转化分析有一定深度"
+      ],
+      "improvements": [
+        "建议增加对Bcl-2与Mcl-1功能互补性的讨论，因为Mcl-1代偿性上调是Venetoclax耐药的已知机制",
+        "动物模型选择需进一步论证，裸鼠缺乏功能性T细胞，与PD-1抗体的作用机制不匹配",
+        "建议补充剂量-效应关系的预实验设计",
+        "产业分析部分可增加对竞争格局和专利到期时间的讨论"
+      ],
+      "suggested_score": 78
+    },
+    "reviewer_questions": [
+      {
+        "question_id": "rq_001",
+        "question": "你的机制假设中提到Bcl-2抑制剂可'恢复Fas表达'，但MOCK-APOP-001中并未直接证明Venetoclax能上调Fas表达。请问你有什么依据支持这一推论？你计划如何在实验中验证这一点？",
+        "priority": "major",
+        "target_section": "mechanism_summary"
+      },
+      {
+        "question_id": "rq_002",
+        "question": "你选择了BALB/c裸鼠作为体内模型，但裸鼠缺乏功能性T细胞，而PD-1抗体的作用依赖于T细胞介导的免疫反应。请论证这一模型选择的合理性，或提出替代方案。",
+        "priority": "major",
+        "target_section": "experiment_design.in_vivo"
+      },
+      {
+        "question_id": "rq_003",
+        "question": "你的体外实验仅使用了两种肿瘤细胞系，考虑到肿瘤异质性，你认为这些结果能否代表更广泛的肿瘤类型？是否考虑增加Bcl-2低表达的细胞系作为对照？",
+        "priority": "minor",
+        "target_section": "experiment_design.in_vitro"
+      },
+      {
+        "question_id": "rq_004",
+        "question": "在联合用药的剂量选择上，你直接引用了文献中的单药剂量。联合用药时是否需要重新进行剂量优化？你如何排除联合用药可能增加的毒性？",
+        "priority": "major",
+        "target_section": "experiment_design"
+      },
+      {
+        "question_id": "rq_005",
+        "question": "MOCK-APOP-003中提到的基于caspase的高通量筛选策略是否可以整合到你的联合用药研究中？例如，利用该平台筛选能增强Venetoclax+PD-1抗体协同效应的辅助化合物？",
+        "priority": "minor",
+        "target_section": "industry_translation"
+      }
+    ],
+    "status": "draft_requires_review",
+    "demo_only": true,
+    "not_real_benchmark": true,
+    "requires_teacher_review": true
+  }
+}
