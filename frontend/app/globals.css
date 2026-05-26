@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #0ea5e9;
+  --primary-light: #38bdf8;
+  --primary-dark: #0284c7;
+  --accent: #06d6a0;
+  --accent-light: #2ef5c0;
+  --accent-dark: #00b386;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --purple: #8b5cf6;
+  --purple-light: #a78bfa;
+
+  --bg-dark: #0a0e27;
+  --bg-medium: #0f1535;
+  --bg-card: rgba(15, 23, 42, 0.6);
+  --bg-card-solid: #111a30;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover: rgba(255, 255, 255, 0.08);
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --sidebar-width: 240px;
+  --header-height: 60px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: "Inter", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+@layer base {
+  body {
+    @apply text-sm antialiased;
+  }
+
+  h1 {
+    @apply text-2xl font-bold;
+  }
+
+  h2 {
+    @apply text-xl font-semibold;
+  }
+
+  h3 {
+    @apply text-lg font-medium;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+}
+
+@layer components {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+  }
+
+  .glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.2), 0 0 60px rgba(14, 165, 233, 0.05);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px rgba(6, 214, 160, 0.2), 0 0 60px rgba(6, 214, 160, 0.05);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.2), 0 0 60px rgba(139, 92, 246, 0.05);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .btn-primary {
+    @apply px-6 py-2.5 rounded-xl font-medium text-white;
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border: 1px solid rgba(14, 165, 233, 0.4);
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    box-shadow: 0 0 24px rgba(14, 165, 233, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .btn-accent {
+    @apply px-6 py-2.5 rounded-xl font-medium text-white;
+    background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+    border: 1px solid rgba(6, 214, 160, 0.4);
+    transition: all 0.3s ease;
+  }
+
+  .btn-accent:hover {
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    box-shadow: 0 0 24px rgba(6, 214, 160, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .kpi-card {
+    @apply glass-card p-5;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    opacity: 0.6;
+  }
+
+  .bio-pattern {
+    background-image:
+      radial-gradient(circle at 20% 50%, rgba(14, 165, 233, 0.03) 1px, transparent 1px),
+      radial-gradient(circle at 80% 50%, rgba(6, 214, 160, 0.03) 1px, transparent 1px),
+      radial-gradient(circle at 50% 80%, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+}
+
+@layer utilities {
+  .text-shadow-glow {
+    text-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+  }
+}
