@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Clock,
-  AlertCircle,
   ChevronLeft,
   ChevronRight,
   Flag,
@@ -71,7 +70,6 @@ export default function QuizPage() {
 
   const q = quizQuestions[current];
   const answered = Object.keys(answers).length;
-  const unanswered = quizQuestions.length - answered;
 
   const handleSelect = (option: string) => {
     if (submitted) return;
@@ -83,13 +81,15 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-reveal">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">基因工程原理 - 第三章测验</h1>
-          <p className="text-text-muted mt-1">单选题 · 共 {quizQuestions.length} 题</p>
+          <h1 className="text-2xl font-bold text-ink" style={{ fontFamily: "Georgia, serif" }}>
+            基因工程原理 - 第三章测验
+          </h1>
+          <p className="text-ink-muted mt-1">单选题 · 共 {quizQuestions.length} 题</p>
         </div>
-        <div className="flex items-center gap-3 text-sm text-text-secondary">
+        <div className="flex items-center gap-3 text-sm text-ink-muted">
           <Clock className="w-4 h-4" />
           <span>剩余时间：28:45</span>
         </div>
@@ -102,34 +102,28 @@ export default function QuizPage() {
             onClick={() => setCurrent(i)}
             className={`w-8 h-8 rounded-lg text-xs font-medium transition-all ${
               i === current
-                ? "bg-primary text-white"
+                ? "bg-amber text-surface-base"
                 : answers[quizQuestions[i].id]
-                ? "bg-accent/20 text-accent border border-accent/30"
-                : "bg-white/5 text-text-muted border border-white/10"
+                ? "bg-sage/20 text-sage border border-sage/30"
+                : "bg-surface-raised text-ink-muted border border-white/5"
             }`}
           >
             {i + 1}
           </button>
         ))}
-        <span className="text-xs text-text-muted ml-2">
+        <span className="text-xs text-ink-muted ml-2">
           {answered}/{quizQuestions.length} 已答
         </span>
       </div>
 
       {!submitted ? (
-        <div className="glass-card p-6 animate-fade-in">
+        <div className="lab-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary-light">
-              第 {current + 1} 题
-            </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-text-muted">
-              单选题
-            </span>
+            <span className="badge badge-amber text-xs">第 {current + 1} 题</span>
+            <span className="badge badge-muted text-xs">单选题</span>
           </div>
 
-          <p className="text-base text-text-primary mb-6 leading-relaxed">
-            {q.content}
-          </p>
+          <p className="text-base text-ink mb-6 leading-relaxed">{q.content}</p>
 
           <div className="space-y-3">
             {q.options.map((opt) => {
@@ -140,21 +134,17 @@ export default function QuizPage() {
                   onClick={() => handleSelect(opt)}
                   className={`w-full text-left p-4 rounded-xl border transition-all ${
                     isSelected
-                      ? "bg-primary/10 border-primary/40 text-primary-light"
-                      : "bg-white/[0.03] border-white/10 text-text-secondary hover:bg-white/[0.06] hover:border-white/20"
+                      ? "bg-amber/10 border-amber/30 text-amber"
+                      : "bg-surface-raised border-white/5 text-ink-muted hover:bg-white/[0.06] hover:border-white/10"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        isSelected
-                          ? "border-primary bg-primary/20"
-                          : "border-white/20"
+                        isSelected ? "border-amber bg-amber/20" : "border-white/10"
                       }`}
                     >
-                      {isSelected && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                      )}
+                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-amber" />}
                     </div>
                     <span className="text-sm">{opt}</span>
                   </div>
@@ -167,13 +157,13 @@ export default function QuizPage() {
             <button
               onClick={() => setCurrent(Math.max(0, current - 1))}
               disabled={current === 0}
-              className="flex items-center gap-1 px-4 py-2 rounded-xl glass text-sm text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
+              className="btn-ghost text-sm flex items-center gap-1"
             >
               <ChevronLeft className="w-4 h-4" />
               上一题
             </button>
 
-            <button className="flex items-center gap-1 px-3 py-2 rounded-xl glass text-sm text-warning hover:text-warning/80 transition-colors">
+            <button className="btn-ghost text-sm flex items-center gap-1 text-amber">
               <Flag className="w-4 h-4" />
               标记
             </button>
@@ -181,16 +171,13 @@ export default function QuizPage() {
             {current < quizQuestions.length - 1 ? (
               <button
                 onClick={() => setCurrent(current + 1)}
-                className="flex items-center gap-1 px-4 py-2 rounded-xl glass text-sm text-text-secondary hover:text-text-primary transition-colors"
+                className="btn-ghost text-sm flex items-center gap-1"
               >
                 下一题
                 <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <button
-                onClick={handleSubmit}
-                className="btn-accent text-sm flex items-center gap-1.5"
-              >
+              <button onClick={handleSubmit} className="btn-sage text-sm flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
                 提交试卷
               </button>
@@ -198,13 +185,15 @@ export default function QuizPage() {
           </div>
         </div>
       ) : (
-        <div className="glass-card p-8 text-center animate-slide-up">
-          <CheckCircle2 className="w-16 h-16 mx-auto text-accent mb-4" />
-          <h2 className="text-xl font-bold mb-2">测验提交成功！</h2>
-          <p className="text-text-secondary mb-6">
+        <div className="lab-card p-8 text-center">
+          <CheckCircle2 className="w-16 h-16 mx-auto text-sage mb-4" />
+          <h2 className="text-xl font-bold text-ink mb-2" style={{ fontFamily: "Georgia, serif" }}>
+            测验提交成功！
+          </h2>
+          <p className="text-ink-muted mb-6">
             你已完成 {answered}/{quizQuestions.length} 道题目
           </p>
-          <Link href="/student/quiz/result" className="btn-primary text-sm">
+          <Link href="/student/quiz/result" className="btn-amber text-sm">
             查看测验结果 →
           </Link>
         </div>

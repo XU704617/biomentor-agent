@@ -4,11 +4,10 @@ import Link from "next/link";
 import {
   CheckCircle2,
   XCircle,
-  HelpCircle,
-  TrendingUp,
   Clock,
   Award,
   ArrowRight,
+  TrendingUp,
 } from "lucide-react";
 import {
   BarChart,
@@ -65,66 +64,70 @@ const questionReview = [
   },
 ];
 
-const scoreColor = resultDetail.score >= 90 ? "text-accent" : resultDetail.score >= 80 ? "text-primary-light" : resultDetail.score >= 60 ? "text-warning" : "text-danger";
+const scoreColor =
+  resultDetail.score >= 90
+    ? "text-sage"
+    : resultDetail.score >= 80
+    ? "text-amber"
+    : resultDetail.score >= 60
+    ? "text-amber"
+    : "text-rust";
 
 export default function QuizResultPage() {
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-reveal">
       <div className="text-center py-8">
-        <Award className="w-16 h-16 mx-auto text-primary-light mb-4" />
-        <h1 className="text-2xl font-bold mb-2">测验结果</h1>
-        <p className="text-text-secondary">{resultDetail.quizTitle}</p>
+        <Award className="w-16 h-16 mx-auto text-amber mb-4" />
+        <h1 className="text-2xl font-bold text-ink mb-2" style={{ fontFamily: "Georgia, serif" }}>
+          测验结果
+        </h1>
+        <p className="text-ink-muted">{resultDetail.quizTitle}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card p-5 text-center">
-          <p className={`text-4xl font-extrabold ${scoreColor}`}>
-            {resultDetail.score}
-          </p>
-          <p className="text-xs text-text-muted mt-1">得分 / {resultDetail.totalScore}</p>
+        <div className="lab-card p-5 text-center">
+          <p className={`stat-number text-4xl font-extrabold ${scoreColor}`}>{resultDetail.score}</p>
+          <p className="text-xs text-ink-muted mt-1">得分 / {resultDetail.totalScore}</p>
         </div>
-        <div className="glass-card p-5 text-center">
+        <div className="lab-card p-5 text-center">
           <div className="flex items-center justify-center gap-1">
-            <CheckCircle2 className="w-4 h-4 text-success" />
-            <span className="text-xl font-bold text-success">{resultDetail.correct}</span>
+            <CheckCircle2 className="w-4 h-4 text-sage" />
+            <span className="stat-number text-xl text-sage">{resultDetail.correct}</span>
           </div>
-          <p className="text-xs text-text-muted mt-1">正确</p>
+          <p className="text-xs text-ink-muted mt-1">正确</p>
         </div>
-        <div className="glass-card p-5 text-center">
+        <div className="lab-card p-5 text-center">
           <div className="flex items-center justify-center gap-1">
-            <XCircle className="w-4 h-4 text-danger" />
-            <span className="text-xl font-bold text-danger">{resultDetail.wrong}</span>
+            <XCircle className="w-4 h-4 text-rust" />
+            <span className="stat-number text-xl text-rust">{resultDetail.wrong}</span>
           </div>
-          <p className="text-xs text-text-muted mt-1">错误</p>
+          <p className="text-xs text-ink-muted mt-1">错误</p>
         </div>
-        <div className="glass-card p-5 text-center">
+        <div className="lab-card p-5 text-center">
           <div className="flex items-center justify-center gap-1">
-            <Clock className="w-4 h-4 text-text-secondary" />
-            <span className="text-lg font-bold text-text-primary">{resultDetail.timeUsed}</span>
+            <Clock className="w-4 h-4 text-ink-muted" />
+            <span className="text-lg font-bold text-ink">{resultDetail.timeUsed}</span>
           </div>
-          <p className="text-xs text-text-muted mt-1">用时</p>
+          <p className="text-xs text-ink-muted mt-1">用时</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card p-5">
-          <h3 className="text-base font-semibold mb-4">知识掌握分析</h3>
+        <div className="lab-card p-5">
+          <h3 className="text-base mb-4" style={{ fontFamily: "Georgia, serif" }}>
+            知识掌握分析
+          </h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={performanceData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis type="number" domain={[0, 100]} tick={{ fill: "#64748b", fontSize: 11 }} />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={{ fill: "#94a3b8", fontSize: 12 }}
-                width={70}
-              />
+              <XAxis type="number" domain={[0, 100]} tick={{ fill: "#6b6560", fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" tick={{ fill: "#9d968f", fontSize: 12 }} width={70} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "rgba(15,23,42,0.95)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  backgroundColor: "#191b24",
+                  border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: "8px",
-                  color: "#e2e8f0",
+                  color: "#e8e4dd",
                   fontSize: "12px",
                 }}
               />
@@ -134,10 +137,10 @@ export default function QuizResultPage() {
                     key={index}
                     fill={
                       entry.value >= 85
-                        ? "rgba(6,214,160,0.7)"
+                        ? "#4dab9a"
                         : entry.value >= 70
-                        ? "rgba(14,165,233,0.7)"
-                        : "rgba(245,158,11,0.7)"
+                        ? "#e8983e"
+                        : "#d96459"
                     }
                   />
                 ))}
@@ -146,58 +149,61 @@ export default function QuizResultPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="glass-card p-5">
-          <h3 className="text-base font-semibold mb-2">成绩对比</h3>
+        <div className="lab-card p-5">
+          <h3 className="text-base mb-2" style={{ fontFamily: "Georgia, serif" }}>
+            成绩对比
+          </h3>
           <div className="space-y-3 mt-6">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03]">
-              <span className="text-sm text-text-secondary">你的成绩</span>
-              <span className="text-sm font-bold text-primary-light">{resultDetail.score}分</span>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-surface-raised">
+              <span className="text-sm text-ink-muted">你的成绩</span>
+              <span className="text-sm font-bold text-amber">{resultDetail.score}分</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03]">
-              <span className="text-sm text-text-secondary">班级均分</span>
-              <span className="text-sm font-bold text-text-primary">{resultDetail.avgScore}分</span>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-surface-raised">
+              <span className="text-sm text-ink-muted">班级均分</span>
+              <span className="text-sm font-bold text-ink">{resultDetail.avgScore}分</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03]">
-              <span className="text-sm text-text-secondary">班级排名</span>
-              <span className="text-sm font-bold text-accent">{resultDetail.rank}</span>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-surface-raised">
+              <span className="text-sm text-ink-muted">班级排名</span>
+              <span className="text-sm font-bold text-sage">{resultDetail.rank}</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03]">
-              <span className="text-sm text-text-secondary flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-success" />
+            <div className="flex items-center justify-between p-3 rounded-xl bg-surface-raised">
+              <span className="text-sm text-ink-muted flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-sage" />
                 较上次
               </span>
-              <span className="text-sm font-bold text-success">+5分</span>
+              <span className="text-sm font-bold text-sage">+5分</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="glass-card p-5">
-        <h3 className="text-base font-semibold mb-4">错题回顾</h3>
+      <div className="lab-card p-5">
+        <h3 className="text-base mb-4" style={{ fontFamily: "Georgia, serif" }}>
+          错题回顾
+        </h3>
         <div className="space-y-3">
           {questionReview.map((q) => (
             <div
               key={q.id}
               className={`p-4 rounded-xl border ${
-                q.isCorrect
-                  ? "bg-success/5 border-success/10"
-                  : "bg-danger/5 border-danger/10"
+                q.isCorrect ? "bg-sage/5 border-sage/10" : "bg-rust/5 border-rust/10"
               }`}
             >
               <div className="flex items-start gap-2">
                 {q.isCorrect ? (
-                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-sage flex-shrink-0 mt-0.5" />
                 ) : (
-                  <XCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
+                  <XCircle className="w-4 h-4 text-rust flex-shrink-0 mt-0.5" />
                 )}
                 <div>
-                  <p className="text-sm text-text-primary">{q.content}</p>
+                  <p className="text-sm text-ink">{q.content}</p>
                   <div className="flex items-center gap-4 mt-2">
-                    <span className="text-xs text-text-muted">
-                      正确答案：<span className="text-accent">{q.correctAnswer}</span>
+                    <span className="text-xs text-ink-muted">
+                      正确答案：<span className="text-sage">{q.correctAnswer}</span>
                     </span>
-                    <span className="text-xs text-text-muted">
-                      你的答案：<span className={q.isCorrect ? "text-accent" : "text-danger"}>{q.yourAnswer}</span>
+                    <span className="text-xs text-ink-muted">
+                      你的答案：
+                      <span className={q.isCorrect ? "text-sage" : "text-rust"}>{q.yourAnswer}</span>
                     </span>
                   </div>
                 </div>
@@ -208,11 +214,11 @@ export default function QuizResultPage() {
       </div>
 
       <div className="flex items-center justify-center gap-3 pt-4">
-        <Link href="/student/report" className="btn-primary text-sm flex items-center gap-1.5">
+        <Link href="/student/report" className="btn-amber text-sm flex items-center gap-1.5">
           查看详细报告
           <ArrowRight className="w-4 h-4" />
         </Link>
-        <Link href="/student/quiz" className="btn-accent text-sm">
+        <Link href="/student/quiz" className="btn-sage text-sm">
           继续练习
         </Link>
       </div>

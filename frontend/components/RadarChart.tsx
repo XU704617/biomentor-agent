@@ -14,31 +14,31 @@ interface RadarChartProps {
   color?: string;
 }
 
-export function RadarChart({ data, color = "#0ea5e9" }: RadarChartProps) {
+export function RadarChart({ data, color = "#e8983e" }: RadarChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <RechartsRadar data={data} cx="50%" cy="50%" outerRadius="75%">
-        <PolarGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
+    <ResponsiveContainer width="100%" height={260}>
+      <RechartsRadar data={data} cx="50%" cy="50%" outerRadius="70%">
+        <PolarGrid stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
         <PolarAngleAxis
           dataKey="name"
-          tick={{ fill: "#94a3b8", fontSize: 11 }}
-          axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+          tick={{ fill: "#9d968f", fontSize: 11 }}
+          axisLine={{ stroke: "rgba(255,255,255,0.05)" }}
         />
         <PolarRadiusAxis
           angle={90}
           domain={[0, 100]}
-          tick={{ fill: "#64748b", fontSize: 10 }}
-          axisLine={{ stroke: "rgba(255,255,255,0.05)" }}
+          tick={{ fill: "#6b6560", fontSize: 10 }}
+          axisLine={{ stroke: "rgba(255,255,255,0.04)" }}
         />
         <Radar
           name="掌握度"
           dataKey="value"
           stroke={color}
           fill={color}
-          fillOpacity={0.15}
-          strokeWidth={2}
-          dot={{ r: 3, fill: color, strokeWidth: 0 }}
-          activeDot={{ r: 5, fill: color, stroke: "rgba(255,255,255,0.3)", strokeWidth: 1 }}
+          fillOpacity={0.1}
+          strokeWidth={1.5}
+          dot={{ r: 2, fill: color, strokeWidth: 0 }}
+          activeDot={{ r: 4, fill: color, stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
         />
       </RechartsRadar>
     </ResponsiveContainer>

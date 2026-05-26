@@ -1,7 +1,6 @@
 "use client";
 
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
 
 interface KpiCardProps {
@@ -13,85 +12,49 @@ interface KpiCardProps {
   color: "primary" | "accent" | "purple" | "warning";
 }
 
-const colorMap = {
-  primary: {
-    bg: "from-primary/10 to-primary/5",
-    border: "border-primary/20",
-    text: "text-primary-light",
-    glow: "shadow-primary/10",
-    line: "from-transparent via-primary to-transparent",
-  },
-  accent: {
-    bg: "from-accent/10 to-accent/5",
-    border: "border-accent/20",
-    text: "text-accent",
-    glow: "shadow-accent/10",
-    line: "from-transparent via-accent to-transparent",
-  },
-  purple: {
-    bg: "from-purple-500/10 to-purple-500/5",
-    border: "border-purple-500/20",
-    text: "text-purple-400",
-    glow: "shadow-purple-500/10",
-    line: "from-transparent via-purple-500 to-transparent",
-  },
-  warning: {
-    bg: "from-warning/10 to-warning/5",
-    border: "border-warning/20",
-    text: "text-warning",
-    glow: "shadow-warning/10",
-    line: "from-transparent via-warning to-transparent",
-  },
+const colorAccents: Record<string, string> = {
+  primary: "bg-amber/10 text-amber border-amber/20",
+  accent: "bg-sage/10 text-sage border-sage/20",
+  purple: "bg-sage/10 text-sage border-sage/20",
+  warning: "bg-rust/10 text-rust border-rust/20",
+};
+
+const trendColors = (isUp: boolean, isDown: boolean) => {
+  if (isUp) return "text-sage bg-sage/10";
+  if (isDown) return "text-rust bg-rust/10";
+  return "text-ink-faint bg-surface-field";
 };
 
 export function KpiCard({ label, value, unit, change, icon, color }: KpiCardProps) {
-  const colors = colorMap[color];
-  const IconComponent = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[icon];
+  const colors = colorAccents[color] || colorAccents.primary;
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<any>>)[icon];
   const isUp = change > 0;
   const isDown = change < 0;
   const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
 
   return (
-    <div className={cn("kpi-card group cursor-default", colors.border, colors.glow)}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div
-            className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br",
-              colors.bg,
-              colors.border
-            )}
-          >
-            {IconComponent && <IconComponent className={cn("w-5 h-5", colors.text)} />}
+    <div className="lab-card p-5 group">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colors}`}>
+            {IconComponent && <IconComponent className="w-4 h-4" />}
           </div>
-          <span className="text-sm text-text-secondary">{label}</span>
+          <span className="text-[12px] text-ink-muted tracking-wide">{label}</span>
         </div>
-        <div
-          className={cn(
-            "flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full",
-            isUp && "text-success bg-success/10",
-            isDown && "text-danger bg-danger/10",
-            !isUp && !isDown && "text-text-muted bg-white/5"
-          )}
-        >
+        <div className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-medium ${trendColors(isUp, isDown)}`}>
           <TrendIcon className="w-3 h-3" />
           <span>{Math.abs(change)}%</span>
         </div>
       </div>
 
       <div className="flex items-baseline gap-1.5">
-        <span className={cn("text-3xl font-bold", colors.text)}>
+        <span className="stat-number text-[28px] font-medium text-ink tracking-tight">
           {value.toLocaleString()}
         </span>
-        <span className="text-sm text-text-muted">{unit}</span>
+        <span className="text-[12px] text-ink-faint">{unit}</span>
       </div>
 
-      <div
-        className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{
-          background: `linear-gradient(90deg, transparent, var(--${color === "purple" ? "purple" : color}), transparent)`,
-        }}
-      />
+      <div className="mt-3 h-[2px] w-0 group-hover:w-full bg-amber/20 rounded-full transition-all duration-500" />
     </div>
   );
 }

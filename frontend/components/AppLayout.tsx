@@ -17,12 +17,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const role = isTeacher ? "teacher" : "student";
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#f5f5f7]">
       <Header role={role} />
       <div className="flex flex-1 pt-[var(--header-height)]">
         <Sidebar role={role} />
-        <main className="flex-1 ml-[var(--sidebar-width)] p-6 min-h-[calc(100vh-var(--header-height))] bio-pattern">
-          <div className="max-w-7xl mx-auto animate-fade-in">
+        <main className="flex-1 ml-[var(--sidebar-width)] p-8 min-h-[calc(100vh-var(--header-height))]">
+          <div className="max-w-6xl mx-auto">
             {children}
           </div>
         </main>

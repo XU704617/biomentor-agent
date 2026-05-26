@@ -1,251 +1,188 @@
 "use client";
 
 import Link from "next/link";
-import {
-  BookOpen,
-  ClipboardCheck,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
-  ArrowRight,
-  FileText,
-  Microscope,
-  FileBarChart,
-  BookX,
-} from "lucide-react";
-import { studentTasks, studentScores, knowledgeGaps } from "@/lib/mock-data";
-import { RadarChart } from "@/components/RadarChart";
-import { formatDate } from "@/lib/utils";
+import { Dna, CircleDot, Microscope, GitFork, FileBarChart, BookX } from "lucide-react";
 
-const radarData = knowledgeGaps.map((g) => ({
-  name: g.topic.length > 6 ? g.topic.slice(0, 6) + "..." : g.topic,
-  value: g.mastery,
-}));
+interface ToolCard {
+  href: string;
+  title: string;
+  description: string[];
+  Icon: typeof Dna;
+  accentColor: string;
+  accentBg: string;
+  accentBorder: string;
+}
 
-const shortcutCards = [
+const toolCards: ToolCard[] = [
   {
-    href: "/student/quiz",
-    label: "在线测验",
-    icon: ClipboardCheck,
-    color: "from-primary/20 to-primary/5 border-primary/20",
-    textColor: "text-primary-light",
+    href: "/student/protein",
+    title: "Protein Structure Viewer",
+    description: ["3D \u7ed3\u6784\u63a2\u7d22", "\u6d3b\u6027\u4f4d\u70b9\u5206\u6790", "AlphaFold \u9884\u6d4b"],
+    Icon: Dna,
+    accentColor: "#2563eb",
+    accentBg: "rgba(37, 99, 235, 0.08)",
+    accentBorder: "#2563eb",
   },
   {
-    href: "/student/report",
-    label: "学习诊断",
-    icon: FileBarChart,
-    color: "from-accent/20 to-accent/5 border-accent/20",
-    textColor: "text-accent",
+    href: "/student/plasmid",
+    title: "Plasmid Map Viewer",
+    description: ["\u56fe\u8c31\u6ce8\u91ca", "\u5143\u4ef6\u8bc6\u522b", "\u5b9e\u9a8c\u8bbe\u8ba1"],
+    Icon: CircleDot,
+    accentColor: "#059669",
+    accentBg: "rgba(5, 150, 105, 0.08)",
+    accentBorder: "#059669",
   },
   {
-    href: "/student/wrong-questions",
-    label: "错题本",
-    icon: BookX,
-    color: "from-purple-500/20 to-purple-500/5 border-purple-500/20",
-    textColor: "text-purple-400",
+    href: "/student/sequence",
+    title: "Sequence Analysis",
+    description: ["BLAST \u6bd4\u5bf9", "\u5f15\u7269\u8bbe\u8ba1", "\u5e8f\u5217\u7ffb\u8bd1"],
+    Icon: Microscope,
+    accentColor: "#7c3aed",
+    accentBg: "rgba(124, 58, 237, 0.08)",
+    accentBorder: "#7c3aed",
   },
   {
-    href: "/student/case-study",
-    label: "科研案例",
-    icon: Microscope,
-    color: "from-warning/20 to-warning/5 border-warning/20",
-    textColor: "text-warning",
+    href: "/student/pathway",
+    title: "Pathway Explorer",
+    description: ["\u4fe1\u53f7\u901a\u8def", "\u86cb\u767d\u4e92\u4f5c", "\u4ee3\u8c22\u7f51\u7edc"],
+    Icon: GitFork,
+    accentColor: "#d97706",
+    accentBg: "rgba(217, 119, 6, 0.08)",
+    accentBorder: "#d97706",
   },
 ];
 
-export default function StudentHome() {
+const assistCards = [
+  {
+    href: "/student/report",
+    title: "Learning Diagnosis",
+    subtitle: "\u5b66\u4e60\u8bca\u65ad",
+    Icon: FileBarChart,
+    accentColor: "#2563eb",
+    accentBg: "rgba(37, 99, 235, 0.08)",
+  },
+  {
+    href: "/student/wrong-questions",
+    title: "Wrong Question Book",
+    subtitle: "\u9519\u9898\u672c",
+    Icon: BookX,
+    accentColor: "#dc2626",
+    accentBg: "rgba(220, 38, 38, 0.08)",
+  },
+];
+
+function ToolLabel({ text }: { text: string }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">学习中心</h1>
-        <p className="text-text-muted mt-1">
-          生物工程 2024 级 · 基因工程课程
-        </p>
+    <span
+      className="inline-block px-2.5 py-1 rounded-md text-[12px] font-medium leading-none"
+      style={{
+        background: "#f3f4f6",
+        color: "#6b7280",
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
+export default function BioToolBoxHome() {
+  return (
+    <div className="space-y-8 animate-reveal">
+      <div className="page-header">
+        <h1>BioToolBox</h1>
+        <p>\u9009\u62e9\u5de5\u5177\u5f00\u59cb\u63a2\u7d22\u751f\u7269\u4e16\u754c</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {shortcutCards.map((card) => (
-          <Link
-            key={card.href}
-            href={card.href}
-            className={`glass-card p-4 text-center hover:scale-[1.02] transition-all hover:shadow-lg ${card.textColor}`}
-          >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {toolCards.map((card) => (
+          <Link key={card.href} href={card.href} className="group block">
             <div
-              className={`w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center`}
+              className="card p-6 relative overflow-hidden transition-all duration-200 ease-out"
+              style={{ borderLeft: `4px solid ${card.accentBorder}` }}
             >
-              <card.icon className={`w-5 h-5 ${card.textColor}`} />
+              <div className="flex items-start gap-4">
+                <div
+                  className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
+                  style={{ background: card.accentBg }}
+                >
+                  <card.Icon className="w-6 h-6" style={{ color: card.accentColor }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3
+                    className="text-[15px] font-semibold mb-2"
+                    style={{ color: "#1a1a1a" }}
+                  >
+                    <span className="mr-2">{card.title}</span>
+                    <span
+                      className="inline-block text-[11px] font-normal px-1.5 py-0.5 rounded align-middle"
+                      style={{
+                        background: card.accentBg,
+                        color: card.accentColor,
+                      }}
+                    >
+                      Beta
+                    </span>
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {card.description.map((desc) => (
+                      <ToolLabel key={desc} text={desc} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-1 transition-all duration-200 ease-out"
+                style={{ color: card.accentColor }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </div>
             </div>
-            <span className="text-xs font-medium">{card.label}</span>
           </Link>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold">今日任务</h3>
-              <Link
-                href="/student/quiz"
-                className="text-xs text-primary-light hover:text-primary transition-colors"
-              >
-                查看全部 →
-              </Link>
-            </div>
-            <div className="space-y-2">
-              {studentTasks.map((task) => {
-                const isOverdue = task.status === "overdue";
-                return (
-                  <Link
-                    key={task.id}
-                    href={
-                      task.type === "quiz"
-                        ? "/student/quiz"
-                        : task.type === "case-study"
-                        ? "/student/case-study"
-                        : "#"
-                    }
-                    className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-colors"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                          task.status === "completed"
-                            ? "bg-success"
-                            : isOverdue
-                            ? "bg-danger"
-                            : "bg-primary-light"
-                        }`}
-                      />
-                      <div className="min-w-0">
-                        <p className="text-sm text-text-primary truncate">
-                          {task.title}
-                        </p>
-                        <p className="text-xs text-text-muted">
-                          {task.course} ·{" "}
-                          {task.type === "quiz"
-                            ? "测验"
-                            : task.type === "reading"
-                            ? "阅读"
-                            : task.type === "practice"
-                            ? "练习"
-                            : "案例分析"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <span
-                        className={`text-xs flex items-center gap-1 ${
-                          isOverdue ? "text-danger" : "text-text-muted"
-                        }`}
-                      >
-                        <Clock className="w-3 h-3" />
-                        {formatDate(task.dueDate)}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          task.status === "completed"
-                            ? "bg-success/10 text-success"
-                            : isOverdue
-                            ? "bg-danger/10 text-danger"
-                            : "bg-primary/10 text-primary-light"
-                        }`}
-                      >
-                        {task.status === "pending"
-                          ? "待完成"
-                          : task.status === "overdue"
-                          ? "已逾期"
-                          : "已完成"}
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
+      <div className="divider" />
 
-          <div className="glass-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold">最近成绩</h3>
-              <Link
-                href="/student/report"
-                className="text-xs text-primary-light hover:text-primary transition-colors"
-              >
-                详细报告 →
-              </Link>
-            </div>
-            <div className="space-y-2">
-              {studentScores.map((score) => (
+      <section>
+        <h2 className="text-[15px] font-semibold mb-4" style={{ color: "#1a1a1a" }}>
+          \u5b66\u4e60\u8f85\u52a9
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {assistCards.map((card) => (
+            <Link key={card.href} href={card.href} className="group block">
+              <div className="card p-5 flex items-center gap-4 transition-all duration-200 ease-out">
                 <div
-                  key={score.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5"
+                  className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{ background: card.accentBg }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${
-                        score.score >= 90
-                          ? "bg-accent/20 text-accent"
-                          : score.score >= 80
-                          ? "bg-primary/20 text-primary-light"
-                          : score.score >= 70
-                          ? "bg-warning/20 text-warning"
-                          : "bg-danger/20 text-danger"
-                      }`}
-                    >
-                      {score.score}
-                    </div>
-                    <div>
-                      <p className="text-sm text-text-primary">{score.quizTitle}</p>
-                      <p className="text-xs text-text-muted">
-                        {formatDate(score.date)} · 排名 {score.rank}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1">
-                      <TrendingUp
-                        className={`w-3.5 h-3.5 ${
-                          score.score >= 85 ? "text-success" : "text-warning"
-                        }`}
-                      />
-                      <span className="text-xs text-text-secondary">
-                        {score.score}/{score.totalScore}
-                      </span>
-                    </div>
-                  </div>
+                  <card.Icon className="w-5 h-5" style={{ color: card.accentColor }} />
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium" style={{ color: "#1a1a1a" }}>
+                    {card.title}
+                  </p>
+                  <p className="text-[12px]" style={{ color: "#6b7280" }}>
+                    {card.subtitle}
+                  </p>
+                </div>
+                <div
+                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-200 ease-out"
+                  style={{ color: card.accentColor }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
-
-        <div className="lg:col-span-1 space-y-6">
-          <div className="glass-card p-5">
-            <h3 className="text-base font-semibold mb-2">知识掌握雷达</h3>
-            <RadarChart data={radarData} />
-          </div>
-
-          <div className="glass-card p-5">
-            <h3 className="text-base font-semibold mb-3">薄弱知识点</h3>
-            <div className="space-y-2">
-              {knowledgeGaps
-                .filter((g) => g.level === "weak")
-                .map((g) => (
-                  <div
-                    key={g.topic}
-                    className="flex items-center gap-2 p-2.5 rounded-lg bg-danger/5 border border-danger/10"
-                  >
-                    <AlertTriangle className="w-3.5 h-3.5 text-danger flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs text-text-primary truncate">{g.topic}</p>
-                      <p className="text-[10px] text-text-muted">掌握度 {g.mastery}%</p>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
