@@ -1,5 +1,46 @@
 # BioMentor Agent 研究发现
 
+## 当前版本状态（commit `df0cacc`）
+
+### 项目概述
+- **项目名称**: BioMentor Agent | 智造学伴
+- **当前状态**: 15 页静态前端 ✅，构建通过 ✅，Vercel 部署 ✅
+- **技术栈**: Next.js 14 + TypeScript + Tailwind CSS + 纯 CSS 动画
+- **部署地址**: https://frontend-eta-nine-7rvsekcz80.vercel.app
+
+### 架构
+```
+15 页统一品牌应用 (无教师/学生角色分叉)
+  ├── /                     首页 (Hero + 三层递进 + AI导师)
+  ├── /explore              知识探索中心
+  ├── /research             科研实战训练营
+  ├── /cases                产业案例库
+  ├── /knowledge-map        知识图谱浏览
+  ├── /seminar              学术研讨
+  ├── /assessment           智能测评中心
+  ├── /diagnosis            学习诊断仪表盘
+  ├── /timeline             学习轨迹时间线
+  ├── /wrong-questions      错题本
+  └── /tools + 4子页面      生物工具箱 (蛋白/质粒/序列/通路)
+```
+
+### 设计语言
+- 流光玻璃设计系统 (glass-card, glass-nav, glass-card-iridescent)
+- 渐变背景 faf8ff → f0f4ff
+- 色彩: brand-ink(#0d0d1a), accent-electric(#2563eb), accent-cyan, accent-amber, accent-rose
+- 字体: Plus Jakarta Sans, Orbitron, JetBrains Mono
+- 动画: 纯 CSS keyframes (animate-reveal-up, animate-scale-in, animate-float)
+
+### 技术决策
+- ✅ 不使用 GSAP / Three.js / Framer Motion
+- ✅ 纯 CSS 动画，轻量无依赖
+- ✅ 无后端代码（此版本为纯前端）
+- ✅ 无 GSAP 包装组件
+- ✅ Canvas 2D 粒子背景 (HeroCanvas.tsx)
+- ✅ requestAnimationFrame 数字滚动 (CountUp.tsx)
+
+---
+
 ## 2026-05-26 项目交接文档阅读
 
 ### 项目概述
@@ -8,7 +49,7 @@
 - **一句话定位**: 面向生物制造课程的科研型自适应学习智能体平台，通过领域 RAG 知识库、多智能体测评诊断、科研案例辅导和教师学习分析看板，实现从知识学习到科研能力训练的闭环培养。
 
 ### 技术栈
-- **前端**: Next.js + TypeScript + Tailwind CSS + shadcn/ui + Recharts/ECharts
+- **前端**: Next.js + TypeScript + Tailwind CSS + Recharts/ECharts
 - **后端**: FastAPI + Python + SQLAlchemy + SQLite (demo) / PostgreSQL (prod)
 - **AI/RAG**: PyMuPDF + python-docx + Chroma + Embedding API + LLM API
 - **Agent**: LangGraph 风格状态机 + JSON Schema + structured outputs
@@ -113,43 +154,9 @@
 ```
 
 ### 视觉风格
-- 深蓝背景、电光蓝、青绿色、紫色 AI 光效、少量橙色强调
-- 玻璃拟态、半透明卡片、发光数据流
-- 生物制造元素：DNA 双螺旋、细胞、工程菌、生物反应器、分子结构
-- 教师端偏数据看板风格、学生端偏任务流和反馈风格
-
-### 页面清单
-- **教师端 (7页)**: Dashboard、课程资料库、知识地图、AI 出题、题库管理、测验发布、班级分析
-- **学生端 (6页)**: 首页、测验页面、测验结果、学习诊断报告、错题本、科研案例辅导
-
-### 核心数据模型
-User, Course, FileResource, KnowledgeChunk, KnowledgeNode, Question, Quiz, Attempt, Response, StudentProfile
-
-### 项目目录结构
-```
-biomentor-agent/
-  frontend/
-    app/
-    components/
-    lib/
-    data/
-  backend/
-    app/
-      main.py
-      config.py
-      database.py
-      models/
-      schemas/
-      routers/
-      services/
-      ai/
-      rag/
-      utils/
-  docs/
-  demo-data/
-  README.md
-  .env.example
-```
+- 流光玻璃背景 (faf8ff → f0f4ff)、电光蓝 (#2563eb)、青绿色、紫色、橙色强调
+- 玻璃拟态、半透明卡片
+- 生物制造元素：DNA 双螺旋、细胞、工程菌、分子结构
 
 ### 第一版禁止事项
 - 不做复杂登录权限系统
@@ -176,6 +183,5 @@ biomentor-agent/
 | 使用 mock 用户，不做权限 | 第一版简化，专注核心闭环 | 2026-05-26 |
 | SQLite 起步 | 简单、零配置、后续可迁移 | 2026-05-26 |
 | 采用 hybrid metadata-first RAG | 按课程/章节/知识点过滤再向量召回，更精准 | 2026-05-26 |
-| 采用 LangGraph 风格状态机 | 比自由 Agent 更可控，适合教育生产场景 | 2026-05-26 |
-| chunk_size 400-800 中文字 | 平衡召回精度和上下文完整性 | 2026-05-26 |
-| 先做 01/02/04/06/07/08/09/20 | 没有这些就没有真实可用系统 | 2026-05-26 |
+| 统一为单套页面，不分角色 | 14 页 BioMentor Agent，消除教师/学生分叉 | 2026-05-27 |
+| 纯 CSS 动画，不引入 GSAP | 轻量无依赖，避免复杂动画库引入 bug | 2026-05-27 |
