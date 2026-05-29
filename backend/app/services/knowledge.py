@@ -1,138 +1,108 @@
 """
-Knowledge Service — RAG retrieval, hybrid search, chunk management.
-
-Design: metadata-first hybrid RAG. Filter by course/chapter/knowledge_point
-first, then vector-semantic recall top-k, then optional LLM rerank.
+Knowledge Service — LLM-powered RAG retrieval with hybrid search.
 """
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
-from app.models import (
-    MaterialChunk,
-    Material,
-    KnowledgePoint,
-    ResearchPaper,
-    IndustryCase,
-)
-from app.schemas import RAGSearchResult
-
-settings = get_settings()
+from app.models import MaterialChunk, Material, KnowledgePoint, ResearchPaper
+from app.services.llm import get_llm
+from app.services.embedding import EmbeddingService
+from app.services.prompts import RAG_SYNTHESIS_SYSTEM, RAG_SYNTHESIS_USER
 
 
 class KnowledgeService:
 
     def __init__(self, db: Session):
         self.db = db
+        self.llm = get_llm()
+        self.vector = EmbeddingService()
 
-    # ----- Chunk CRUD -----
+    # ── Chunk CRUD ───────────────────────────────────────────────
 
     def get_chunks_by_material(self, material_id: int) -> list[MaterialChunk]:
-        return (
-            self.db.query(MaterialChunk)
-            .filter(MaterialChunk.material_id == material_id)
-            .order_by(MaterialChunk.chunk_index)
-            .all()
-        )
+        return self.db.query(MaterialChunk).filter(MaterialChunk.material_id == material_id).order_by(MaterialChunk.chunk_index).all()
 
     def get_chunk(self, chunk_id: int) -> MaterialChunk | None:
         return self.db.query(MaterialChunk).filter(MaterialChunk.id == chunk_id).first()
 
-    # ----- Metadata-filtered Keyword Search (no embedding fallback) -----
+    # ── Vector Indexing ──────────────────────────────────────────
 
-    def keyword_search_chunks(
-        self,
-        query: str,
-        course_id: int | None = None,
-        top_k: int = 5,
-    ) -> list[RAGSearchResult]:
-        q = self.db.query(MaterialChunk).join(Material)
+    def index_material_chunks(self, material_id: int, collection: str = "course_materials") -> int:
+        """Index all chunks of a material into vector DB."""
+        chunks = self.get_chunks_by_material(material_id)
+        if not chunks: return 0
 
-        if course_id is not None:
-            q = q.filter(Material.course_id == course_id)
+        texts = [c.content for c in chunks]
+        metadatas = [{"material_id": material_id, "chunk_index": c.chunk_index, "chunk_id": c.id} for c in chunks]
+        ids = [f"mat-{material_id}-chunk-{c.chunk_index}" for c in chunks]
 
-        q = q.filter(Material.status == "done")
-        q = q.filter(MaterialChunk.content.contains(query))
+        # Generate embeddings via LLM service
+        try:
+            embeddings = self.llm.embed(texts)
+        except Exception:
+            embeddings = None
 
-        chunks = q.limit(top_k).all()
+        return len(self.vector.index_chunks(collection, texts, metadatas, ids, embeddings))
 
-        results: list[RAGSearchResult] = []
-        for c in chunks:
-            results.append(RAGSearchResult(
-                chunk_id=c.id,
-                content=c.content,
-                score=0.5,
-                source={
-                    "material_id": c.material_id,
-                    "filename": c.material.filename if c.material else "",
-                    "chunk_index": c.chunk_index,
-                },
-            ))
-        return results
+    # ── Hybrid Search ────────────────────────────────────────────
 
-    def search_all(
-        self,
-        query: str,
-        course_id: int | None = None,
-        top_k: int = 5,
-    ) -> dict[str, Any]:
-        """Hybrid search across chunks, papers, and knowledge points."""
-        chunk_results = self.keyword_search_chunks(query, course_id, top_k)
+    def search_all(self, query: str, course_id: int | None = None, top_k: int = 5) -> dict[str, Any]:
+        """LLM-powered hybrid search across all knowledge sources."""
+        context_parts: list[str] = []
+        sources: list[dict] = []
 
+        # Vector search in course materials
+        try:
+            vec_hits = self.vector.hybrid_search("course_materials", query, top_k)
+            for h in vec_hits:
+                context_parts.append(f"[资料来源 {h['metadata'].get('material_id','?')}]\n{h['content'][:600]}")
+                sources.append({"type": "material", "id": h["metadata"].get("material_id"), "content": h["content"][:200]})
+        except Exception:
+            pass
+
+        # Keyword search in papers
         papers = (
             self.db.query(ResearchPaper)
-            .filter(
-                ResearchPaper.title.contains(query)
-                | ResearchPaper.title_zh.contains(query)
-                | ResearchPaper.abstract.contains(query)
-            )
-            .limit(top_k)
-            .all()
+            .filter(ResearchPaper.title.contains(query) | ResearchPaper.title_zh.contains(query) | ResearchPaper.abstract.contains(query))
+            .limit(top_k).all()
         )
+        for p in papers:
+            context_parts.append(f"[论文 {p.id}] {p.title_zh}: {p.key_finding[:300]}")
+            sources.append({"type": "paper", "id": p.id, "title": p.title_zh})
 
-        kps = (
-            self.db.query(KnowledgePoint)
-            .filter(
-                KnowledgePoint.name.contains(query)
-                | KnowledgePoint.definition.contains(query)
-            )
-            .limit(top_k)
-            .all()
-        )
+        # Keyword search in KPs
+        kps = self.db.query(KnowledgePoint).filter(KnowledgePoint.name.contains(query) | KnowledgePoint.definition.contains(query)).limit(top_k).all()
+        kp_list = [{"id": kp.id, "name": kp.name, "definition": kp.definition[:200]} for kp in kps]
+
+        context = "\n\n".join(context_parts) if context_parts else "未找到相关资料。"
+
+        # LLM answer synthesis
+        answer = ""
+        if self.llm.available and context_parts:
+            try:
+                user_prompt = RAG_SYNTHESIS_USER.format(query=query, context=context[:3000])
+                response = self.llm.generate_text(RAG_SYNTHESIS_SYSTEM, user_prompt, temperature=0.3, max_tokens=800)
+                answer = response.content
+            except Exception:
+                answer = f"根据检索结果，相关内容涉及：{'、'.join(kp['name'] for kp in kp_list[:5])}。"
 
         return {
             "query": query,
-            "chunks": [
-                {"id": r.chunk_id, "content": r.content[:400], "score": r.score, "source": r.source}
-                for r in chunk_results
-            ],
-            "papers": [
-                {
-                    "id": p.id,
-                    "title": p.title,
-                    "title_zh": p.title_zh,
-                    "direction": p.direction,
-                    "core_problem": p.core_problem[:200],
-                }
-                for p in papers
-            ],
-            "knowledge_points": [
-                {"id": kp.id, "name": kp.name, "definition": kp.definition[:200]}
-                for kp in kps
-            ],
+            "answer": answer,
+            "sources": sources,
+            "knowledge_points": kp_list,
+            "papers": [{"id": p.id, "title": p.title_zh, "direction": p.direction} for p in papers],
         }
 
-    # ----- Knowledge Point CRUD -----
+    # ── Knowledge Point CRUD ─────────────────────────────────────
 
     def list_knowledge_points(self, chapter_id: int | None = None) -> list[KnowledgePoint]:
         q = self.db.query(KnowledgePoint)
-        if chapter_id is not None:
-            q = q.filter(KnowledgePoint.chapter_id == chapter_id)
+        if chapter_id is not None: q = q.filter(KnowledgePoint.chapter_id == chapter_id)
         return q.order_by(KnowledgePoint.order).all()
 
     def get_knowledge_point(self, kp_id: int) -> KnowledgePoint | None:

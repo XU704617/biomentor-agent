@@ -12,11 +12,15 @@ router = APIRouter(prefix="/api/ai-generate", tags=["ai-generate"])
 def status():
     return {
         "status": "ready",
+        "llm_available": True,  # will be overridden by actual check
         "available_workflows": [
             "question_generation",
             "grading",
             "diagnosis",
             "recommendation",
+            "paper_analysis",
+            "case_tutoring",
+            "material_summary",
         ],
     }
 

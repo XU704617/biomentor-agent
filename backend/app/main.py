@@ -19,6 +19,7 @@ from app.routers import (
     rag,
     reports,
     research,
+    tutor,
 )
 
 settings = get_settings()
@@ -53,6 +54,7 @@ app.include_router(research.router)
 app.include_router(photo_learning.router)
 app.include_router(knowledge_graph.router)
 app.include_router(agent.router)
+app.include_router(tutor.router)
 
 
 @app.on_event("startup")
