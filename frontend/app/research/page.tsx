@@ -65,7 +65,7 @@ const taskTypeIcons: Record<string, React.ReactNode> = {
   evidence_judgement: <BarChart3 className="w-4 h-4" />,
 };
 
-const PY = "http://localhost:8000";
+const PY = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:9090";
 
 function TaskCard({ task, index }: { task: ResearchTaskItem; index: number }) {
   const [expanded, setExpanded] = useState(false);
@@ -105,22 +105,27 @@ function TaskCard({ task, index }: { task: ResearchTaskItem; index: number }) {
             <div>
               <h4 className="text-xs font-bold text-brand-ink mb-2">操作步骤</h4>
               <div className="space-y-2">
-                {task.steps.map((step, i) => (
-                  <div key={i} className="flex gap-3">
-                    <span className="w-5 h-5 rounded-full bg-accent-electric/10 text-accent-electric flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
-                      {i + 1}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-brand-ink">{step.title}</p>
-                      <p className="text-xs text-brand-muted">{step.description}</p>
-                      {step.expected_duration && (
-                        <span className="text-[10px] text-brand-faint mt-0.5 inline-block">
-                          预计时长：{step.expected_duration}
-                        </span>
-                      )}
+                {task.steps.map((step: any, i: number) => {
+                  const title = typeof step === "string" ? step : step?.title || "";
+                  const desc = typeof step === "string" ? "" : step?.description || "";
+                  const duration = typeof step === "string" ? "" : step?.expected_duration || "";
+                  return (
+                    <div key={i} className="flex gap-3">
+                      <span className="w-5 h-5 rounded-full bg-accent-electric/10 text-accent-electric flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                        {i + 1}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-brand-ink">{title}</p>
+                        {desc && <p className="text-xs text-brand-muted">{desc}</p>}
+                        {duration && (
+                          <span className="text-[10px] text-brand-faint mt-0.5 inline-block">
+                            预计时长：{duration}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -170,13 +175,17 @@ function DefaultResearchPage() {
   const [kbLoading, setKbLoading] = useState(true);
   const [kbError, setKbError] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const generatingRef = useRef(false);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
     Promise.all([
-      fetch(`${PY}/api/research/tasks`).then(r => { if (!r.ok) throw new Error("fail"); return r.json(); }),
-      fetch(`${PY}/api/research/papers?page_size=6`).then(r => { if (!r.ok) throw new Error("fail"); return r.json(); }),
+      fetch(`${PY}/api/research/tasks`, { signal: controller.signal }).then(r => { if (!r.ok) throw new Error("fail"); return r.json(); }),
+      fetch(`${PY}/api/research/papers?page_size=6`, { signal: controller.signal }).then(r => { if (!r.ok) throw new Error("fail"); return r.json(); }),
     ]).then(([t, p]) => {
       if (!cancelled) {
         setTasks(Array.isArray(t) ? t.slice(0, 8) : []);
@@ -186,8 +195,9 @@ function DefaultResearchPage() {
       if (!cancelled) setKbError(true);
     }).finally(() => {
       if (!cancelled) setKbLoading(false);
+      clearTimeout(timeout);
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, []);
 
   const handleSendChat = () => {
@@ -201,8 +211,8 @@ function DefaultResearchPage() {
 
   const handleGenerate = useCallback(async () => {
     const topic = topicInput.trim();
-    if (!topic) return;
-
+    if (!topic || generatingRef.current) return;
+    generatingRef.current = true;
     setLoading(true);
     setResult(null);
 
@@ -219,6 +229,7 @@ function DefaultResearchPage() {
       );
     } finally {
       setLoading(false);
+      generatingRef.current = false;
     }
   }, [topicInput]);
 
@@ -525,8 +536,11 @@ function DefaultResearchPage() {
 function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase; caseKey: string }) {
   const [result, setResult] = useState<ResearchTaskGenerateResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastCaseKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (lastCaseKeyRef.current === caseKey) return;
+    lastCaseKeyRef.current = caseKey;
     let cancelled = false;
 
     async function load() {
