@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas import ResearchPaperOut, ResearchPaperCreate
+from app.schemas import ResearchTaskGenerateRequest, ResearchTaskGenerateResponse
 from app.services.papers import PaperService
+from app.services.research_service import ResearchService
 
 router = APIRouter(prefix="/api/research", tags=["research"])
 
@@ -89,3 +91,19 @@ def list_research_tasks(direction: str | None = Query(None), db: Session = Depen
             })
 
     return tasks
+
+
+@router.post("/generate-task", response_model=ResearchTaskGenerateResponse)
+def generate_task(data: ResearchTaskGenerateRequest, db: Session = Depends(get_db)):
+    if data.mode not in ("independent", "case_driven"):
+        raise HTTPException(400, "mode must be 'independent' or 'case_driven'")
+    if data.mode == "case_driven" and not data.case_key:
+        raise HTTPException(400, "case_key is required for case_driven mode")
+
+    service = ResearchService(db)
+    try:
+        return service.generate_task(data.topic, data.case_key, data.mode)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"Task generation failed: {e}")

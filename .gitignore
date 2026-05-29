@@ -37,3 +37,4 @@ Thumbs.db
 *.db-shm
 *.db-wal
 backend/.venv-conda/
+.trae/

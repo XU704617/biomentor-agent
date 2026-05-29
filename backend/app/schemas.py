@@ -636,3 +636,45 @@ class PaginatedResponse(BaseModel):
     page: int = 1
     page_size: int = 20
     total_pages: int = 0
+
+
+# ---------------------------------------------------------------------------
+# Research Task Generation
+# ---------------------------------------------------------------------------
+
+class TaskStep(BaseModel):
+    title: str
+    description: str
+    expected_duration: str = ""
+
+
+class TaskItem(BaseModel):
+    type: str
+    title: str
+    goal: str
+    steps: list[TaskStep] = []
+    output_requirement: str = ""
+    suggested_keywords: list[str] = []
+    example_outline: str = ""
+
+
+class ResearchTaskGenerateRequest(BaseModel):
+    topic: str
+    case_key: str | None = None
+    mode: str = "independent"
+
+
+class ResearchTaskGenerateResponse(BaseModel):
+    topic: str
+    case_key: str | None = None
+    mode: str = "independent"
+    research_question: str = ""
+    background: str = ""
+    matched_cases: list[dict[str, str]] = []
+    related_knowledge_points: list[str] = []
+    tasks: list[TaskItem] = []
+    expected_outputs: list[str] = []
+    mentor_advice: str = ""
+    seminar_topic: str = ""
+    source_scope: str = ""
+    disclaimer: str = ""
