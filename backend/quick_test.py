@@ -3,7 +3,7 @@ import os, sys, json, time
 
 # Set env before any imports
 os.environ["DATABASE_URL"] = "sqlite:///./_ignore.db"
-os.environ["OPENAI_API_KEY"] = "sk-23b5b919b12b420d85da04ca0e73dc4a"
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "sk-placeholder")
 os.environ["OPENAI_BASE_URL"] = "https://api.deepseek.com"
 os.environ["LLM_MODEL"] = "deepseek-chat"
 os.environ["AGENT_TIMEOUT_SECONDS"] = "60"
