@@ -311,6 +311,10 @@ body {
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
+@keyframes knowledge-shimmer {
+  100% { transform: translateX(220%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;

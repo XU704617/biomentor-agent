@@ -84,3 +84,24 @@ frontend/
 - 任务 2：新增 `frontend/app/knowledge-map/mindmap/page.tsx` 和 `frontend/lib/mindmap-data.ts`，实现渐进展开式 BioMind Map，并从知识图谱页提供入口。
 - 任务 3：重做首页为浅色液态玻璃风格；导航改为左 Logo + 中间 6 导航 + 右侧留空，并移除“开始测评”。
 - 验证：`node --test frontend/lib/biotools.test.mjs` 通过 11/11；`npm run build` 通过；本地生产服务 smoke 检查 `/`、四个工具页、`/knowledge-map/mindmap` 均返回 200 且 H1 正常。
+
+## 2026-05-29 会话：工具箱 AI 与知识图谱工作台集成
+
+- 已保留 DeepSeek 本地工具箱分支 `feature/toolbox-ai-deepseek`，从其提交 `acdc273` 新建集成分支 `codex/knowledge-map-toolbox-integration`。
+- 已合并最新 `origin/master`，包含合作者上传的知识探索相关页面与 API。
+- 已重做 `/knowledge-map`：
+  - 首屏为浅色液态玻璃风格的 12 学科生命科学知识星图。
+  - 点击学科后平滑进入三栏工作台：左侧学科导航、中间渐进展开图谱、右侧 BioMentor AI 对话栏。
+  - 5 个重点学科深做：分子生物学、细胞生物学、结构生物学、合成生物学、生物信息学。
+  - 其他 7 个学科保持中等完整度，不做空壳。
+  - 节点支持六维展开：生物大类、基础知识、科研前沿、产业应用、代表文献、学习任务。
+  - 右侧 AI 支持教学导师 / 科研助手双模式，点击节点自动生成解释，模式切换自动重生成。
+- 新增 `/api/ai/knowledge-chat`，使用 `DEEPSEEK_API_KEY` 与 `DEEPSEEK_MODEL=deepseek-v4-flash`，未写入真实 key。
+- 修复远端合作者代码的构建问题：
+  - TypeScript target 从 ES2017 调整到 ES2018，支持现有正则 dotAll flag。
+  - `explore/page.tsx` 中 `new Image()` 改为 `new window.Image()`，避免 lucide `Image` 命名冲突。
+- 验证：
+  - `node --test frontend/lib/*.test.mjs` 通过 22/22。
+  - `npm run build` 通过。
+  - 本地生产服务 smoke 检查 `/`、`/knowledge-map`、四个工具页、`/explore` 均返回 200。
+  - 浏览器验证 `/knowledge-map`：可进入结构生物学工作台、展开科研前沿、选择 AlphaFold、右栏 AI 显示解释和蛋白结构工具入口；控制台错误 0。
