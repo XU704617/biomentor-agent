@@ -1,11 +1,9 @@
 import type { IndustryCase, IndustryAnswer } from "@/data/industryCases";
 import { industryCases as mockCases, getMockAnswer } from "@/data/industryCases";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
   try {
-    const response = await fetch(`${API_BASE}${path}`, {
+    const response = await fetch(path, {
       ...init,
       headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
     });
@@ -52,25 +50,25 @@ export function convertApiCaseToFrontend(apiCase: ApiIndustryCase): IndustryCase
     subtitle: apiCase.subtitle,
     category: apiCase.category || "",
     realProductOrTechnology: apiCase.real_product_or_technology || "",
-    relatedKnowledgePoints: apiCase.knowledge_points,
+    relatedKnowledgePoints: apiCase.knowledge_points || [],
     industryDirection: apiCase.industry_direction,
     coreProblem: apiCase.core_problem,
     researchFoundation: apiCase.research_foundation,
     applicationValue: apiCase.application_value,
-    requiredAbilities: apiCase.required_abilities,
-    recommendedKeywords: apiCase.recommended_keywords,
+    requiredAbilities: apiCase.required_abilities || [],
+    recommendedKeywords: apiCase.recommended_keywords || [],
     linkedResearchTask: apiCase.linked_research_task,
     evidenceLevel: apiCase.evidence_level === "high" ? "高" : apiCase.evidence_level === "medium" ? "中" : "发展中",
     sourceType: apiCase.source_type === "academic" ? "学术文献" : apiCase.source_type === "clinical_trial" ? "临床试验" : apiCase.source_type === "patent" ? "专利文献" : apiCase.source_type === "regulatory" ? "监管文件" : "产业报告",
     background: apiCase.background,
     applicationScenario: apiCase.application_scenario,
     displayFocus: apiCase.display_focus,
-    migrationPath: apiCase.migration_path,
-    references: apiCase.references.map(r => ({
+    migrationPath: apiCase.migration_path || { textbookBase: [], researchFrontier: [], industryApplication: [] },
+    references: Array.isArray(apiCase.references) ? apiCase.references.map(r => ({
       title: r.title,
       url: r.url,
       type: r.type as "FDA" | "PubMed" | "DOI" | "NCI" | "Label" | "Review" | "Other",
-    })),
+    })) : [],
     sourceUrls: apiCase.source_urls || [],
   };
 }
