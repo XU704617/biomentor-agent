@@ -7,6 +7,7 @@ from app.routers import (
     diagnosis,
     industry_cases,
     knowledge_graph,
+    literature,
     materials,
     photo_learning,
     questions,
