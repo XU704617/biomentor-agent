@@ -160,18 +160,18 @@ function TaskCard({ task, index, defaultExpanded }: { task: ResearchTaskItem; in
               <div className="flex flex-wrap gap-1">
                 {task.suggested_keywords.map((kw, i) => (
                   <span key={i} className="text-[11px] text-brand-muted bg-white/60 px-1.5 py-0.5 rounded-md font-mono">
-                    {kw}
+                    {kw ?? ''}
                   </span>
                 ))}
               </div>
             </div>
           )}
 
-          {task.example_outline && (
+          {task.example_outline != null && (
             <div>
               <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">示例提纲</h4>
               <pre className="text-xs text-brand-muted bg-white/40 rounded-lg p-3 font-body leading-relaxed whitespace-pre-wrap">
-                {task.example_outline}
+                {Array.isArray(task.example_outline) ? task.example_outline.join('\n') : String(task.example_outline)}
               </pre>
             </div>
           )}
@@ -698,6 +698,8 @@ function DefaultResearchPage() {
 function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase; caseKey: string }) {
   const [result, setResult] = useState<ResearchTaskGenerateResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const caseDataRef = useRef(caseData);
+  caseDataRef.current = caseData;
   const generatingRef = useRef(false);
 
   useEffect(() => {
@@ -707,9 +709,10 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
       if (generatingRef.current) return;
       generatingRef.current = true;
       setLoading(true);
+      const cd = caseDataRef.current;
       try {
         const data = await generateResearchTask({
-          topic: caseData.coreProblem || caseData.title,
+          topic: cd.coreProblem || cd.title,
           case_key: caseKey,
           mode: "case_driven",
         });
@@ -718,7 +721,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
         if (!cancelled) {
           setResult(
             generateFallbackResearchTask(
-              caseData.coreProblem || caseData.title,
+              cd.coreProblem || cd.title,
               caseKey,
               "case_driven"
             )
@@ -978,12 +981,14 @@ export default function ResearchPage() {
   const [loadingCase, setLoadingCase] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const params = new URLSearchParams(window.location.search);
     const id = params.get("caseId");
     if (id) {
       setCaseId(id);
       setLoadingCase(true);
       getIndustryCaseById(id).then((found) => {
+        if (cancelled) return;
         if (found) {
           setCaseData(found);
         } else {
@@ -994,6 +999,7 @@ export default function ResearchPage() {
     } else {
       setCaseId(null);
     }
+    return () => { cancelled = true; };
   }, []);
 
   if (caseId === undefined || loadingCase) {
