@@ -684,3 +684,19 @@ class ResearchTaskGenerateResponse(BaseModel):
     seminar_topic: str = ""
     source_scope: str = ""
     disclaimer: str = ""
+
+
+# ---------------------------------------------------------------------------
+# Literature Search
+# ---------------------------------------------------------------------------
+
+class LiteratureSearchItem(BaseModel):
+    source: str = ""
+    source_id: str = ""
+
+
+class LiteratureSearchResponse(BaseModel):
+    query: str
+    results: list[LiteratureSearchItem] = []
+    source: str = "not_configured"
+    message: str = ""

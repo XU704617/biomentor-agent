@@ -12,6 +12,7 @@ from app.routers import (
     diagnosis,
     industry_cases,
     knowledge_graph,
+    literature,
     materials,
     photo_learning,
     questions,
@@ -54,6 +55,7 @@ app.include_router(research.router)
 app.include_router(photo_learning.router)
 app.include_router(knowledge_graph.router)
 app.include_router(agent.router)
+app.include_router(literature.router)
 app.include_router(tutor.router)
 
 
