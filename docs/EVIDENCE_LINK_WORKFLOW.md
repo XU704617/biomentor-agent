@@ -114,7 +114,36 @@ export LITERATURE_NCBI_EMAIL=your_email@example.com  # 可选但建议
 
 ---
 
-## 五、后续路线
+## 五、Demo Usage 与验收方式
+
+### 5.1 推荐演示路径
+
+1. 启动后端和前端（参考 [LOCAL_DEMO_STARTUP.md](./LOCAL_DEMO_STARTUP.md)）。
+2. 访问科研实战页面：`http://localhost:3001/research?caseId=case-004`。
+3. 在任务卡下的 Evidence Link 区域触发文献检索。
+4. 浏览 provider 返回的文献 metadata 列表。
+5. 手动选择 1-N 条相关文献。
+6. 生成 metadata-based evidence note。
+
+### 5.2 验收方式
+
+| 检查项 | 验收方式 |
+|--------|----------|
+| Evidence Link API 可用 | `curl "http://localhost:9090/api/evidence/search?query=mRNA+vac&taskId=task-001"` 返回有效结果 |
+| Evidence note 生成 | `curl -X POST "http://localhost:9090/api/evidence/note" -d '{"selected_papers": [...]}'` 返回 note |
+| 缺失字段处理 | 确认缺失字段显示为"未提供"，无伪造数据 |
+| smoke 测试 | 执行 `bash scripts/smoke_evidence.sh`（如可用），确认 `SMOKE PASS` |
+
+### 5.3 成功标准
+
+- Evidence Link API 正常返回文献 metadata 列表
+- 用户可手动选择文献并生成 evidence note
+- Evidence note 仅基于已有 metadata，未补编缺失字段
+- evidence smoke 测试通过（`SMOKE PASS`）
+
+---
+
+## 六、后续路线
 
 以下能力属于 Evidence Link 的未来演进方向，**当前均未完成**：
 
@@ -127,9 +156,11 @@ export LITERATURE_NCBI_EMAIL=your_email@example.com  # 可选但建议
 
 ---
 
-## 六、相关文档
+## 七、相关文档
 
 - [当前项目状态](./CURRENT_PROJECT_STATUS.md)
 - [演示路径指南](./DEMO_WALKTHROUGH.md)
 - [文献检索合同文档](./LITERATURE_SEARCH_CONTRACT.md)
 - [本地 Demo 启动指南](./LOCAL_DEMO_STARTUP.md)
+- [最终演示指南](./FINAL_DEMO_GUIDE.md)
+- [Demo 质量验收清单](./DEMO_QUALITY_CHECKLIST.md)

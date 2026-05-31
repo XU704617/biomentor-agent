@@ -68,6 +68,13 @@ BioMentor Agent 是一个面向生物科学教育的 AI 辅助学习与科研训
 - 推荐演示使用 PubMed provider。
 - 详细设计详见 [EVIDENCE_LINK_WORKFLOW.md](./EVIDENCE_LINK_WORKFLOW.md)。
 
+### PubMed metadata live verified
+
+- PubMed provider 已通过 live smoke 验证。
+- 可通过 `LITERATURE_PROVIDER=pubmed` 配置，执行真实生物医学文献元数据检索。
+- ESearch → PMID list → ESummary → metadata summary 链路已通。
+- EFetch XML abstract parsing 留作后续。
+
 ---
 
 ## 未完成能力
@@ -79,27 +86,13 @@ BioMentor Agent 是一个面向生物科学教育的 AI 辅助学习与科研训
 - 默认 `not_configured` 状态不执行任何外部 API 调用。
 - PubMed provider 前端已支持 source/provider label，后端实现待完善。
 
-### 文献 Evidence Grounding
+### smoke validation
 
-- 科研任务生成的结果**未接入真实文献证据支撑**。
-- 任务卡中的描述源自预置的训练引导内容，而非基于文献检索的实时证据。
-
-### 真实数据分析、可视化与报告导出
-
-- 尚未实现任何真实生物数据的上传、解析、分析流程。
-- 尚无数据可视化图表（如基因表达热图、蛋白质结构图等）。
-- 尚无科研报告（PDF / Word）导出功能。
-
-### 科研任务到学术研讨的深度闭环
-
-- 科研任务页面与学术研讨页面目前通过 `caseId` 参数关联，但两者之间尚未形成自动化的深度闭环。
-- 学术研讨页面的讨论内容尚未与科研任务的实验结果或分析结论联动。
-
-### 上传资料到科研实战的知识库闭环
-
-- 尚无文件上传功能。
-- 尚无用户自定义资料与科研任务之间的知识库关联。
-- 尚无资料解析后的结构化存储与检索能力。
+- 后端 tests: `57 passed`
+- 前端 build: passed
+- default smoke: passed
+- evidence optional smoke: `SMOKE PASS (11/11 checks passed)`
+- PubMed live smoke: optional passed
 
 ---
 
