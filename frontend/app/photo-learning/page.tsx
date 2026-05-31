@@ -351,14 +351,12 @@ export default function PhotoLearningPage() {
         {/* OCR info */}
         <div className="max-w-3xl mx-auto mb-8">
           <div className="glass-card rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-3"><ScanLine className="w-4 h-4 text-accent-amber" /><h3 className="font-display font-bold text-sm text-brand-ink">真实 OCR 引擎说明</h3></div>
+            <div className="flex items-center gap-2 mb-3"><ScanLine className="w-4 h-4 text-accent-amber" /><h3 className="font-display font-bold text-sm text-brand-ink">内容识别说明</h3></div>
             <ul className="text-xs text-brand-muted font-body space-y-1 list-disc pl-4">
-              <li><strong>PDF：</strong>PyMuPDF (fitz) 直接提取文本层，秒级完成</li>
-              <li><strong>图片 (JPG/PNG)：</strong>DeepSeek Vision API，将图片编码为 base64 发送给大模型识别</li>
-              <li><strong>DOCX：</strong>python-docx 提取段落文本</li>
-              <li><strong>文本：</strong>直接读取 UTF-8 编码</li>
+              <li>系统支持 PDF、图片（JPG/PNG）、DOCX 和纯文本等多种格式的文件内容识别。</li>
+              <li>系统将尝试识别图片中的知识内容，并生成学习建议。</li>
             </ul>
-            <p className="text-xs text-brand-faint font-body mt-3">需要 Python 后端 (localhost:8000) 正常运行。上传的文件仅用于 OCR 文本提取，不会存储在服务器上。</p>
+            <p className="text-xs text-brand-faint font-body mt-3">上传内容仅用于本次学习分析，不会存储在服务器上。</p>
           </div>
         </div>
       </div>

@@ -48,7 +48,7 @@ export function IndustryAskPanel({ onQuery }: IndustryAskPanelProps) {
 
   const sourceScopeLabel = (scope?: string) => {
     switch (scope) {
-      case "based_on_local_cases": return "基于本地案例库";
+      case "based_on_local_cases": return "基于案例库匹配";
       case "extended_reasoning": return "拓展性分析";
       case "no_direct_match": return "暂无直接匹配";
       default: return "";

@@ -50,7 +50,7 @@ const phases = [
     title: "文献调研",
     icon: <BookOpen className="w-5 h-5" />,
     description:
-      "基于本地知识库和已接入资料，辅助整理关键词、研究问题和证据线索；当前版本优先使用本地知识库。",
+      "基于知识库和已接入资料，辅助整理关键词、研究问题和证据线索。",
   },
   {
     num: 2,
@@ -463,11 +463,11 @@ function DefaultResearchPage() {
   };
 
   const sourceScopeLabel = (scope: string | undefined) => {
-    if (!scope) return "基于预置模板生成，建议补充文献材料";
-    if (scope.includes("案例库")) return "基于预置案例库生成";
+    if (!scope) return "基于当前研究主题生成";
+    if (scope.includes("案例库")) return "基于案例信息生成";
     if (scope.includes("产业案例")) return "基于当前产业案例生成";
-    if (scope.includes("模板") || scope.includes("template")) return "基于预置模板生成，建议补充文献材料";
-    return scope || "基于预置模板生成，建议补充文献材料";
+    if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
+    return scope || "基于当前研究主题生成";
   };
 
   return (
@@ -747,7 +747,7 @@ function DefaultResearchPage() {
               ) : kbError || papers.length === 0 ? (
                 <div className="text-center py-6">
                   <BookOpen className="w-5 h-5 text-brand-faint/30 mx-auto mb-2" />
-                  <p className="text-xs text-brand-muted leading-relaxed max-w-xs mx-auto">当前暂无已接入文献材料。后续可在科研实战中发起文献检索，或上传论文/课程资料作为本地知识来源。</p>
+                  <p className="text-xs text-brand-muted leading-relaxed max-w-xs mx-auto">当前暂无已接入文献材料。后续可在科研实战中发起文献检索，或上传论文/课程资料作为资料补充。</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -773,7 +773,7 @@ function DefaultResearchPage() {
                 <p className="text-[11px] text-brand-muted font-body leading-relaxed">
                   <span className="font-semibold text-brand-ink">文献支撑：持续更新中</span>
                   <br />
-                  当前版本提供关键词和检索策略建议，文献结果持续更新中。
+                  当前提供关键词整理与检索辅助，具体研究判断请结合文献原文和教师指导。
                 </p>
               </div>
             </div>
@@ -951,11 +951,11 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
   }, [caseKey]);
 
   const sourceScopeLabel = (scope: string | undefined) => {
-    if (!scope) return "基于预置模板生成，建议补充文献材料";
-    if (scope.includes("案例库")) return "基于预置案例库生成";
+    if (!scope) return "基于当前研究主题生成";
+    if (scope.includes("案例库")) return "基于案例信息生成";
     if (scope.includes("产业案例")) return "基于当前产业案例生成";
-    if (scope.includes("模板") || scope.includes("template")) return "基于预置模板生成，建议补充文献材料";
-    return scope || "基于预置模板生成，建议补充文献材料";
+    if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
+    return scope || "基于当前研究主题生成";
   };
 
   return (
