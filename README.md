@@ -53,6 +53,8 @@ npm run dev -- -p 3001
 - **完整演示路径**：[docs/FINAL_DEMO_GUIDE.md](docs/FINAL_DEMO_GUIDE.md)
 - **Demo 质量验收清单**：[docs/DEMO_QUALITY_CHECKLIST.md](docs/DEMO_QUALITY_CHECKLIST.md)
 - **当前项目状态**：[docs/CURRENT_PROJECT_STATUS.md](docs/CURRENT_PROJECT_STATUS.md)
+- **推荐展示案例**：[docs/SHOWCASE_CASES.md](docs/SHOWCASE_CASES.md)
+- **测试反馈指南**：[docs/TESTING_FEEDBACK_GUIDE.md](docs/TESTING_FEEDBACK_GUIDE.md)
 
 ## 构建与测试
 

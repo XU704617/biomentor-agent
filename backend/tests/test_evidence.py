@@ -288,7 +288,14 @@ class TestEvidenceNoteLimitations:
             "/api/evidence/note",
             json={
                 "task_title": "test",
-                "selected_literature": [],
+                "selected_literature": [
+                    {
+                        "title": "Test Paper",
+                        "authors": ["Author A"],
+                        "year": 2023,
+                        "source_provider": "pubmed",
+                    }
+                ],
             },
         )
         assert response.status_code == 200
@@ -300,7 +307,7 @@ class TestEvidenceNoteLimitations:
 
 class TestEvidenceNoteEmptyLiterature:
 
-    def test_empty_selected_literature_returns_controlled_result(self):
+    def test_empty_selected_literature_returns_guard_message(self):
         response = client.post(
             "/api/evidence/note",
             json={
@@ -312,10 +319,9 @@ class TestEvidenceNoteEmptyLiterature:
         data = response.json()
         assert data["selected_count"] == 0
         assert data["evidence_note"]["references"] == []
-        assert "已选择 0 篇文献" in data["evidence_note"]["summary"]
-        assert data["error"] is None
+        assert "请先选择至少 1 篇参考文献" in data["evidence_note"]["limitations"][0]
 
-    def test_missing_selected_literature_field_is_ok(self):
+    def test_missing_selected_literature_field_returns_guard_message(self):
         response = client.post(
             "/api/evidence/note",
             json={
@@ -326,6 +332,7 @@ class TestEvidenceNoteEmptyLiterature:
         data = response.json()
         assert data["selected_count"] == 0
         assert data["evidence_note"]["references"] == []
+        assert "请先选择至少 1 篇参考文献" in data["evidence_note"]["limitations"][0]
 
     def test_single_entry_returns_correct_count(self):
         response = client.post(
