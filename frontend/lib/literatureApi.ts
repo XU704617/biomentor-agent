@@ -12,7 +12,7 @@ export interface LiteratureSearchItem {
   raw_id?: string | null;
 }
 
-export type LiteratureSource = "not_configured" | "semantic_scholar" | "crossref";
+export type LiteratureSource = "not_configured" | "semantic_scholar" | "crossref" | "pubmed";
 
 export interface LiteratureSearchResponse {
   query: string;
