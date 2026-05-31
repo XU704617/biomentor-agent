@@ -3,6 +3,9 @@
 # Usage:
 #   BACKEND_BASE=http://127.0.0.1:9090 bash scripts/smoke_demo_api.sh
 #
+#   # Optional: run live literature provider checks (requires external API key)
+#   RUN_LIVE_LITERATURE_CHECKS=1 BACKEND_BASE=http://127.0.0.1:9090 bash scripts/smoke_demo_api.sh
+#
 # Smoke test script for BioMentor Agent demo API.
 # Verifies the core API endpoints respond correctly.
 # Exits with code 1 on any failure, 0 on success.
@@ -10,6 +13,7 @@
 set -euo pipefail
 
 BACKEND_BASE="${BACKEND_BASE:-http://127.0.0.1:9090}"
+RUN_LIVE_LITERATURE_CHECKS="${RUN_LIVE_LITERATURE_CHECKS:-0}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -43,6 +47,12 @@ fetch_json() {
     else
         curl -sS --max-time 30 "$url"
     fi
+}
+
+# fetch with HTTP status code output for error checks
+fetch_with_status() {
+    local url="$1"
+    curl -sS --max-time 30 -w "\n%{http_code}" "$url"
 }
 
 echo "============================================"
@@ -79,7 +89,6 @@ case004_ok=$(python3 -c "
 import json, sys
 try:
     data = json.loads(sys.argv[1])
-    # If it has a case_key field, it's a valid case object
     if data.get('case_key') == 'case-004':
         print('true')
     else:
@@ -110,11 +119,43 @@ except Exception as e:
 
 check "research tasks count == 4 (got $tasks_count)" "$([ "$tasks_count" -eq 4 ] && echo true || echo false)"
 
+# ===================================================================
+# 4. Literature Search – Core Checks
+# ===================================================================
+
 # -------------------------------------------------------------------
-# 4. GET /api/literature/search?q=mRNA&limit=5
+# 4a. GET /api/literature/search?q=mRNA&limit=5  (baseline check)
 # -------------------------------------------------------------------
-echo "--- 4. GET /api/literature/search?q=mRNA&limit=5 ---"
+echo "--- 4a. GET /api/literature/search?q=mRNA&limit=5 ---"
 lit_resp=$(fetch_json "$BACKEND_BASE/api/literature/search?q=mRNA&limit=5")
+
+lit_source=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    print(data.get('source', ''))
+except Exception:
+    print('')
+" "$lit_resp")
+
+lit_results_count=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    results = data.get('results', [])
+    print(len(results))
+except Exception:
+    print(-1)
+" "$lit_resp")
+
+lit_query=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    print(data.get('query', ''))
+except Exception:
+    print('')
+" "$lit_resp")
 
 lit_check=$(python3 -c "
 import json, sys
@@ -130,7 +171,140 @@ except Exception:
     print('false')
 " "$lit_resp")
 
+echo "  literature search detail: provider=$lit_source query=$lit_query results_count=$lit_results_count"
 check "literature search source=not_configured and results=[]" "$lit_check"
+
+# -------------------------------------------------------------------
+# 4b. Anti-spoofing: when source=not_configured, results must be []
+#     and no fake fields (title/doi/pmid/authors) are present
+# -------------------------------------------------------------------
+echo "--- 4b. Anti-spoofing check (source=not_configured) ---"
+
+spoof_check=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    source = data.get('source', '')
+    results = data.get('results', [])
+    if source != 'not_configured':
+        print('skipped')
+    elif not isinstance(results, list) or len(results) != 0:
+        print('false')
+    else:
+        # verify no fake fields in the response
+        fake_fields = ['title', 'doi', 'pmid', 'authors', 'abstract', 'year', 'journal', 'url', 'citation_count']
+        resp_str = json.dumps(data).lower()
+        found_fake = [f for f in fake_fields if f in resp_str]
+        if found_fake:
+            print('false')
+        else:
+            print('true')
+except Exception:
+    print('false')
+" "$lit_resp")
+
+check "no fake fields (title/doi/pmid/authors) when source=not_configured" "$([ "$spoof_check" != "false" ] && echo true || echo false)"
+
+# -------------------------------------------------------------------
+# 4c. GET /api/literature/search?q=CAR-T&limit=3
+# -------------------------------------------------------------------
+echo "--- 4c. GET /api/literature/search?q=CAR-T&limit=3 ---"
+lit_cart_resp=$(fetch_json "$BACKEND_BASE/api/literature/search?q=CAR-T&limit=3")
+
+lit_cart_check=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    source = data.get('source', '')
+    results = data.get('results', [])
+    query = data.get('query', '')
+    if query == 'CAR-T' and source == 'not_configured' and isinstance(results, list) and len(results) == 0:
+        print('true')
+    else:
+        print('false')
+except Exception:
+    print('false')
+" "$lit_cart_resp")
+
+cart_results_count=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    print(len(data.get('results', [])))
+except Exception:
+    print(-1)
+" "$lit_cart_resp")
+
+echo "  CAR-T search detail: provider=$lit_source results_count=$cart_results_count"
+check "CAR-T search source=not_configured and results=[]" "$lit_cart_check"
+
+# -------------------------------------------------------------------
+# 4d. Empty query / missing q – expect 422 validation error
+# -------------------------------------------------------------------
+echo "--- 4d. GET /api/literature/search (missing q) ---"
+lit_empty_resp=$(fetch_with_status "$BACKEND_BASE/api/literature/search?limit=5")
+
+empty_status=$(echo "$lit_empty_resp" | tail -1)
+check "missing q returns 422 (got $empty_status)" "$([ "$empty_status" = "422" ] && echo true || echo false)"
+
+# -------------------------------------------------------------------
+# 4e. Empty query (q parameter present but empty)
+# -------------------------------------------------------------------
+echo "--- 4e. GET /api/literature/search?q=&limit=5 (empty q) ---"
+lit_emptyq_resp=$(fetch_with_status "$BACKEND_BASE/api/literature/search?q=&limit=5")
+
+emptyq_status=$(echo "$lit_emptyq_resp" | tail -1)
+check "empty q returns 422 (got $emptyq_status)" "$([ "$emptyq_status" = "422" ] && echo true || echo false)"
+
+# ===================================================================
+# 5. Optional: Live Literature Provider Check
+# ===================================================================
+if [ "$RUN_LIVE_LITERATURE_CHECKS" = "1" ]; then
+    echo ""
+    echo -e "${YELLOW}--- 5. Live Literature Provider Checks (RUN_LIVE_LITERATURE_CHECKS=1) ---${NC}"
+    echo "  (API may not crash, return JSON, results is array – does NOT require results)"
+
+    lit_live_resp=$(fetch_json "$BACKEND_BASE/api/literature/search?q=mRNA&limit=3")
+
+    lit_live_valid=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    results = data.get('results', None)
+    source = data.get('source', '')
+    query = data.get('query', '')
+    if isinstance(results, list) and isinstance(source, str) and isinstance(query, str):
+        print('true')
+    else:
+        print('false')
+except Exception:
+    print('false')
+" "$lit_live_resp")
+
+    lit_live_source=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    print(data.get('source', ''))
+except Exception:
+    print('')
+" "$lit_live_resp")
+
+    lit_live_count=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    print(len(data.get('results', [])))
+except Exception:
+    print(-1)
+" "$lit_live_resp")
+
+    echo "  live search detail: provider=$lit_live_source results_count=$lit_live_count"
+    check "live literature search returns valid JSON with results array" "$lit_live_valid"
+else
+    echo ""
+    echo -e "${YELLOW}--- 5. Live Literature Provider Checks -- SKIPPED (RUN_LIVE_LITERATURE_CHECKS=0) ---${NC}"
+fi
 
 # -------------------------------------------------------------------
 # Summary
@@ -139,10 +313,13 @@ echo ""
 echo "============================================"
 echo " Smoke Summary"
 echo "============================================"
-echo " industry cases:  $cases_total"
-echo " case-004:        $( [ "$case004_ok" = "true" ] && echo 'ok' || echo 'FAIL' )"
-echo " research tasks:  $tasks_count"
-echo " literature search: $( [ "$lit_check" = "true" ] && echo 'not_configured' || echo 'FAIL' )"
+echo " industry cases:     $cases_total"
+echo " case-004:           $( [ "$case004_ok" = "true" ] && echo 'ok' || echo 'FAIL' )"
+echo " research tasks:     $tasks_count"
+echo " literature search:  $( [ "$lit_check" = "true" ] && echo 'not_configured' || echo 'FAIL' )"
+echo " anti-spoofing:      $( [ "$spoof_check" != "false" ] && echo 'ok' || echo 'FAIL' )"
+echo " CAR-T search:       $( [ "$lit_cart_check" = "true" ] && echo 'not_configured' || echo 'FAIL' )"
+echo " empty q validation: $( [ "$empty_status" = "422" ] && [ "$emptyq_status" = "422" ] && echo 'ok' || echo 'FAIL' )"
 echo ""
 
 if [ "$fail_count" -eq 0 ]; then
