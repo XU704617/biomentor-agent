@@ -92,6 +92,23 @@ curl "http://localhost:9090/api/industry/cases?page_size=100"
 
 Expected response: `total=23` industry cases.
 
+## Quality Validation
+
+After both servers are running, you can run the automated quality validation:
+
+```bash
+# Basic validation (default, no external dependencies)
+BACKEND_BASE=http://127.0.0.1:9090 bash scripts/run_demo_quality_checks.sh
+
+# With evidence link checks
+RUN_EVIDENCE_LINK_CHECKS=1 BACKEND_BASE=http://127.0.0.1:9090 bash scripts/run_demo_quality_checks.sh
+
+# With live literature provider checks (requires external API access)
+RUN_LIVE_LITERATURE_CHECKS=1 LITERATURE_PROVIDER=pubmed BACKEND_BASE=http://127.0.0.1:9090 bash scripts/run_demo_quality_checks.sh
+```
+
+See [DEMO_VALIDATION_REPORT_TEMPLATE.md](./DEMO_VALIDATION_REPORT_TEMPLATE.md) for recording validation results.
+
 ## Known Issues
 
 ### disk I/O error with default database
