@@ -828,7 +828,14 @@ function AiResponseCard({
 }) {
   return (
     <div className="rounded-2xl rounded-tl-sm border border-white/85 bg-white/84 p-4 text-left shadow-sm">
-      <h3 className="font-display text-base font-black text-[#111827]">{response.title}</h3>
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-display text-base font-black text-[#111827]">{response.title}</h3>
+        {response.source && (
+          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-400">
+            {response.source === "deepseek" ? "云端 AI" : "本地辅助"}
+          </span>
+        )}
+      </div>
       <p className="mt-2 text-sm leading-7 text-slate-600">{response.answer}</p>
       <div className="mt-3 space-y-3">
         <MiniPanel title="关键点" items={response.keyPoints} />

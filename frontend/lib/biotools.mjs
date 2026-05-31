@@ -92,6 +92,15 @@ const proteinAliases = new Map(
 const proteinKeywordAliases = new Map([
   ["胃蛋白酶", "pepsin"],
   ["胰岛素", "insulin"],
+  ["胰蛋白酶", "trypsin"],
+  ["淀粉酶", "amylase"],
+  ["α淀粉酶", "alpha amylase"],
+  ["α-淀粉酶", "alpha amylase"],
+  ["脂肪酶", "lipase"],
+  ["乳糖酶", "lactase"],
+  ["溶菌酶", "lysozyme"],
+  ["胶原蛋白", "collagen"],
+  ["肌红蛋白", "myoglobin"],
   ["血红蛋白", "hemoglobin"],
   ["绿色荧光蛋白", "green fluorescent protein"],
   ["肿瘤抑制蛋白", "tumor protein p53"],
@@ -298,8 +307,25 @@ export function normalizeProteinKeyword(query) {
   return proteinKeywordAliases.get(raw) || raw;
 }
 
+export function buildProteinSearchTerms(query, extraTerms = []) {
+  const raw = String(query || "").trim();
+  const candidates = [
+    raw,
+    normalizeProteinKeyword(raw),
+    ...extraTerms,
+  ];
+  return [...new Set(
+    candidates
+      .map((item) => String(item || "").trim())
+      .filter(Boolean),
+  )].slice(0, 8);
+}
+
 export function buildUniProtKeywordSearchUrl(query) {
-  const keyword = normalizeProteinKeyword(query);
+  const terms = buildProteinSearchTerms(query);
+  const keyword = terms.length > 1
+    ? terms.map((term) => `(${term})`).join(" OR ")
+    : terms[0] || String(query || "").trim();
   const params = new URLSearchParams({
     query: `(${keyword}) AND (reviewed:true OR organism_id:9606)`,
     fields: "accession,id,protein_name,gene_names,organism_name,reviewed,structure_3d",

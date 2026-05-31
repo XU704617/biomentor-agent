@@ -5,6 +5,7 @@ import {
   buildAlphaFoldPdbUrl,
   buildRcsbPdbUrl,
   buildUniProtKeywordSearchUrl,
+  buildProteinSearchTerms,
   calculateNucleotideStats,
   calculateProteinStats,
   describeFeature,
@@ -121,6 +122,12 @@ test("builds UniProt keyword search URLs and maps remote entries to structure ca
   assert.equal(candidate.pdbId, "1PSO");
   assert.equal(candidate.sourceKind, "experimental");
   assert.equal(candidate.structureUrl, "https://files.rcsb.org/download/1PSO.pdb");
+});
+
+test("expands Chinese protein names to UniProt-searchable English terms", () => {
+  assert.ok(buildProteinSearchTerms("淀粉酶").includes("amylase"));
+  assert.ok(buildProteinSearchTerms("胃蛋白酶").includes("pepsin"));
+  assert.ok(buildProteinSearchTerms("胰蛋白酶").includes("trypsin"));
 });
 
 test("calculates nucleotide stats and translates coding DNA", () => {

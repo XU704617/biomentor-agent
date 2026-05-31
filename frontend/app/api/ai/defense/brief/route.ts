@@ -5,6 +5,7 @@ import {
   extractPlainTextFromOfficeXml,
   normalizeDefenseBrief,
 } from "@/lib/defense-flow.mjs";
+import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 export const runtime = "nodejs";
 
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const localBrief = buildDefenseBriefFromText({ sourceType, sourceLabel, text, href });
-    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const { apiKey } = resolveDeepSeekConfig();
     if (!apiKey) return NextResponse.json({ success: true, data: localBrief });
 
     const aiBrief = await generateBriefWithDeepSeek({ text, sourceType, sourceLabel, href, fallback: localBrief });
@@ -64,65 +65,49 @@ async function generateBriefWithDeepSeek({
   href: string;
   fallback: unknown;
 }) {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  const baseUrl = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
-  const model = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
 
   try {
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: "system",
-            content:
-              "你是 BioMentor Agent 的科研答辩资料整理助手。请把用户资料凝练为 Defense Brief JSON，不要输出 Markdown，不要暴露 API、模型或调试信息。",
-          },
-          {
-            role: "user",
-            content: JSON.stringify({
-              sourceType,
-              sourceLabel,
-              text: text.slice(0, 16000),
-              requiredFields: [
-                "title",
-                "mode",
-                "background",
-                "researchQuestion",
-                "hypothesis",
-                "objectives",
-                "methods",
-                "evidence",
-                "limitations",
-                "innovationPoints",
-                "applicationValue",
-                "keywords",
-                "relatedKnowledgeNodes",
-                "relatedTools",
-              ],
-            }),
-          },
-        ],
-        temperature: 0.25,
-        max_tokens: 2200,
-        response_format: { type: "json_object" },
-      }),
+    const result = await callDeepSeekJson({
+      messages: [
+        {
+          role: "system",
+          content:
+            "你是 BioMentor Agent 的科研答辩资料整理助手。请把用户资料凝练为 Defense Brief JSON，不要输出 Markdown，不要暴露 API、模型或调试信息。",
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            sourceType,
+            sourceLabel,
+            text: text.slice(0, 16000),
+            requiredFields: [
+              "title",
+              "mode",
+              "background",
+              "researchQuestion",
+              "hypothesis",
+              "objectives",
+              "methods",
+              "evidence",
+              "limitations",
+              "innovationPoints",
+              "applicationValue",
+              "keywords",
+              "relatedKnowledgeNodes",
+              "relatedTools",
+            ],
+          }),
+        },
+      ],
+      temperature: 0.25,
+      maxTokens: 2200,
       signal: controller.signal,
     });
     clearTimeout(timeout);
 
-    if (!response.ok) return fallback;
-    const data = await response.json();
-    const raw = data?.choices?.[0]?.message?.content || "";
-    const parsed = JSON.parse(extractJson(raw));
-    return normalizeDefenseBrief(parsed, { sourceType: sourceType as never, sourceLabel, text, href });
+    return normalizeDefenseBrief(result.parsed, { sourceType: sourceType as never, sourceLabel, text, href });
   } catch {
     clearTimeout(timeout);
     return fallback;
@@ -163,11 +148,4 @@ async function extractPptxText(buffer: Buffer): Promise<string> {
     .sort();
   const texts = await Promise.all(parts.map(async (name) => extractPlainTextFromOfficeXml(await zip.files[name].async("string"))));
   return texts.join("\n");
-}
-
-function extractJson(raw: string): string {
-  const text = String(raw || "").trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
-  const first = text.indexOf("{");
-  const last = text.lastIndexOf("}");
-  return first >= 0 && last > first ? text.slice(first, last + 1) : text;
 }

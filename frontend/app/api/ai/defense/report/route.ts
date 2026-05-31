@@ -6,16 +6,19 @@ import {
   normalizeDefenseAiJson,
   normalizeDefenseReport,
 } from "@/lib/defense-flow.mjs";
+import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
+
+type AiMessage = { role: "system" | "user" | "assistant"; content: string };
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const fallback = (generateLocalDefenseReport as unknown as (input: Record<string, unknown>) => unknown)({ brief: body.brief, transcript: body.transcript || [] });
-    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const { apiKey } = resolveDeepSeekConfig();
     if (!apiKey) return NextResponse.json({ success: true, data: fallback });
 
     const data = await callDefenseAi({
-      messages: (buildDefensePromptMessages as unknown as (input: Record<string, unknown>) => unknown[])({
+      messages: (buildDefensePromptMessages as unknown as (input: Record<string, unknown>) => AiMessage[])({
         action: "report",
         brief: body.brief,
         difficulty: body.difficulty,
@@ -32,24 +35,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function callDefenseAi({ messages, maxTokens, fallback }: { messages: unknown[]; maxTokens: number; fallback: unknown }) {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  const baseUrl = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
-  const model = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
+async function callDefenseAi({ messages, maxTokens, fallback }: { messages: AiMessage[]; maxTokens: number; fallback: unknown }) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
   try {
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, messages, temperature: 0.35, max_tokens: maxTokens, response_format: { type: "json_object" } }),
+    const result = await callDeepSeekJson({
+      messages,
+      temperature: 0.35,
+      maxTokens,
       signal: controller.signal,
     });
     clearTimeout(timeout);
-    if (!response.ok) return fallback;
-    const result = await response.json();
-    const raw = result?.choices?.[0]?.message?.content || "";
-    const aiParsed = normalizeDefenseAiJson(raw, fallback);
+    const aiParsed = normalizeDefenseAiJson(result.raw, fallback);
     return normalizeDefenseReport(aiParsed, fallback as Record<string,unknown>);
   } catch {
     clearTimeout(timeout);

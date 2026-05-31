@@ -5,15 +5,14 @@ import {
   createLocalKnowledgeAnswer,
   normalizeKnowledgeAiResponse,
 } from "@/lib/knowledge-ai-types.mjs";
+import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 import type { KnowledgeAiMessage, KnowledgeAiRequest } from "@/lib/knowledge-map-types";
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as KnowledgeAiRequest;
     const safeRequest = sanitizeRequest(body);
-    const apiKey = process.env.DEEPSEEK_API_KEY;
-    const baseUrl = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
-    const model = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
+    const { apiKey } = resolveDeepSeekConfig();
 
     if (!apiKey) {
       return NextResponse.json({
@@ -25,35 +24,17 @@ export async function POST(request: NextRequest) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
 
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: buildKnowledgePromptMessages(safeRequest),
-        temperature: safeRequest.mode === "research" ? 0.45 : 0.55,
-        max_tokens: 1200,
-        response_format: { type: "json_object" },
-      }),
+    const result = await callDeepSeekJson({
+      messages: buildKnowledgePromptMessages(safeRequest),
+      temperature: safeRequest.mode === "research" ? 0.45 : 0.55,
+      maxTokens: 1200,
       signal: controller.signal,
     });
     clearTimeout(timeout);
 
-    if (!response.ok) {
-      return NextResponse.json({
-        success: true,
-        data: createLocalKnowledgeAnswer(safeRequest),
-      });
-    }
-
-    const result = await response.json();
-    const raw = result?.choices?.[0]?.message?.content || "";
     return NextResponse.json({
       success: true,
-      data: normalizeKnowledgeAiResponse(raw, safeRequest),
+      data: normalizeKnowledgeAiResponse(result.raw, safeRequest),
     });
   } catch {
     return NextResponse.json(

@@ -6,6 +6,7 @@ export interface ToolChatMessage {
   role: "assistant" | "user";
   content: string;
   quickQuestions?: string[];
+  source?: "deepseek" | "local_fallback";
 }
 
 export interface ToolContextSummary {

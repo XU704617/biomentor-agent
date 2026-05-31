@@ -4,6 +4,7 @@ import {
   createHelpfulToolFallback,
   normalizeToolAiResponse,
 } from "@/lib/tool-ai-response.mjs";
+import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 const TOOL_LABELS: Record<string, string> = {
   protein: "蛋白结构",
@@ -97,9 +98,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "question 模式需要提供 question 参数" }, { status: 400 });
     }
 
-    const apiKey = process.env.DEEPSEEK_API_KEY;
-    const baseUrl = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
-    const model = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
+    const { apiKey } = resolveDeepSeekConfig();
 
     if (!apiKey) {
       return NextResponse.json(createHelpfulToolFallback(tool, body));
@@ -109,42 +108,22 @@ export async function POST(request: NextRequest) {
     const timeout = setTimeout(() => controller.abort(), 30000);
 
     try {
-      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: buildSystemPrompt(tool) },
-            { role: "user", content: buildUserPrompt(body) },
-          ],
-          temperature: 0.3,
-          max_tokens: 2048,
-        }),
+      const result = await callDeepSeekJson({
+        messages: [
+          { role: "system", content: buildSystemPrompt(tool) },
+          { role: "user", content: buildUserPrompt(body) },
+        ],
+        temperature: 0.3,
+        maxTokens: 2048,
+        responseFormat: false,
         signal: controller.signal,
       });
 
       clearTimeout(timeout);
 
-      if (!response.ok) {
-        console.error(`[tool-chat] API 返回错误 ${response.status}`);
-        return NextResponse.json(createHelpfulToolFallback(tool, body));
-      }
+      const normalized = normalizeToolAiResponse(result.raw, tool, body) as ToolAiResponse;
 
-      const data = await response.json();
-      const content = data?.choices?.[0]?.message?.content;
-
-      if (!content) {
-        console.error("[tool-chat] API 返回内容为空");
-        return NextResponse.json(createHelpfulToolFallback(tool, body));
-      }
-
-      const result = normalizeToolAiResponse(content, tool, body) as ToolAiResponse;
-
-      return NextResponse.json(result);
+      return NextResponse.json(normalized);
     } catch (fetchError) {
       clearTimeout(timeout);
       console.error("[tool-chat] API 调用异常:", fetchError instanceof Error ? fetchError.message : fetchError);

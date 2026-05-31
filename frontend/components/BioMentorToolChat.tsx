@@ -73,6 +73,7 @@ export default function BioMentorToolChat({
           role: "assistant",
           content: data.answer,
           quickQuestions: data.quickQuestions,
+          source: data.source,
         };
 
         startTransition(() => {
@@ -171,6 +172,11 @@ export default function BioMentorToolChat({
               }`}
             >
               {msg.content}
+              {msg.role === "assistant" && msg.source && (
+                <div className="mt-2 text-[10px] font-semibold text-brand-faint">
+                  {msg.source === "deepseek" ? "云端 AI" : "本地辅助"}
+                </div>
+              )}
               {msg.role === "assistant" && msg.quickQuestions && msg.quickQuestions.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {msg.quickQuestions.map((q, qi) => (
