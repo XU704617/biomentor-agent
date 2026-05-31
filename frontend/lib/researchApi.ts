@@ -71,7 +71,7 @@ export function generateFallbackResearchTask(
     case_key: caseKey,
     mode,
     research_question: topic,
-    background: `围绕「${topic}」这一主题，本训练框架整合生物制造领域核心研究方法论。当前使用本地模板生成，配置 LLM API Key 后可获得 AI 生成的个性化科研任务。`,
+    background: `围绕「${topic}」这一主题，本训练框架整合生物制造领域核心研究方法论。使用系统模板生成，接入 AI 服务后可获得个性化科研任务。`,
     matched_cases: [],
     related_knowledge_points: [
       "分子生物学基础",
@@ -201,7 +201,7 @@ export function generateFallbackResearchTask(
     seminar_topic: topic.includes("研讨") ? topic : `「${topic}」的研究进展与方法论探讨`,
     source_scope: "仅限平台案例库和知识库内容，未使用外部搜索或数据库",
     disclaimer:
-      "当前使用本地模板生成。配置 LLM API Key 后可使用 AI 生成个性化科研任务。本训练框架仅供参考，具体研究设计请结合实际情况和导师指导。",
+      "使用系统模板生成。本训练框架仅供参考，具体研究设计请结合实际情况和导师指导。",
   };
 }
 

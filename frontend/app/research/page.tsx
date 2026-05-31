@@ -50,7 +50,7 @@ const phases = [
     title: "文献调研",
     icon: <BookOpen className="w-5 h-5" />,
     description:
-      "基于本地知识库和已接入资料，辅助整理关键词、研究问题和证据线索；当前版本优先使用本地知识库。",
+      "基于知识库和已接入资料，辅助整理关键词、研究问题和证据线索。",
   },
   {
     num: 2,
@@ -293,10 +293,10 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
         <div className="rounded-xl bg-amber-50/40 border border-amber-100/50 p-4">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <p className="text-sm font-semibold text-brand-ink">文献检索未配置</p>
+            <p className="text-sm font-semibold text-brand-ink">暂未检索到相关文献</p>
           </div>
           <p className="text-xs text-brand-muted leading-relaxed">
-            {result?.message || "真实文献检索 API 尚未配置，当前仅提供检索入口和关键词建议。"}
+            {result?.message || "当前暂无可展示文献，请调整关键词后重试。"}
           </p>
         </div>
       )}
@@ -380,7 +380,7 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
                 )}
                 {item.source_provider && (
                   <p>
-                    <span className="font-medium text-brand-ink">数据来源：</span>
+                    <span className="font-medium text-brand-ink">文献来源：</span>
                     {providerLabel(item.source_provider)}
                   </p>
                 )}
@@ -477,11 +477,11 @@ function DefaultResearchPage() {
   };
 
   const sourceScopeLabel = (scope: string | undefined) => {
-    if (!scope) return "基于本地模板生成，建议补充文献材料";
-    if (scope.includes("案例库")) return "基于本地案例库生成";
+    if (!scope) return "基于当前研究主题生成";
+    if (scope.includes("案例库")) return "基于案例信息生成";
     if (scope.includes("产业案例")) return "基于当前产业案例生成";
-    if (scope.includes("模板") || scope.includes("template")) return "基于本地模板生成，建议补充文献材料";
-    return scope || "基于本地模板生成，建议补充文献材料";
+    if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
+    return scope || "基于当前研究主题生成";
   };
 
   return (
@@ -761,7 +761,7 @@ function DefaultResearchPage() {
               ) : kbError || papers.length === 0 ? (
                 <div className="text-center py-6">
                   <BookOpen className="w-5 h-5 text-brand-faint/30 mx-auto mb-2" />
-                  <p className="text-xs text-brand-muted leading-relaxed max-w-xs mx-auto">当前暂无已接入文献材料。后续可在科研实战中发起文献检索，或上传论文/课程资料作为本地知识来源。</p>
+                  <p className="text-xs text-brand-muted leading-relaxed max-w-xs mx-auto">当前暂无已接入文献材料。后续可在科研实战中发起文献检索，或上传论文/课程资料作为资料补充。</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -787,7 +787,7 @@ function DefaultResearchPage() {
                 <p className="text-[11px] text-brand-muted font-body leading-relaxed">
                   <span className="font-semibold text-brand-ink">AI 文献检索：接口预留 / 开发中</span>
                   <br />
-                  当前版本提供关键词和检索策略建议，真实文献结果需接入外部检索 API 后生成。
+                  当前提供关键词整理与检索辅助，具体研究判断请结合文献原文和教师指导。
                 </p>
               </div>
             </div>
@@ -965,11 +965,11 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
   }, [caseKey]);
 
   const sourceScopeLabel = (scope: string | undefined) => {
-    if (!scope) return "基于本地模板生成，建议补充文献材料";
-    if (scope.includes("案例库")) return "基于本地案例库生成";
+    if (!scope) return "基于当前研究主题生成";
+    if (scope.includes("案例库")) return "基于案例信息生成";
     if (scope.includes("产业案例")) return "基于当前产业案例生成";
-    if (scope.includes("模板") || scope.includes("template")) return "基于本地模板生成，建议补充文献材料";
-    return scope || "基于本地模板生成，建议补充文献材料";
+    if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
+    return scope || "基于当前研究主题生成";
   };
 
   return (

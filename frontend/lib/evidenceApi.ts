@@ -69,7 +69,7 @@ export async function searchEvidenceForTask(
   } catch (error) {
     clearTimeout(timeout);
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("evidence 文献检索请求超时，请稍后重试");
+      throw new Error("文献检索请求超时，请稍后重试");
     }
     throw error;
   }
@@ -104,7 +104,7 @@ export async function createEvidenceNote(
   } catch (error) {
     clearTimeout(timeout);
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("evidence note 生成请求超时，请稍后重试");
+      throw new Error("文献笔记生成请求超时，请稍后重试");
     }
     throw error;
   }

@@ -196,7 +196,7 @@ export default function CasesPage() {
               {apiFailed && (
                 <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-xl bg-amber-50/80 border border-amber-200/60 text-xs text-amber-700 font-body">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>后端服务暂不可用，当前显示本地示例案例（{allCases.length} 个）。完整案例库共 23 个产业案例。</span>
+                  <span>案例数据暂时加载不完整，当前显示可用案例（{allCases.length} 个）。案例库共收录 23 个产业案例。</span>
                 </div>
               )}
 
