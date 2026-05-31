@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from app.schemas import EvidenceReferenceItem
 from app.services.literature_service import LiteratureSearchService
+from app.services.query_builder import build_literature_search_query
 
 
 class EvidenceService:
@@ -23,11 +24,13 @@ class EvidenceService:
         case_title: str | None = None,
         query: str | None = None,
         limit: int = 5,
+        recommended_keywords: list[str] | None = None,
     ) -> dict:
         search_query = self._build_query(
             query=query,
             task_title=task_title,
             case_title=case_title,
+            recommended_keywords=recommended_keywords or [],
         )
 
         result = await self._literature_service.search(
@@ -87,15 +90,18 @@ class EvidenceService:
 
     @staticmethod
     def _build_query(
-        query: str | None,
-        task_title: str,
+        query: str | None = None,
+        task_title: str = "",
         case_title: str | None = None,
+        recommended_keywords: list[str] | None = None,
     ) -> str:
-        if query and query.strip():
-            return query.strip()
+        task: dict = {}
+        if recommended_keywords:
+            task["recommended_keywords"] = recommended_keywords
 
-        parts = [task_title.strip()]
-        if case_title and case_title.strip():
-            parts.append(case_title.strip())
-
-        return " ".join(parts)
+        return build_literature_search_query(
+            query=query,
+            task_title=task_title,
+            case_title=case_title,
+            task=task if task else None,
+        )

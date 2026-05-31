@@ -21,6 +21,7 @@ async def evidence_search(body: EvidenceSearchRequest):
         case_title=body.case_title,
         query=body.query,
         limit=body.limit,
+        recommended_keywords=body.recommended_keywords,
     )
     return EvidenceSearchResponse(
         query=result["query"],
