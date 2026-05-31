@@ -40,6 +40,7 @@ import {
   searchLiterature,
   type LiteratureSearchResponse,
 } from "@/lib/literatureApi";
+import EvidenceLinkPanel from "@/components/EvidenceLinkPanel";
 
 interface Message { role: "user" | "ai"; content: string; }
 
@@ -90,7 +91,7 @@ const taskTypeIcons: Record<string, React.ReactNode> = {
 
 const PY = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:9090";
 
-function TaskCard({ task, index, defaultExpanded }: { task: ResearchTaskItem; index: number; defaultExpanded: boolean }) {
+function TaskCard({ task, index, defaultExpanded, caseTitle }: { task: ResearchTaskItem; index: number; defaultExpanded: boolean; caseTitle?: string }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
@@ -179,6 +180,8 @@ function TaskCard({ task, index, defaultExpanded }: { task: ResearchTaskItem; in
               </pre>
             </div>
           )}
+
+          <EvidenceLinkPanel task={task} caseTitle={caseTitle} />
         </div>
       )}
     </div>
@@ -1072,7 +1075,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
 
                 <div className="space-y-2.5 mb-4">
                   {(result.tasks || []).map((task, i) => (
-                    <TaskCard key={i} task={task} index={i} defaultExpanded={i === 0} />
+                    <TaskCard key={i} task={task} index={i} defaultExpanded={i === 0} caseTitle={caseData.title} />
                   ))}
                 </div>
               </section>

@@ -710,3 +710,69 @@ class LiteratureSearchResponse(BaseModel):
     source: str = "not_configured"
     message: str | None = None
     error: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Evidence Link
+# ---------------------------------------------------------------------------
+
+class EvidenceSearchRequest(BaseModel):
+    task_title: str
+    task_description: str | None = None
+    case_title: str | None = None
+    query: str | None = None
+    limit: int = Field(default=5, ge=1, le=20)
+
+
+class EvidenceSearchResponse(BaseModel):
+    query: str
+    source: str = "not_configured"
+    task_title: str
+    results: list[LiteratureSearchItem] = []
+    message: str | None = None
+    error: str | None = None
+
+
+class EvidenceLiteratureItem(BaseModel):
+    id: str | None = None
+    title: str | None = None
+    authors: list[str] = []
+    year: int | None = None
+    venue: str | None = None
+    doi: str | None = None
+    pmid: str | None = None
+    url: str | None = None
+    abstract: str | None = None
+    source_provider: str = ""
+    raw_id: str | None = None
+
+
+class EvidenceReferenceItem(BaseModel):
+    title: str | None = None
+    authors: list[str] = []
+    year: int | None = None
+    venue: str | None = None
+    doi: str | None = None
+    pmid: str | None = None
+    url: str | None = None
+    source_provider: str = ""
+
+
+class EvidenceNoteData(BaseModel):
+    summary: str
+    references: list[EvidenceReferenceItem] = []
+    limitations: list[str] = []
+
+
+class EvidenceNoteRequest(BaseModel):
+    task_title: str
+    task_description: str | None = None
+    selected_literature: list[EvidenceLiteratureItem] = []
+
+
+class EvidenceNoteResponse(BaseModel):
+    task_title: str
+    selected_count: int = 0
+    evidence_note: EvidenceNoteData
+    message: str | None = None
+    error: str | None = None

@@ -55,9 +55,18 @@ BioMentor Agent 是一个面向生物科学教育的 AI 辅助学习与科研训
   - `not_configured`（默认）：不发起外部调用，返回空结果。
   - `semantic_scholar`：接入 Semantic Scholar API 进行论文检索。
   - `crossref`：接入 Crossref API 进行学术出版元数据检索。
-  - `pubmed`：接入 NCBI PubMed Entrez E-utilities 进行生物医学文献元数据检索（前端已支持，后端实现待完善）。
+  - `pubmed`：接入 NCBI PubMed Entrez E-utilities 进行生物医学文献元数据检索。
 - **不伪造** DOI / PMID / 文献标题等数据。
 - 接口合同详见 [LITERATURE_SEARCH_CONTRACT.md](./LITERATURE_SEARCH_CONTRACT.md)。
+
+### Evidence Link 能力
+
+- 科研任务卡与真实文献 metadata 之间的连接层。
+- 目标流程：科研任务卡 → 查找相关文献 → 展示 provider 返回的真实 metadata → 用户手动选择文献 → 生成 evidence note。
+- Evidence note 仅基于 metadata 组装，不代表全文阅读、不代表证据强度判断、不生成最终科研结论。
+- 复用已有的 literature provider 架构（not_configured / semantic_scholar / crossref / pubmed）。
+- 推荐演示使用 PubMed provider。
+- 详细设计详见 [EVIDENCE_LINK_WORKFLOW.md](./EVIDENCE_LINK_WORKFLOW.md)。
 
 ---
 

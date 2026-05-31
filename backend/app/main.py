@@ -10,6 +10,7 @@ from app.routers import (
     bio_tools,
     courses,
     diagnosis,
+    evidence,
     industry_cases,
     knowledge_graph,
     literature,
@@ -56,6 +57,7 @@ app.include_router(photo_learning.router)
 app.include_router(knowledge_graph.router)
 app.include_router(agent.router)
 app.include_router(literature.router)
+app.include_router(evidence.router)
 app.include_router(tutor.router)
 
 

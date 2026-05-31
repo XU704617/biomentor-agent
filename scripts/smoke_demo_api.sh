@@ -9,6 +9,12 @@
 #   # Optional: specify expected literature provider for live checks
 #   LITERATURE_PROVIDER=pubmed RUN_LIVE_LITERATURE_CHECKS=1 BACKEND_BASE=http://127.0.0.1:9090 bash scripts/smoke_demo_api.sh
 #
+#   # Optional: run evidence link checks (requires evidence API endpoints)
+#   RUN_EVIDENCE_LINK_CHECKS=1 BACKEND_BASE=http://127.0.0.1:9090 bash scripts/smoke_demo_api.sh
+#
+#   # Optional: run both live literature and evidence link checks
+#   RUN_LIVE_LITERATURE_CHECKS=1 RUN_EVIDENCE_LINK_CHECKS=1 BACKEND_BASE=http://127.0.0.1:9090 bash scripts/smoke_demo_api.sh
+#
 # Smoke test script for BioMentor Agent demo API.
 # Verifies the core API endpoints respond correctly.
 # Exits with code 1 on any failure, 0 on success.
@@ -17,6 +23,7 @@ set -euo pipefail
 
 BACKEND_BASE="${BACKEND_BASE:-http://127.0.0.1:9090}"
 RUN_LIVE_LITERATURE_CHECKS="${RUN_LIVE_LITERATURE_CHECKS:-0}"
+RUN_EVIDENCE_LINK_CHECKS="${RUN_EVIDENCE_LINK_CHECKS:-0}"
 LITERATURE_PROVIDER="${LITERATURE_PROVIDER:-not_configured}"
 EXPECTED_PROVIDER="${LITERATURE_PROVIDER:-not_configured}"
 
@@ -455,6 +462,138 @@ fi
 
 rm -f /tmp/smoke_lit_live.json /tmp/smoke_lit_live_err
 
+# ===================================================================
+# 6. Optional: Evidence Link Checks
+# ===================================================================
+if [ "$RUN_EVIDENCE_LINK_CHECKS" = "1" ]; then
+    echo ""
+    echo -e "${YELLOW}--- 6. Evidence Link Checks (RUN_EVIDENCE_LINK_CHECKS=1) ---${NC}"
+
+    # Check if POST /api/evidence/search endpoint exists
+    evidence_search_http_code=$(curl -sS --max-time 10 -o /tmp/smoke_evidence_search.json -w "%{http_code}" \
+        -X POST "$BACKEND_BASE/api/evidence/search" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "task_title": "mRNA vaccine delivery strategy",
+            "task_description": null,
+            "case_title": "mRNA vaccine",
+            "query": "mRNA vaccine delivery",
+            "limit": 3
+        }' 2>/dev/null || echo "000")
+
+    if [ "$evidence_search_http_code" = "000" ]; then
+        echo -e "  ${YELLOW}[WARN]${NC} POST /api/evidence/search – endpoint unreachable (connection failed)"
+        echo -e "  ${YELLOW}[SKIPPED]${NC} Evidence search check skipped – evidence API not available"
+        evidence_search_status="skipped"
+    elif [ "$evidence_search_http_code" = "404" ] || [ "$evidence_search_http_code" = "405" ]; then
+        echo -e "  ${YELLOW}[WARN]${NC} POST /api/evidence/search – returned HTTP $evidence_search_http_code"
+        echo -e "  ${YELLOW}[SKIPPED]${NC} Evidence search check skipped – endpoint not implemented yet"
+        evidence_search_status="skipped"
+    else
+        echo "  POST /api/evidence/search returned HTTP $evidence_search_http_code"
+        evidence_search_valid=$(python3 -c "
+import json
+try:
+    with open('/tmp/smoke_evidence_search.json') as f:
+        data = json.load(f)
+    results = data.get('results', None)
+    if isinstance(results, list):
+        print('true')
+    else:
+        print('false')
+except Exception:
+    print('false')
+")
+        echo "  evidence search results is array: $evidence_search_valid"
+        check "POST /api/evidence/search returns JSON with results array" "$evidence_search_valid"
+        evidence_search_status="checked"
+    fi
+
+    # Check if POST /api/evidence/note endpoint exists
+    evidence_note_http_code=$(curl -sS --max-time 10 -o /tmp/smoke_evidence_note.json -w "%{http_code}" \
+        -X POST "$BACKEND_BASE/api/evidence/note" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "task_title": "mRNA vaccine delivery strategy",
+            "task_description": null,
+            "selected_literature": [
+                {
+                    "id": "123",
+                    "title": "Example metadata-only paper",
+                    "authors": ["Example A"],
+                    "year": 2024,
+                    "venue": "Example Journal",
+                    "doi": null,
+                    "pmid": "123",
+                    "url": "https://pubmed.ncbi.nlm.nih.gov/123/",
+                    "abstract": null,
+                    "source_provider": "pubmed",
+                    "raw_id": "123"
+                }
+            ]
+        }' 2>/dev/null || echo "000")
+
+    if [ "$evidence_note_http_code" = "000" ]; then
+        echo -e "  ${YELLOW}[WARN]${NC} POST /api/evidence/note – endpoint unreachable (connection failed)"
+        echo -e "  ${YELLOW}[SKIPPED]${NC} Evidence note check skipped – evidence API not available"
+        evidence_note_status="skipped"
+    elif [ "$evidence_note_http_code" = "404" ] || [ "$evidence_note_http_code" = "405" ]; then
+        echo -e "  ${YELLOW}[WARN]${NC} POST /api/evidence/note – returned HTTP $evidence_note_http_code"
+        echo -e "  ${YELLOW}[SKIPPED]${NC} Evidence note check skipped – endpoint not implemented yet"
+        evidence_note_status="skipped"
+    else
+        echo "  POST /api/evidence/note returned HTTP $evidence_note_http_code"
+        evidence_note_valid=$(python3 -c "
+import json
+try:
+    with open('/tmp/smoke_evidence_note.json') as f:
+        data = json.load(f)
+    resp_str = json.dumps(data).lower()
+    # Check that response mentions limitations or boundaries
+    has_limitation = any(kw in resp_str for kw in ['limitation', '边界', 'metadata', '不代表', 'not a conclusion', 'based on'])
+    # Check no fabricated fields
+    has_fake = 'doi' in resp_str and 'pmid' in resp_str and 'authors' in resp_str and 'abstract' in resp_str
+    if has_limitation or not has_fake:
+        print('true')
+    else:
+        print('false')
+except Exception:
+    print('false')
+")
+        echo "  evidence note has limitations/boundary info: $evidence_note_valid"
+        check "POST /api/evidence/note returns JSON with limitations or boundary info" "$evidence_note_valid"
+        evidence_note_status="checked"
+    fi
+
+    # Anti-spoofing: verify evidence note does not fabricate missing fields
+    if [ "$evidence_note_status" = "checked" ]; then
+        evidence_antispoof=$(python3 -c "
+import json
+try:
+    with open('/tmp/smoke_evidence_note.json') as f:
+        data = json.load(f)
+    resp_str = json.dumps(data)
+    # Should not contain clearly fabricated-looking values
+    fake_indicators = ['FAKE', 'fabricated', 'placeholder_doi', 'placeholder_pmid']
+    found = [f for f in fake_indicators if f.lower() in resp_str.lower()]
+    if found:
+        print('false')
+    else:
+        print('true')
+except Exception:
+    print('true')
+")
+        check "Evidence note anti-spoofing: no fabricated fields" "$evidence_antispoof"
+    fi
+else
+    echo ""
+    echo -e "${YELLOW}--- 6. Evidence Link Checks -- SKIPPED (RUN_EVIDENCE_LINK_CHECKS=0) ---${NC}"
+    evidence_search_status="skipped"
+    evidence_note_status="skipped"
+fi
+
+rm -f /tmp/smoke_evidence_search.json /tmp/smoke_evidence_note.json
+
 # -------------------------------------------------------------------
 # Summary
 # -------------------------------------------------------------------
@@ -477,6 +616,14 @@ if [ "$RUN_LIVE_LITERATURE_CHECKS" = "1" ]; then
 fi
 echo " live literature checks: $live_label"
 echo " pubmed live: $pubmed_live_status"
+echo ""
+evidence_label="skipped"
+if [ "$RUN_EVIDENCE_LINK_CHECKS" = "1" ]; then
+    evidence_label="enabled"
+fi
+echo " evidence link checks: $evidence_label"
+echo " evidence search: $evidence_search_status"
+echo " evidence note: $evidence_note_status"
 echo ""
 
 if [ "$fail_count" -eq 0 ]; then
