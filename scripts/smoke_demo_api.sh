@@ -18,6 +18,7 @@ set -euo pipefail
 BACKEND_BASE="${BACKEND_BASE:-http://127.0.0.1:9090}"
 RUN_LIVE_LITERATURE_CHECKS="${RUN_LIVE_LITERATURE_CHECKS:-0}"
 LITERATURE_PROVIDER="${LITERATURE_PROVIDER:-not_configured}"
+EXPECTED_PROVIDER="${LITERATURE_PROVIDER:-not_configured}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -165,18 +166,28 @@ lit_check=$(python3 -c "
 import json, sys
 try:
     data = json.loads(sys.argv[1])
+    expected = sys.argv[2]
     source = data.get('source', '')
     results = data.get('results', [])
-    if source == 'not_configured' and isinstance(results, list) and len(results) == 0:
-        print('true')
+    count = len(results) if isinstance(results, list) else -1
+    if expected == 'not_configured':
+        if source == 'not_configured' and isinstance(results, list) and count == 0:
+            print('true')
+        else:
+            print('false')
+    elif expected == 'pubmed':
+        if source == 'pubmed' and isinstance(results, list) and count > 0:
+            print('true')
+        else:
+            print('false')
     else:
         print('false')
 except Exception:
     print('false')
-" "$lit_resp")
+" "$lit_resp" "$EXPECTED_PROVIDER")
 
-echo "  literature search detail: provider=$lit_source query=$lit_query results_count=$lit_results_count"
-check "literature search source=not_configured and results=[]" "$lit_check"
+echo "  literature search detail: provider=$lit_source query=$lit_query results_count=$lit_results_count expected_provider=$EXPECTED_PROVIDER"
+check "literature search source=$EXPECTED_PROVIDER and results valid" "$lit_check"
 
 # -------------------------------------------------------------------
 # 4b. Anti-spoofing: when source=not_configured, results must be []
@@ -221,16 +232,28 @@ lit_cart_check=$(python3 -c "
 import json, sys
 try:
     data = json.loads(sys.argv[1])
+    expected = sys.argv[2]
     source = data.get('source', '')
     results = data.get('results', [])
     query = data.get('query', '')
-    if query == 'CAR-T' and source == 'not_configured' and isinstance(results, list) and len(results) == 0:
-        print('true')
+    count = len(results) if isinstance(results, list) else -1
+    if query != 'CAR-T':
+        print('false')
+    elif expected == 'not_configured':
+        if source == 'not_configured' and isinstance(results, list) and count == 0:
+            print('true')
+        else:
+            print('false')
+    elif expected == 'pubmed':
+        if source == 'pubmed' and isinstance(results, list) and count > 0:
+            print('true')
+        else:
+            print('false')
     else:
         print('false')
 except Exception:
     print('false')
-" "$lit_cart_resp")
+" "$lit_cart_resp" "$EXPECTED_PROVIDER")
 
 cart_results_count=$(python3 -c "
 import json, sys
@@ -241,8 +264,8 @@ except Exception:
     print(-1)
 " "$lit_cart_resp")
 
-echo "  CAR-T search detail: provider=$lit_source results_count=$cart_results_count"
-check "CAR-T search source=not_configured and results=[]" "$lit_cart_check"
+echo "  CAR-T search detail: provider=$lit_source results_count=$cart_results_count expected_provider=$EXPECTED_PROVIDER"
+check "CAR-T search source=$EXPECTED_PROVIDER and results valid" "$lit_cart_check"
 
 # -------------------------------------------------------------------
 # 4d. Empty query / missing q – expect 422 validation error
@@ -442,9 +465,9 @@ echo "============================================"
 echo " industry cases:     $cases_total"
 echo " case-004:           $( [ "$case004_ok" = "true" ] && echo 'ok' || echo 'FAIL' )"
 echo " research tasks:     $tasks_count"
-echo " literature search:  $( [ "$lit_check" = "true" ] && echo 'not_configured' || echo 'FAIL' )"
+echo " literature search:  $( [ "$lit_check" = "true" ] && echo "$EXPECTED_PROVIDER" || echo 'FAIL' )"
 echo " anti-spoofing:      $( [ "$spoof_check" != "false" ] && echo 'ok' || echo 'FAIL' )"
-echo " CAR-T search:       $( [ "$lit_cart_check" = "true" ] && echo 'not_configured' || echo 'FAIL' )"
+echo " CAR-T search:       $( [ "$lit_cart_check" = "true" ] && echo "$EXPECTED_PROVIDER" || echo 'FAIL' )"
 echo " empty q validation: $( [ "$empty_status" = "422" ] && [ "$emptyq_status" = "422" ] && echo 'ok' || echo 'FAIL' )"
 echo ""
 echo " literature provider: $LITERATURE_PROVIDER"
