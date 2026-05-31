@@ -27,6 +27,7 @@ export default function CasesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedCase, setSelectedCase] = useState<IndustryCase | null>(null);
+  const [displayLimit, setDisplayLimit] = useState(6);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +40,7 @@ export default function CasesPage() {
             const cases = (data.items as ApiIndustryCase[]).map(convertApiCaseToFrontend);
             if (!cancelled) {
               setAllCases(cases);
+              setDisplayLimit(6);
               setLoading(false);
               return;
             }
@@ -47,12 +49,14 @@ export default function CasesPage() {
         if (!cancelled) {
           setAllCases(mockCases);
           setApiFailed(true);
+          setDisplayLimit(6);
           setLoading(false);
         }
       } catch {
         if (!cancelled) {
           setAllCases(mockCases);
           setApiFailed(true);
+          setDisplayLimit(6);
           setLoading(false);
         }
       }
@@ -90,6 +94,34 @@ export default function CasesPage() {
     }
     return result;
   }, [allCases, searchQuery, selectedCategory]);
+
+  const sortedCases = useMemo(() => {
+    const priorityKeywords = [
+      "mRNA", "CAR-T", "CAR", "免疫治疗", "CRISPR", "基因编辑",
+      "蛋白工程", "PET", "PETase", "合成生物学", "代谢工程",
+      "抗体药物", "PD-1",
+    ];
+    const scored = filteredCases.map((c) => {
+      let score = 0;
+      const text = `${c.title} ${c.subtitle} ${c.industryDirection}`.toLowerCase();
+      for (const kw of priorityKeywords) {
+        if (text.includes(kw.toLowerCase())) score += 1;
+      }
+      return { case: c, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return scored.map((s) => s.case);
+  }, [filteredCases]);
+
+  const isSearching = searchQuery.trim() !== "" || selectedCategory !== "";
+  const displayedCases = isSearching ? sortedCases : sortedCases.slice(0, displayLimit);
+  const hasMore = !isSearching && displayLimit < sortedCases.length;
+
+  useEffect(() => {
+    if (searchQuery.trim() !== "" || selectedCategory !== "") {
+      setDisplayLimit(sortedCases.length);
+    }
+  }, [searchQuery, selectedCategory, sortedCases.length]);
 
   const handleAskQuery = async (query: string) => {
     return getIndustryAnswer(query);
@@ -196,17 +228,17 @@ export default function CasesPage() {
               {apiFailed && (
                 <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-xl bg-amber-50/80 border border-amber-200/60 text-xs text-amber-700 font-body">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>后端服务暂不可用，当前显示本地示例案例（{allCases.length} 个）。完整案例库共 23 个产业案例。</span>
+                  <span>案例数据暂时加载不完整，当前显示可用案例（{allCases.length} 个）。案例库共收录 23 个产业案例。</span>
                 </div>
               )}
 
               <p className="text-sm text-brand-muted font-body mb-1 max-w-2xl">
-                每张卡片聚焦一个真实产业问题，内置知识迁移路径与训练能力。点击详情查看深度内容，或进入科研实战探索。
+                精选案例优先展示，可通过搜索和筛选查看完整案例库。
               </p>
 
               <div className="flex items-center justify-between mb-5">
                 <p className="text-xs text-brand-faint font-body">
-                  共 <span className="font-semibold text-brand-ink">{filteredCases.length}</span> 个产业案例{selectedCategory && ` · ${selectedCategory}`}{searchQuery && ` · 搜索"${searchQuery}"`}
+                  共 <span className="font-semibold text-brand-ink">{sortedCases.length}</span> 个产业案例{selectedCategory && ` · ${selectedCategory}`}{searchQuery && ` · 搜索"${searchQuery}"`}{!isSearching && displayedCases.length < sortedCases.length && ` · 显示 ${displayedCases.length} 个精选`}
                 </p>
               </div>
 
@@ -254,15 +286,28 @@ export default function CasesPage() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {filteredCases.map((c) => (
-                    <IndustryCaseCard
-                      key={c.id}
-                      caseData={c}
-                      onViewDetail={() => setSelectedCase(c)}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {displayedCases.map((c) => (
+                      <IndustryCaseCard
+                        key={c.id}
+                        caseData={c}
+                        onViewDetail={() => setSelectedCase(c)}
+                      />
+                    ))}
+                  </div>
+
+                  {hasMore && (
+                    <div className="mt-6 text-center">
+                      <button
+                        onClick={() => setDisplayLimit((prev) => prev + 6)}
+                        className="h-10 px-6 rounded-xl bg-white/60 border border-black/10 text-sm font-semibold text-accent-electric hover:bg-white hover:border-accent-electric/20 transition-all cursor-pointer"
+                      >
+                        查看更多案例
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
@@ -276,7 +321,7 @@ export default function CasesPage() {
             </div>
             <h2 className="section-heading mb-2">覆盖产业方向</h2>
             <p className="text-sm text-brand-muted font-body mb-8 max-w-2xl">
-              当前案例库覆盖生命科学领域 {categories.length} 个产业方向，覆盖 {allCases.length} 个真实产业案例。
+              当前案例库覆盖生命科学领域 {categories.length} 个产业方向，精选案例优先展示，可通过搜索和筛选查看完整案例库。
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">

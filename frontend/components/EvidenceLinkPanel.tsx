@@ -28,15 +28,6 @@ interface EvidenceLinkPanelProps {
 
 const MAX_SELECT = 3;
 
-function providerLabel(provider?: string) {
-  switch (provider) {
-    case "semantic_scholar": return "Semantic Scholar";
-    case "crossref": return "Crossref";
-    case "pubmed": return "NCBI PubMed";
-    default: return provider || "未知来源";
-  }
-}
-
 export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanelProps) {
   const [panelState, setPanelState] = useState<PanelState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -128,19 +119,22 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
   const selectedCount = selectedIds.size;
 
   const renderIdle = () => (
-    <button
-      onClick={handleSearch}
-      className="h-9 px-4 rounded-lg bg-white/60 border border-black/10 text-xs font-semibold text-accent-electric hover:bg-white hover:border-accent-electric/20 transition-all cursor-pointer flex items-center gap-1.5"
-    >
-      <Search className="w-3.5 h-3.5" />
-      查找相关文献
-    </button>
+    <div>
+      <p className="text-[11px] text-brand-muted mb-2">根据当前任务关键词检索参考文献，帮助学生建立研究依据。</p>
+      <button
+        onClick={handleSearch}
+        className="h-9 px-4 rounded-lg bg-white/60 border border-black/10 text-xs font-semibold text-accent-electric hover:bg-white hover:border-accent-electric/20 transition-all cursor-pointer flex items-center gap-1.5"
+      >
+        <Search className="w-3.5 h-3.5" />
+        查找相关文献
+      </button>
+    </div>
   );
 
   const renderLoading = () => (
     <div className="flex items-center gap-2 py-2">
       <Loader2 className="w-4 h-4 animate-spin text-accent-electric" />
-      <span className="text-xs text-brand-muted">正在检索 evidence 文献...</span>
+      <span className="text-xs text-brand-muted">正在检索文献...</span>
     </div>
   );
 
@@ -148,7 +142,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
     <div className="rounded-lg bg-red-50/40 border border-red-100/50 p-3">
       <div className="flex items-center gap-1.5 mb-1">
         <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-        <p className="text-xs font-semibold text-red-700">evidence 检索失败</p>
+        <p className="text-xs font-semibold text-red-700">文献检索失败</p>
       </div>
       <p className="text-[11px] text-red-600">{errorMsg}</p>
       <button
@@ -162,12 +156,8 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
 
   const renderNotConfigured = () => (
     <div className="rounded-lg bg-amber-50/40 border border-amber-100/50 p-3">
-      <div className="flex items-center gap-1.5 mb-1">
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-        <p className="text-xs font-semibold text-brand-ink">evidence 文献检索未配置</p>
-      </div>
       <p className="text-[11px] text-brand-muted leading-relaxed">
-        {searchResult?.message || "evidence 文献检索 API 尚未配置，当前仅提供检索入口。"}
+        暂未检索到相关文献，请调整关键词后重试。
       </p>
       <button
         onClick={handleSearch}
@@ -181,7 +171,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
   const renderEmpty = () => (
     <div className="py-4 text-center">
       <BookOpen className="w-6 h-6 text-brand-faint/30 mx-auto mb-1.5" />
-      <p className="text-xs text-brand-muted">未检索到 evidence 文献结果</p>
+      <p className="text-xs text-brand-muted">暂未检索到相关文献，请调整关键词后重试。</p>
       <button
         onClick={handleSearch}
         className="mt-2 text-[11px] text-accent-electric hover:underline cursor-pointer"
@@ -238,9 +228,6 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
                     <p>来源：{item.venue || "未提供来源"}</p>
                     <p>DOI：{item.doi || "未提供 DOI"}</p>
                     <p>PMID：{item.pmid || "未提供 PMID"}</p>
-                    {item.source_provider && (
-                      <p>数据来源：{providerLabel(item.source_provider)}</p>
-                    )}
                     {item.url && (
                       <a
                         href={item.url}
@@ -270,7 +257,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
           className="h-8 px-4 rounded-lg bg-gradient-to-r from-accent-electric to-accent-cyan text-xs font-semibold text-white hover:opacity-90 transition-all disabled:opacity-30 cursor-pointer flex items-center gap-1.5"
         >
           <FileText className="w-3.5 h-3.5" />
-          生成 evidence note ({selectedCount})
+          生成文献支撑笔记 ({selectedCount})
         </button>
 
         <button
@@ -286,7 +273,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
   const renderNoteLoading = () => (
     <div className="flex items-center gap-2 py-2">
       <Loader2 className="w-4 h-4 animate-spin text-accent-electric" />
-      <span className="text-xs text-brand-muted">正在生成 evidence note...</span>
+      <span className="text-xs text-brand-muted">正在生成文献支撑笔记...</span>
     </div>
   );
 
@@ -296,7 +283,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
       <div className="space-y-2.5">
         <div className="rounded-lg bg-amber-50/50 border border-amber-100/50 p-2.5">
           <p className="text-[10px] text-brand-muted leading-relaxed">
-            当前 evidence note 仅基于文献元数据，不代表全文解析、证据强度判断或最终科研结论。
+            当前文献支撑笔记仅基于文献元数据，不代表全文解析、证据强度判断或最终科研结论。
           </p>
         </div>
 
@@ -304,11 +291,11 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
           <div className="flex items-center gap-1.5 mb-2">
             <CheckSquare className="w-3.5 h-3.5 text-accent-electric" />
             <span className="text-xs font-semibold text-brand-ink">
-              Evidence Note · 基于 {noteResult.selected_count} 篇文献
+              文献支撑笔记 · 基于 {noteResult.selected_count} 篇文献
             </span>
           </div>
           <div className="text-xs text-brand-muted leading-relaxed whitespace-pre-wrap">
-            {noteResult.note || "暂无 evidence note 内容"}
+            {noteResult.note || "暂无文献支撑笔记内容"}
           </div>
         </div>
 
@@ -327,7 +314,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
       <div className="flex items-center gap-1.5 mb-2">
         <BookOpen className="w-3.5 h-3.5 text-accent-electric" />
         <span className="text-[11px] font-bold text-brand-ink uppercase tracking-wider">
-          文献证据链接
+          文献支撑
         </span>
       </div>
 
