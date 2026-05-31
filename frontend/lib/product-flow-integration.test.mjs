@@ -17,3 +17,11 @@ test("seminar source screen exposes file upload and knowledge-base import", () =
   assert.match(seminar, /知识库导入|从知识库导入/);
   assert.match(seminar, /paper-workbench|knowledgePapers|getSelectedPapers/);
 });
+
+test("protein explorer explains empty search results instead of failing silently", () => {
+  const proteinPage = readFileSync("frontend/app/tools/protein/page.tsx", "utf8");
+
+  assert.match(proteinPage, /未找到匹配结构/);
+  assert.match(proteinPage, /UniProt\/RCSB\/AlphaFold/);
+  assert.match(proteinPage, /英文全名、基因名、PDB ID 或 UniProt ID/);
+});
