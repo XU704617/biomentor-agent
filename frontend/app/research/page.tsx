@@ -219,6 +219,18 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
     }
   }, [query]);
 
+  const isNotConfigured = result !== null && result.source === "not_configured";
+  const isEmpty = result !== null && result.source !== "not_configured" && result.results.length === 0;
+  const hasResults = result !== null && result.source !== "not_configured" && result.results.length > 0;
+
+  const providerLabel = (provider?: string) => {
+    switch (provider) {
+      case "semantic_scholar": return "Semantic Scholar";
+      case "crossref": return "Crossref";
+      default: return provider || "未知来源";
+    }
+  };
+
   return (
     <section className="glass-card rounded-2xl p-6 md:p-8">
       <div className="flex items-center gap-2.5 mb-4">
@@ -263,7 +275,7 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
         </div>
       )}
 
-      {!loading && searched && error && (
+      {!loading && error && (
         <div className="rounded-xl bg-red-50/40 border border-red-100/50 p-4">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-red-500" />
@@ -273,54 +285,112 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
         </div>
       )}
 
-      {!loading && searched && !error && result && result.source === "not_configured" && (
+      {!loading && !error && searched && isNotConfigured && (
         <div className="rounded-xl bg-amber-50/40 border border-amber-100/50 p-4">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
             <p className="text-sm font-semibold text-brand-ink">文献检索未配置</p>
           </div>
           <p className="text-xs text-brand-muted leading-relaxed">
-            真实文献检索 API 尚未配置，当前仅提供检索入口和关键词建议。
+            {result?.message || "真实文献检索 API 尚未配置，当前仅提供检索入口和关键词建议。"}
           </p>
         </div>
       )}
 
-      {!loading && searched && !error && result && result.source !== "not_configured" && (
-        <div>
-          {result.results.length === 0 ? (
-            <div className="py-8 text-center">
-              <BookOpen className="w-8 h-8 text-brand-faint/30 mx-auto mb-2" />
-              <p className="text-sm text-brand-muted font-body">未找到相关文献</p>
-              <p className="text-xs text-brand-faint mt-1">尝试使用不同的关键词检索</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {result.results.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/40 border border-black/5 hover:border-accent-electric/20 transition-all"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-brand-ink truncate">{item.title}</p>
-                    <p className="text-xs text-brand-muted">
-                      {item.source}
-                      {item.url && (
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-2 text-accent-electric hover:underline"
-                        >
-                          查看原文
-                        </a>
-                      )}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-brand-faint shrink-0 ml-2" />
+      {!loading && !error && searched && isEmpty && (
+        <div className="py-8 text-center">
+          <BookOpen className="w-8 h-8 text-brand-faint/30 mx-auto mb-2" />
+          <p className="text-sm text-brand-muted font-body">未检索到文献结果</p>
+          <p className="text-xs text-brand-faint mt-1">尝试使用不同的关键词检索</p>
+        </div>
+      )}
+
+      {!loading && !error && searched && hasResults && (
+        <div className="space-y-3">
+          {result!.results.map((item, i) => (
+            <div
+              key={item.id || item.raw_id || i}
+              className="rounded-xl bg-white/40 border border-black/5 hover:border-accent-electric/20 transition-all p-4"
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <h4 className="text-sm font-semibold text-brand-ink leading-snug">
+                  {item.title || "未提供标题"}
+                </h4>
+                {item.url && (
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-accent-electric hover:underline shrink-0 mt-0.5"
+                  >
+                    查看原文
+                  </a>
+                )}
+              </div>
+
+              <div className="text-xs text-brand-muted space-y-0.5">
+                <p>
+                  <span className="font-medium text-brand-ink">作者：</span>
+                  {Array.isArray(item.authors) && item.authors.length > 0
+                    ? item.authors.join("; ")
+                    : "未提供作者"}
+                </p>
+                <p>
+                  <span className="font-medium text-brand-ink">年份：</span>
+                  {item.year != null ? item.year : "未提供年份"}
+                </p>
+                <p>
+                  <span className="font-medium text-brand-ink">来源：</span>
+                  {item.venue || "未提供来源"}
+                </p>
+                {item.doi && (
+                  <p>
+                    <span className="font-medium text-brand-ink">DOI：</span>
+                    <a
+                      href={`https://doi.org/${item.doi}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent-electric hover:underline"
+                    >
+                      {item.doi}
+                    </a>
+                  </p>
+                )}
+                {!item.doi && (
+                  <p>
+                    <span className="font-medium text-brand-ink">DOI：</span>
+                    未提供 DOI
+                  </p>
+                )}
+                {item.pmid && (
+                  <p>
+                    <span className="font-medium text-brand-ink">PMID：</span>
+                    {item.pmid}
+                  </p>
+                )}
+                {!item.pmid && (
+                  <p>
+                    <span className="font-medium text-brand-ink">PMID：</span>
+                    未提供 PMID
+                  </p>
+                )}
+                {item.source_provider && (
+                  <p>
+                    <span className="font-medium text-brand-ink">数据来源：</span>
+                    {providerLabel(item.source_provider)}
+                  </p>
+                )}
+              </div>
+
+              {item.abstract && (
+                <div className="mt-2 pt-2 border-t border-black/5">
+                  <p className="text-xs text-brand-muted leading-relaxed line-clamp-3">
+                    {item.abstract}
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          ))}
         </div>
       )}
     </section>

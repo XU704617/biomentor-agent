@@ -88,9 +88,19 @@ curl "http://localhost:9090/api/industry/cases?page_size=100"
 
 > **注意**：当前学术研讨页面与科研任务之间尚未形成自动化的深度闭环。
 
-### 第 7 步：展示文献检索接口预留
+### 第 7 步：展示文献检索入口
 
-通过 API 工具（如浏览器开发者工具、Postman 或 curl）调用文献检索接口：
+#### 7.1 前端入口（/research 页面）
+
+访问 `/research` 页面（如 `http://localhost:3001/research?caseId=case-001`），页面上展示 **AI 文献检索入口**。
+
+- 页面包含文献检索区域，可输入关键词进行文献搜索。
+- **默认未配置真实 provider** 时，检索区域显示 `not_configured` 状态。
+- 这是诚实的设计：不伪造任何文献数据。
+
+#### 7.2 API 接口验证
+
+通过 API 工具调用文献检索接口：
 
 ```bash
 curl "http://localhost:9090/api/literature/search?q=mRNA&limit=5"
@@ -100,17 +110,32 @@ curl "http://localhost:9090/api/literature/search?q=mRNA&limit=5"
 
 ```json
 {
+  "query": "mRNA",
+  "source": "not_configured",
   "results": [],
-  "source": "not_configured"
+  "message": null,
+  "error": null
 }
 ```
 
 向演示观众说明：
 
-- 这是一个**预留接口**（placeholder）。
-- `results` 为空是因为尚未接入真实文献数据库（如 PubMed）。
+- 这是文献检索接口的预留入口。
 - `source: "not_configured"` 表示当前未配置任何文献数据源。
-- 这是**诚实的设计**：不伪造 DOI、PMID 或文献标题。
+- `results` 为空是因为默认不发起外部 API 调用。
+- 支持通过 `LITERATURE_PROVIDER` 环境变量配置 Semantic Scholar 或 Crossref。
+- **不伪造** DOI、PMID、文献标题、作者、期刊、年份。
+
+#### 7.3 配置 provider 后的演示（可选）
+
+如果已配置 `LITERATURE_PROVIDER=semantic_scholar` 或 `crossref`：
+
+1. 在 `/research` 页面输入关键词搜索。
+2. 展示返回的真实文献元数据（标题、作者、年份、期刊等）。
+3. **缺失字段**显示为"未提供"。
+4. 强调：这是文献检索入口，**不是 evidence grounding**，不做 AI 证据总结。
+
+> 详细信息参见 [文献检索合同文档](./LITERATURE_SEARCH_CONTRACT.md)。
 
 ---
 
@@ -120,10 +145,12 @@ curl "http://localhost:9090/api/literature/search?q=mRNA&limit=5"
 
 | 问题 | 说明 |
 |------|------|
-| 能查真实文献吗？ | 不能。文献接口是 placeholder，尚未接入 PubMed 等数据库。 |
+| 能查真实文献吗？ | 支持可配置 provider（Semantic Scholar、Crossref），但默认 not_configured。文献检索是入口能力，不是 evidence grounding。 |
 | 科研任务是真实实验方案吗？ | 不是。是训练引导内容，不能替代导师建议。 |
 | 能上传实验数据吗？ | 不能。尚无文件上传和数据分析功能。 |
 | 能导出报告吗？ | 不能。报告导出功能尚未实现。 |
+| 有 PubMed 吗？ | 尚未接入 PubMed 作为 provider 选项。 |
+| 能做 AI 证据总结吗？ | 不能。文献检索入口不做 AI 证据总结或 evidence grounding。 |
 
 > **诚实演示原则**：展示当前已完成的功能，同时坦诚说明未完成的功能和能力边界。不夸大、不虚假宣传。
 
@@ -133,4 +160,5 @@ curl "http://localhost:9090/api/literature/search?q=mRNA&limit=5"
 
 - [本地 Demo 启动指南](./LOCAL_DEMO_STARTUP.md)
 - [当前项目状态](./CURRENT_PROJECT_STATUS.md)
+- [文献检索合同文档](./LITERATURE_SEARCH_CONTRACT.md)
 - [产业案例模块状态](./INDUSTRY_CASES_MODULE_STATUS.md)
