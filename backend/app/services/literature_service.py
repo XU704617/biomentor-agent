@@ -1,37 +1,71 @@
 """
-Literature search service — placeholder for real external API integration.
+Literature search service with pluggable provider adapter architecture.
 
-When no external API (PubMed / Semantic Scholar / Crossref) is configured,
-returns an empty result set with a clear status message.
+Supported providers: not_configured, semantic_scholar, crossref.
 No fake DOIs, PMIDs, or paper titles are ever generated.
 """
 
 from __future__ import annotations
 
+from app.config import get_settings
+from app.services.literature_providers import get_provider, BaseLiteratureProvider
+
+VALID_PROVIDERS = {"not_configured", "semantic_scholar", "crossref"}
+
 
 class LiteratureSearchService:
 
-    def __init__(self, config: dict | None = None):
-        self._config = config or {}
-        self._api_key = self._config.get("api_key", "")
-        self._source = self._config.get("source", "not_configured")
+    def __init__(self):
+        settings = get_settings()
+        provider_name = settings.LITERATURE_PROVIDER.strip().lower()
+        self._provider_name = provider_name
+        self._provider: BaseLiteratureProvider | None = get_provider(
+            provider_name,
+            api_key=settings.LITERATURE_SEMANTIC_SCHOLAR_API_KEY,
+        )
 
-    @property
-    def configured(self) -> bool:
-        return bool(self._api_key)
-
-    def search(self, query: str, limit: int = 5) -> dict:
-        if not self.configured:
+    async def search(self, query: str, limit: int = 5) -> dict:
+        if self._provider_name == "not_configured":
             return {
                 "query": query,
                 "results": [],
                 "source": "not_configured",
-                "message": "真实文献检索 API 尚未配置，当前仅提供检索入口和关键词建议。",
+                "message": (
+                    "真实文献检索 API 尚未配置，当前仅提供检索入口"
+                    "和关键词建议。"
+                ),
+                "error": None,
             }
 
-        return {
-            "query": query,
-            "results": [],
-            "source": self._source,
-            "message": "文献检索 API 已配置但尚未实现具体检索逻辑。",
-        }
+        if self._provider_name not in VALID_PROVIDERS:
+            return {
+                "query": query,
+                "results": [],
+                "source": self._provider_name,
+                "message": None,
+                "error": (
+                    f"未知的文献检索 provider: '{self._provider_name}'。"
+                    f"支持: {', '.join(sorted(VALID_PROVIDERS))}"
+                ),
+            }
+
+        try:
+            results = await self._provider.search(query=query, limit=limit)
+            return {
+                "query": query,
+                "results": results,
+                "source": self._provider.get_source_name(),
+                "message": None,
+                "error": None,
+            }
+        except Exception as exc:
+            return {
+                "query": query,
+                "results": [],
+                "source": self._provider.get_source_name(),
+                "message": None,
+                "error": (
+                    f"文献检索 provider '{self._provider.get_source_name()}' "
+                    f"暂时不可用: {exc}"
+                ),
+            }

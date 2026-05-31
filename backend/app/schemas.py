@@ -691,12 +691,22 @@ class ResearchTaskGenerateResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class LiteratureSearchItem(BaseModel):
-    source: str = ""
-    source_id: str = ""
+    id: str | None = None
+    title: str | None = None
+    authors: list[str] = []
+    year: int | None = None
+    venue: str | None = None
+    doi: str | None = None
+    pmid: str | None = None
+    url: str | None = None
+    abstract: str | None = None
+    source_provider: str = ""
+    raw_id: str | None = None
 
 
 class LiteratureSearchResponse(BaseModel):
     query: str
     results: list[LiteratureSearchItem] = []
     source: str = "not_configured"
-    message: str = ""
+    message: str | None = None
+    error: str | None = None
