@@ -228,9 +228,14 @@ export default function CasesPage() {
           ) : (
             <>
               {apiFailed && (
-                <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-xl bg-amber-50/80 border border-amber-200/60 text-xs text-amber-700 font-body">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>案例数据暂时加载不完整，当前显示可用案例（{allCases.length} 个）。案例库共收录 23 个产业案例。</span>
+                <div className="flex items-start gap-2 mb-4 px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200/60 text-xs text-amber-700 font-body">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p>当前展示可用案例（{allCases.length} 个），更多案例需连接在线服务后查看。</p>
+                    <p className="text-amber-600/80">
+                      如需查看完整案例库（共 23 个），请确认部署环境已正确配置数据服务连接。
+                    </p>
+                  </div>
                 </div>
               )}
 
