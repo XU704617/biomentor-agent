@@ -36,6 +36,10 @@ import {
   type ResearchTaskGenerateResponse,
   type ResearchTaskItem,
 } from "@/lib/researchApi";
+import {
+  searchLiterature,
+  type LiteratureSearchResponse,
+} from "@/lib/literatureApi";
 
 interface Message { role: "user" | "ai"; content: string; }
 
@@ -178,6 +182,148 @@ function TaskCard({ task, index, defaultExpanded }: { task: ResearchTaskItem; in
         </div>
       )}
     </div>
+  );
+}
+
+function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
+  const [query, setQuery] = useState(defaultQuery);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<LiteratureSearchResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
+  const searchingRef = useRef(false);
+
+  useEffect(() => {
+    setQuery(defaultQuery);
+  }, [defaultQuery]);
+
+  const handleSearch = useCallback(async () => {
+    const q = query.trim();
+    if (!q || searchingRef.current) return;
+    searchingRef.current = true;
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setSearched(false);
+
+    try {
+      const data = await searchLiterature(q, 5);
+      setResult(data);
+      setSearched(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "文献检索失败");
+      setSearched(true);
+    } finally {
+      setLoading(false);
+      searchingRef.current = false;
+    }
+  }, [query]);
+
+  return (
+    <section className="glass-card rounded-2xl p-6 md:p-8">
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-amber to-accent-electric flex items-center justify-center">
+          <BookOpen className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold text-base text-brand-ink">AI 文献检索</h2>
+          <p className="text-xs text-brand-muted font-body">基于当前研究主题检索相关文献</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSearch();
+          }}
+          placeholder="输入检索关键词，例如：mRNA"
+          className="flex-1 h-11 px-4 rounded-xl bg-white/60 border border-black/5 text-sm font-body text-brand-ink placeholder:text-brand-muted/50 outline-none focus:border-accent-electric/30 focus:bg-white/80 transition-all duration-200"
+        />
+        <button
+          onClick={handleSearch}
+          disabled={loading || !query.trim()}
+          className="h-11 px-5 rounded-xl bg-gradient-to-r from-accent-electric to-accent-cyan text-sm font-semibold text-white hover:opacity-90 transition-all disabled:opacity-40 cursor-pointer flex items-center gap-2 justify-center shrink-0"
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Search className="w-4 h-4" />
+          )}
+          {loading ? "检索中..." : "检索文献"}
+        </button>
+      </div>
+
+      {loading && (
+        <div className="py-8 text-center">
+          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-accent-electric" />
+          <p className="text-xs text-brand-muted font-body">正在检索文献...</p>
+        </div>
+      )}
+
+      {!loading && searched && error && (
+        <div className="rounded-xl bg-red-50/40 border border-red-100/50 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <p className="text-sm font-semibold text-red-700">检索失败</p>
+          </div>
+          <p className="text-xs text-red-600">{error}</p>
+        </div>
+      )}
+
+      {!loading && searched && !error && result && result.source === "not_configured" && (
+        <div className="rounded-xl bg-amber-50/40 border border-amber-100/50 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <p className="text-sm font-semibold text-brand-ink">文献检索未配置</p>
+          </div>
+          <p className="text-xs text-brand-muted leading-relaxed">
+            真实文献检索 API 尚未配置，当前仅提供检索入口和关键词建议。
+          </p>
+        </div>
+      )}
+
+      {!loading && searched && !error && result && result.source !== "not_configured" && (
+        <div>
+          {result.results.length === 0 ? (
+            <div className="py-8 text-center">
+              <BookOpen className="w-8 h-8 text-brand-faint/30 mx-auto mb-2" />
+              <p className="text-sm text-brand-muted font-body">未找到相关文献</p>
+              <p className="text-xs text-brand-faint mt-1">尝试使用不同的关键词检索</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {result.results.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/40 border border-black/5 hover:border-accent-electric/20 transition-all"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-brand-ink truncate">{item.title}</p>
+                    <p className="text-xs text-brand-muted">
+                      {item.source}
+                      {item.url && (
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-accent-electric hover:underline"
+                        >
+                          查看原文
+                        </a>
+                      )}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-brand-faint shrink-0 ml-2" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -474,6 +620,8 @@ function DefaultResearchPage() {
                   </div>
                 </div>
               </section>
+
+              <LiteratureSearchSection defaultQuery={result.research_question || topicInput} />
 
               {/* 底部操作 */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
@@ -927,6 +1075,8 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
               </section>
             </>
           )}
+
+          <LiteratureSearchSection defaultQuery={caseData.coreProblem || caseData.title} />
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
             <Link
