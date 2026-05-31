@@ -48,6 +48,19 @@ class EvidenceService:
 
         selected_count = len(selected_literature)
 
+        if selected_count == 0:
+            return {
+                "task_title": task_title,
+                "selected_count": 0,
+                "evidence_note": {
+                    "summary": "",
+                    "references": [],
+                    "limitations": ["请先选择至少 1 篇参考文献。"],
+                },
+                "message": "请先选择至少 1 篇参考文献。",
+                "error": None,
+            }
+
         summary = (
             f"已选择 {selected_count} 篇文献作为该科研训练任务的参考元数据。"
             f"当前 note 仅整理文献来源，不自动判断结论有效性。"

@@ -15,7 +15,6 @@ type PanelState =
   | "idle"
   | "loading"
   | "error"
-  | "not_configured"
   | "empty"
   | "results"
   | "note_loading"
@@ -60,9 +59,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
 
       setSearchResult(data);
 
-      if (data.source === "not_configured") {
-        setPanelState("not_configured");
-      } else if (!data.results || data.results.length === 0) {
+      if (!data.results || data.results.length === 0) {
         setPanelState("empty");
       } else {
         setPanelState("results");
@@ -93,7 +90,11 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
     const selected = searchResult.results.filter((item, idx) =>
       selectedIds.has(getPaperKey(item, idx))
     );
-    if (selected.length === 0) return;
+    if (selected.length === 0) {
+      setErrorMsg("请先选择至少 1 篇参考文献。");
+      setPanelState("error");
+      return;
+    }
 
     noteGeneratingRef.current = true;
     setPanelState("note_loading");
@@ -109,7 +110,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
       setNoteResult(data);
       setPanelState("note_ready");
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "evidence note 生成失败");
+      setErrorMsg(err instanceof Error ? err.message : "文献笔记生成失败");
       setPanelState("error");
     } finally {
       noteGeneratingRef.current = false;
@@ -154,19 +155,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
     </div>
   );
 
-  const renderNotConfigured = () => (
-    <div className="rounded-lg bg-amber-50/40 border border-amber-100/50 p-3">
-      <p className="text-[11px] text-brand-muted leading-relaxed">
-        暂未检索到相关文献，请调整关键词后重试。
-      </p>
-      <button
-        onClick={handleSearch}
-        className="mt-2 text-[11px] text-accent-electric hover:underline cursor-pointer"
-      >
-        重新检索
-      </button>
-    </div>
-  );
+  const renderNotConfigured = () => null;
 
   const renderEmpty = () => (
     <div className="py-4 text-center">
@@ -278,7 +267,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
   );
 
   const renderNoteReady = () => {
-    if (!noteResult) return null;
+    if (!noteResult || noteResult.selected_count === 0) return null;
     return (
       <div className="space-y-2.5">
         <div className="rounded-lg bg-amber-50/50 border border-amber-100/50 p-2.5">
@@ -291,11 +280,11 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
           <div className="flex items-center gap-1.5 mb-2">
             <CheckSquare className="w-3.5 h-3.5 text-accent-electric" />
             <span className="text-xs font-semibold text-brand-ink">
-              文献支撑笔记 · 基于 {noteResult.selected_count} 篇文献
+              文献支撑笔记 · 基于 {noteResult.selected_count} 篇参考文献
             </span>
           </div>
           <div className="text-xs text-brand-muted leading-relaxed whitespace-pre-wrap">
-            {noteResult.note || "暂无文献支撑笔记内容"}
+            {noteResult.note || "选择参考文献后，可生成文献支撑笔记。"}
           </div>
         </div>
 
@@ -321,7 +310,6 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
       {panelState === "idle" && renderIdle()}
       {panelState === "loading" && renderLoading()}
       {panelState === "error" && renderError()}
-      {panelState === "not_configured" && renderNotConfigured()}
       {panelState === "empty" && renderEmpty()}
       {panelState === "results" && renderResults()}
       {panelState === "note_loading" && renderNoteLoading()}
