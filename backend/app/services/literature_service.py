@@ -10,7 +10,7 @@ from __future__ import annotations
 from app.config import get_settings
 from app.services.literature_providers import get_provider, BaseLiteratureProvider
 
-VALID_PROVIDERS = {"not_configured", "semantic_scholar", "crossref"}
+VALID_PROVIDERS = {"not_configured", "semantic_scholar", "crossref", "pubmed"}
 
 
 class LiteratureSearchService:
@@ -22,6 +22,9 @@ class LiteratureSearchService:
         self._provider: BaseLiteratureProvider | None = get_provider(
             provider_name,
             api_key=settings.LITERATURE_SEMANTIC_SCHOLAR_API_KEY,
+            ncbi_api_key=settings.LITERATURE_NCBI_API_KEY,
+            ncbi_tool=settings.LITERATURE_NCBI_TOOL,
+            ncbi_email=settings.LITERATURE_NCBI_EMAIL,
         )
 
     async def search(self, query: str, limit: int = 5) -> dict:

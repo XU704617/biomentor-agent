@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     # ---- Literature ----
     LITERATURE_PROVIDER: str = "not_configured"
     LITERATURE_SEMANTIC_SCHOLAR_API_KEY: str = ""
+    LITERATURE_NCBI_API_KEY: str = ""
+    LITERATURE_NCBI_TOOL: str = "biomentor-agent"
+    LITERATURE_NCBI_EMAIL: str = ""
 
     # ---- Demo / Seed ----
     SEED_DEMO_DATA: bool = True

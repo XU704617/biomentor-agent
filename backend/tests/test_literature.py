@@ -396,3 +396,301 @@ class TestProviderErrorPropagation:
                 assert result["results"] == []
                 assert result["source"] == "semantic_scholar"
                 assert "暂时不可用" in result["error"]
+
+
+class TestPubMedProvider:
+
+    def test_pubmed_provider_is_registered(self):
+        from app.services.literature_providers import get_provider
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = get_provider("pubmed", ncbi_api_key="test-key")
+        assert provider is not None
+        assert isinstance(provider, PubMedProvider)
+
+    def test_pubmed_provider_source_name(self):
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = PubMedProvider()
+        assert provider.get_source_name() == "pubmed"
+
+
+class TestPubMedMapping:
+
+    def test_maps_pubmed_paper_correctly(self):
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = PubMedProvider()
+
+        async def run():
+            with patch.object(provider, "_esearch", return_value=["12345678"]):
+                with patch.object(provider, "_esummary", return_value=[{
+                    "uid": "12345678",
+                    "title": "mRNA Vaccine Design",
+                    "authors": [
+                        {"name": "Smith J", "authtype": "Author"},
+                        {"name": "Doe K", "authtype": "Author"},
+                    ],
+                    "pubdate": "2021 Jan 15",
+                    "epubdate": "2021 Jan 10",
+                    "fulljournalname": "Nature Biotechnology",
+                    "source": "Nat Biotechnol",
+                    "articleids": [
+                        {"idtype": "pubmed", "value": "12345678"},
+                        {"idtype": "doi", "value": "10.1234/test.doi"},
+                        {"idtype": "pmc", "value": "PMC12345678"},
+                    ],
+                }]):
+                    return await provider.search("mRNA", limit=5)
+
+        import asyncio
+        results = asyncio.get_event_loop().run_until_complete(run())
+
+        assert len(results) == 1
+        r = results[0]
+        assert r["id"] == "12345678"
+        assert r["title"] == "mRNA Vaccine Design"
+        assert r["authors"] == ["Smith J", "Doe K"]
+        assert r["year"] == 2021
+        assert r["venue"] == "Nature Biotechnology"
+        assert r["doi"] == "10.1234/test.doi"
+        assert r["pmid"] == "12345678"
+        assert r["url"] == "https://pubmed.ncbi.nlm.nih.gov/12345678/"
+        assert r["abstract"] is None
+        assert r["source_provider"] == "pubmed"
+        assert r["raw_id"] == "12345678"
+
+    def test_doi_extracted_from_articleids(self):
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = PubMedProvider()
+
+        esummary_data = {
+            "uid": "99999999",
+            "title": "DOI Test",
+            "authors": [],
+            "pubdate": "2022 Jun",
+            "epubdate": "",
+            "fulljournalname": "",
+            "articleids": [
+                {"idtype": "pubmed", "value": "99999999"},
+                {"idtype": "doi", "value": "10.9999/doi.test"},
+                {"idtype": "pmc", "value": "PMC99999999"},
+            ],
+        }
+
+        async def run():
+            with patch.object(provider, "_esearch", return_value=["99999999"]):
+                with patch.object(provider, "_esummary", return_value=[esummary_data]):
+                    return await provider.search("doi", limit=5)
+
+        import asyncio
+        results = asyncio.get_event_loop().run_until_complete(run())
+
+        assert results[0]["doi"] == "10.9999/doi.test"
+
+    def test_year_from_pubdate_fallback_to_epubdate(self):
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = PubMedProvider()
+
+        esummary_data = {
+            "uid": "11111111",
+            "title": "Year Test",
+            "authors": [],
+            "pubdate": "",
+            "epubdate": "2023 Mar 15",
+            "fulljournalname": "",
+            "articleids": [],
+        }
+
+        async def run():
+            with patch.object(provider, "_esearch", return_value=["11111111"]):
+                with patch.object(provider, "_esummary", return_value=[esummary_data]):
+                    return await provider.search("year", limit=5)
+
+        import asyncio
+        results = asyncio.get_event_loop().run_until_complete(run())
+
+        assert results[0]["year"] == 2023
+
+    def test_venue_from_source_when_fulljournalname_missing(self):
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = PubMedProvider()
+
+        esummary_data = {
+            "uid": "22222222",
+            "title": "Venue Test",
+            "authors": [],
+            "pubdate": "2024",
+            "source": "J Biol Chem",
+            "articleids": [],
+        }
+
+        async def run():
+            with patch.object(provider, "_esearch", return_value=["22222222"]):
+                with patch.object(provider, "_esummary", return_value=[esummary_data]):
+                    return await provider.search("venue", limit=5)
+
+        import asyncio
+        results = asyncio.get_event_loop().run_until_complete(run())
+
+        assert results[0]["venue"] == "J Biol Chem"
+
+    def test_missing_fields_return_null_or_empty(self):
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = PubMedProvider()
+
+        esummary_data = {
+            "uid": "33333333",
+            "title": None,
+            "authors": [],
+            "pubdate": None,
+            "epubdate": None,
+            "fulljournalname": None,
+            "source": None,
+            "articleids": None,
+        }
+
+        async def run():
+            with patch.object(provider, "_esearch", return_value=["33333333"]):
+                with patch.object(provider, "_esummary", return_value=[esummary_data]):
+                    return await provider.search("minimal", limit=5)
+
+        import asyncio
+        results = asyncio.get_event_loop().run_until_complete(run())
+
+        r = results[0]
+        assert r["title"] is None
+        assert r["authors"] == []
+        assert r["year"] is None
+        assert r["venue"] is None
+        assert r["doi"] is None
+        assert r["pmid"] == "33333333"
+        assert r["abstract"] is None
+
+    def test_esearch_empty_results(self):
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = PubMedProvider()
+
+        async def run():
+            with patch.object(provider, "_esearch", return_value=[]):
+                return await provider.search("noresults", limit=5)
+
+        import asyncio
+        results = asyncio.get_event_loop().run_until_complete(run())
+
+        assert results == []
+
+    def test_esearch_error_returns_controlled_error(self):
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = PubMedProvider()
+
+        async def run():
+            with patch.object(provider, "_esearch", side_effect=RuntimeError("PubMed ESearch timeout")):
+                return await provider.search("error", limit=5)
+
+        import asyncio
+        with pytest.raises(RuntimeError, match="PubMed ESearch timeout"):
+            asyncio.get_event_loop().run_until_complete(run())
+
+    def test_esummary_error_returns_controlled_error(self):
+        from app.services.literature_providers.pubmed import PubMedProvider
+
+        provider = PubMedProvider()
+
+        async def run():
+            with patch.object(provider, "_esearch", return_value=["44444444"]):
+                with patch.object(provider, "_esummary", side_effect=RuntimeError("PubMed ESummary failed")):
+                    return await provider.search("error", limit=5)
+
+        import asyncio
+        with pytest.raises(RuntimeError, match="PubMed ESummary failed"):
+            asyncio.get_event_loop().run_until_complete(run())
+
+
+class TestPubMedServiceIntegration:
+
+    def test_pubmed_provider_selected_by_env(self):
+        with patch(
+            "app.services.literature_service.get_settings"
+        ) as mock_settings:
+            mock_settings.return_value.LITERATURE_PROVIDER = "pubmed"
+            mock_settings.return_value.LITERATURE_SEMANTIC_SCHOLAR_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_API_KEY = "test-key"
+            mock_settings.return_value.LITERATURE_NCBI_TOOL = "biomentor-agent"
+            mock_settings.return_value.LITERATURE_NCBI_EMAIL = ""
+
+            from app.services.literature_service import LiteratureSearchService
+
+            async def run():
+                service = LiteratureSearchService()
+                return service
+
+            import asyncio
+            service = asyncio.get_event_loop().run_until_complete(run())
+
+            assert service._provider_name == "pubmed"
+            assert service._provider is not None
+            assert service._provider.get_source_name() == "pubmed"
+
+    def test_pubmed_service_returns_error_on_provider_exception(self):
+        with patch(
+            "app.services.literature_service.get_settings"
+        ) as mock_settings:
+            mock_settings.return_value.LITERATURE_PROVIDER = "pubmed"
+            mock_settings.return_value.LITERATURE_SEMANTIC_SCHOLAR_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_TOOL = "biomentor-agent"
+            mock_settings.return_value.LITERATURE_NCBI_EMAIL = ""
+
+            from app.services.literature_service import LiteratureSearchService
+            from app.services.literature_providers.pubmed import PubMedProvider
+
+            async def mock_search(self, query, limit):
+                raise RuntimeError("NCBI API timeout")
+
+            with patch.object(PubMedProvider, "search", mock_search):
+                async def run():
+                    service = LiteratureSearchService()
+                    return await service.search("test", limit=5)
+
+                import asyncio
+                result = asyncio.get_event_loop().run_until_complete(run())
+
+                assert result["results"] == []
+                assert result["source"] == "pubmed"
+                assert "暂时不可用" in result["error"]
+
+    def test_pubmed_empty_results_message(self):
+        with patch(
+            "app.services.literature_service.get_settings"
+        ) as mock_settings:
+            mock_settings.return_value.LITERATURE_PROVIDER = "pubmed"
+            mock_settings.return_value.LITERATURE_SEMANTIC_SCHOLAR_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_TOOL = "biomentor-agent"
+            mock_settings.return_value.LITERATURE_NCBI_EMAIL = ""
+
+            from app.services.literature_service import LiteratureSearchService
+            from app.services.literature_providers.pubmed import PubMedProvider
+
+            async def mock_search_empty(self, query, limit):
+                return []
+
+            with patch.object(PubMedProvider, "search", mock_search_empty):
+                async def run():
+                    service = LiteratureSearchService()
+                    return await service.search("mRNA", limit=5)
+
+                import asyncio
+                result = asyncio.get_event_loop().run_until_complete(run())
+
+                assert result["query"] == "mRNA"
+                assert result["source"] == "pubmed"
+                assert result["results"] == []
+                assert result["error"] is None
