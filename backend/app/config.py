@@ -60,6 +60,10 @@ class Settings(BaseSettings):
     QUESTION_AUTO_PUBLISH: bool = False
     GRADING_CONFIDENCE_THRESHOLD: float = 0.75
 
+    # ---- Literature ----
+    LITERATURE_PROVIDER: str = "not_configured"
+    LITERATURE_SEMANTIC_SCHOLAR_API_KEY: str = ""
+
     # ---- Demo / Seed ----
     SEED_DEMO_DATA: bool = True
 
