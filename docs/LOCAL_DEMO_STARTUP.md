@@ -35,6 +35,24 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 9090
 > 注意：运行前请先激活后端虚拟环境，或使用已安装项目依赖的 Python。若在 worktree 中没有本地 `.venv-conda`，可以复用主仓库后端虚拟环境中的 Python。
 ```
 
+### Literature Search Provider (Optional)
+
+By default, literature search is not configured. To enable a provider:
+
+```bash
+# Default: no literature provider
+export LITERATURE_PROVIDER=not_configured
+
+# Use Semantic Scholar (requires API key)
+export LITERATURE_PROVIDER=semantic_scholar
+export LITERATURE_SEMANTIC_SCHOLAR_API_KEY=your_api_key_here
+
+# Use Crossref (no API key required)
+export LITERATURE_PROVIDER=crossref
+```
+
+See [LITERATURE_SEARCH_CONTRACT.md](./LITERATURE_SEARCH_CONTRACT.md) for details on provider capabilities and boundaries.
+
 Expected log output on startup:
 
 ```

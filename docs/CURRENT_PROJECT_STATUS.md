@@ -45,13 +45,18 @@ BioMentor Agent 是一个面向生物科学教育的 AI 辅助学习与科研训
   - 后端 / 前端启动命令
   - 验证 URL 与 API 调用示例
 
-### 文献检索 API Placeholder
+### 文献检索能力
 
 - `GET /api/literature/search?q=mRNA&limit=5` 已预留接口。
-- 当前返回：
+- 默认未配置真实文献数据源时：
   - `results: []`（空结果）
   - `source: "not_configured"`（未配置真实文献源）
+- 支持通过环境变量 `LITERATURE_PROVIDER` 切换 provider：
+  - `not_configured`（默认）：不发起外部调用，返回空结果。
+  - `semantic_scholar`：接入 Semantic Scholar API 进行论文检索。
+  - `crossref`：接入 Crossref API 进行学术出版元数据检索。
 - **不伪造** DOI / PMID / 文献标题等数据。
+- 接口合同详见 [LITERATURE_SEARCH_CONTRACT.md](./LITERATURE_SEARCH_CONTRACT.md)。
 
 ---
 
@@ -59,9 +64,10 @@ BioMentor Agent 是一个面向生物科学教育的 AI 辅助学习与科研训
 
 ### 真实文献检索
 
-- 尚未接入 PubMed、Crossref、Semantic Scholar 等真实文献数据库。
-- 当前 `GET /api/literature/search` 仅返回空占位结果，不执行任何外部 API 调用。
-- 文献检索结果是固定的占位数据，不是实时检索。
+- 已预留文献检索接口和 provider 配置框架。
+- 支持通过 `LITERATURE_PROVIDER` 环境变量切换 Semantic Scholar 或 Crossref。
+- 默认 `not_configured` 状态不执行任何外部 API 调用。
+- 尚未接入 PubMed 作为 provider 选项。
 
 ### 文献 Evidence Grounding
 
@@ -93,9 +99,9 @@ BioMentor Agent 是一个面向生物科学教育的 AI 辅助学习与科研训
 
 1. **当前不能宣传为"完整的科研 Agent"**：系统目前是面向教育的训练原型，不是面向真实科研工作者的生产力工具。
 
-2. **当前不能说"自动查真实文献"**：文献接口仅为 placeholder，并未接入任何真实文献数据库，不具备真实文献检索能力。
+2. **当前不能说"自动查真实文献"**：文献接口支持可配置 provider，但默认 `not_configured` 状态不执行任何外部检索。即使配置了 provider（如 Semantic Scholar、 Crossref），也仅是文献检索入口，不是完整的 evidence grounding。
 
-3. **当前文献接口只是 placeholder**：`GET /api/literature/search` 总是返回空结果和 `source: "not_configured"`，不要向用户承诺可返回真实文献数据。
+3. **当前文献接口不是 evidence grounding**：`GET /api/literature/search` 提供文献元数据检索，不等同于科研证据验证或自动查证。详细信息参见 [LITERATURE_SEARCH_CONTRACT.md](./LITERATURE_SEARCH_CONTRACT.md)。
 
 4. **当前科研任务主要是训练引导**：科研任务卡的设计目标是让学生了解科研流程、锻炼科研思维，输出内容**不是实验方案的最终建议**，不能替代导师或专家的判断。
 
@@ -107,4 +113,5 @@ BioMentor Agent 是一个面向生物科学教育的 AI 辅助学习与科研训
 
 - [本地 Demo 启动指南](./LOCAL_DEMO_STARTUP.md)
 - [演示路径指南](./DEMO_WALKTHROUGH.md)
+- [文献检索合同文档](./LITERATURE_SEARCH_CONTRACT.md)
 - [产业案例模块状态](./INDUSTRY_CASES_MODULE_STATUS.md)
