@@ -55,6 +55,7 @@ BioMentor Agent 是一个面向生物科学教育的 AI 辅助学习与科研训
   - `not_configured`（默认）：不发起外部调用，返回空结果。
   - `semantic_scholar`：接入 Semantic Scholar API 进行论文检索。
   - `crossref`：接入 Crossref API 进行学术出版元数据检索。
+  - `pubmed`：接入 NCBI PubMed Entrez E-utilities 进行生物医学文献元数据检索（前端已支持，后端实现待完善）。
 - **不伪造** DOI / PMID / 文献标题等数据。
 - 接口合同详见 [LITERATURE_SEARCH_CONTRACT.md](./LITERATURE_SEARCH_CONTRACT.md)。
 
@@ -65,9 +66,9 @@ BioMentor Agent 是一个面向生物科学教育的 AI 辅助学习与科研训
 ### 真实文献检索
 
 - 已预留文献检索接口和 provider 配置框架。
-- 支持通过 `LITERATURE_PROVIDER` 环境变量切换 Semantic Scholar 或 Crossref。
+- 支持通过 `LITERATURE_PROVIDER` 环境变量切换 Semantic Scholar、Crossref 或 PubMed。
 - 默认 `not_configured` 状态不执行任何外部 API 调用。
-- 尚未接入 PubMed 作为 provider 选项。
+- PubMed provider 前端已支持 source/provider label，后端实现待完善。
 
 ### 文献 Evidence Grounding
 

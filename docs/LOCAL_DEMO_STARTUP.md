@@ -49,6 +49,12 @@ export LITERATURE_SEMANTIC_SCHOLAR_API_KEY=your_api_key_here
 
 # Use Crossref (no API key required)
 export LITERATURE_PROVIDER=crossref
+
+# Use PubMed (NCBI Entrez E-utilities)
+export LITERATURE_PROVIDER=pubmed
+export LITERATURE_NCBI_API_KEY=your_ncbi_api_key_here  # optional, raises rate limit
+export LITERATURE_NCBI_TOOL=biomentor-agent
+export LITERATURE_NCBI_EMAIL=your_email@example.com     # optional but recommended
 ```
 
 See [LITERATURE_SEARCH_CONTRACT.md](./LITERATURE_SEARCH_CONTRACT.md) for details on provider capabilities and boundaries.

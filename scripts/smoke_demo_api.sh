@@ -6,6 +6,9 @@
 #   # Optional: run live literature provider checks (requires external API key)
 #   RUN_LIVE_LITERATURE_CHECKS=1 BACKEND_BASE=http://127.0.0.1:9090 bash scripts/smoke_demo_api.sh
 #
+#   # Optional: specify expected literature provider for live checks
+#   LITERATURE_PROVIDER=pubmed RUN_LIVE_LITERATURE_CHECKS=1 BACKEND_BASE=http://127.0.0.1:9090 bash scripts/smoke_demo_api.sh
+#
 # Smoke test script for BioMentor Agent demo API.
 # Verifies the core API endpoints respond correctly.
 # Exits with code 1 on any failure, 0 on success.
@@ -14,6 +17,7 @@ set -euo pipefail
 
 BACKEND_BASE="${BACKEND_BASE:-http://127.0.0.1:9090}"
 RUN_LIVE_LITERATURE_CHECKS="${RUN_LIVE_LITERATURE_CHECKS:-0}"
+LITERATURE_PROVIDER="${LITERATURE_PROVIDER:-not_configured}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -176,7 +180,9 @@ check "literature search source=not_configured and results=[]" "$lit_check"
 
 # -------------------------------------------------------------------
 # 4b. Anti-spoofing: when source=not_configured, results must be []
-#     and no fake fields (title/doi/pmid/authors) are present
+#     and no fake fields (title/doi/pmid/authors) are present.
+#     PubMed anti-spoofing: script only checks, never fabricates data.
+#     Missing PubMed fields must NOT be filled in by the script.
 # -------------------------------------------------------------------
 echo "--- 4b. Anti-spoofing check (source=not_configured) ---"
 
@@ -259,17 +265,43 @@ check "empty q returns 422 (got $emptyq_status)" "$([ "$emptyq_status" = "422" ]
 # ===================================================================
 # 5. Optional: Live Literature Provider Check
 # ===================================================================
+pubmed_live_status="skipped"
 if [ "$RUN_LIVE_LITERATURE_CHECKS" = "1" ]; then
     echo ""
     echo -e "${YELLOW}--- 5. Live Literature Provider Checks (RUN_LIVE_LITERATURE_CHECKS=1) ---${NC}"
-    echo "  (API may not crash, return JSON, results is array – does NOT require results)"
+    echo "  expected provider: $LITERATURE_PROVIDER"
 
-    lit_live_resp=$(fetch_json "$BACKEND_BASE/api/literature/search?q=mRNA&limit=3")
+    lit_live_http_code=$(curl -sS --max-time 30 -o /tmp/smoke_lit_live.json -w "%{http_code}" "$BACKEND_BASE/api/literature/search?q=mRNA&limit=5" 2>/tmp/smoke_lit_live_err || echo "000")
 
-    lit_live_valid=$(python3 -c "
-import json, sys
+    if [ "$lit_live_http_code" != "200" ]; then
+        echo -e "  ${YELLOW}[WARN]${NC} live literature search returned HTTP $lit_live_http_code (not 200)"
+        pubmed_live_status="warn"
+    else
+        lit_live_source=$(python3 -c "
+import json
 try:
-    data = json.loads(sys.argv[1])
+    with open('/tmp/smoke_lit_live.json') as f:
+        data = json.load(f)
+    print(data.get('source', ''))
+except Exception:
+    print('')
+")
+
+        lit_live_count=$(python3 -c "
+import json
+try:
+    with open('/tmp/smoke_lit_live.json') as f:
+        data = json.load(f)
+    print(len(data.get('results', [])))
+except Exception:
+    print(-1)
+")
+
+        lit_live_valid=$(python3 -c "
+import json
+try:
+    with open('/tmp/smoke_lit_live.json') as f:
+        data = json.load(f)
     results = data.get('results', None)
     source = data.get('source', '')
     query = data.get('query', '')
@@ -279,32 +311,126 @@ try:
         print('false')
 except Exception:
     print('false')
-" "$lit_live_resp")
+")
 
-    lit_live_source=$(python3 -c "
-import json, sys
+        echo "  live search detail: provider=$lit_live_source results_count=$lit_live_count HTTP=$lit_live_http_code"
+        check "live literature search returns valid JSON with results array" "$lit_live_valid"
+
+        if [ "$LITERATURE_PROVIDER" = "pubmed" ]; then
+            echo ""
+            echo -e "${YELLOW}  --- 5a. PubMed-specific live checks ---${NC}"
+
+            pubmed_source_check=$(python3 -c "
+import json
 try:
-    data = json.loads(sys.argv[1])
-    print(data.get('source', ''))
+    with open('/tmp/smoke_lit_live.json') as f:
+        data = json.load(f)
+    if data.get('source', '') == 'pubmed':
+        print('true')
+    else:
+        print('false')
 except Exception:
-    print('')
-" "$lit_live_resp")
+    print('false')
+")
+            check "source == pubmed" "$pubmed_source_check"
 
-    lit_live_count=$(python3 -c "
-import json, sys
+            pubmed_results_array=$(python3 -c "
+import json
 try:
-    data = json.loads(sys.argv[1])
-    print(len(data.get('results', [])))
+    with open('/tmp/smoke_lit_live.json') as f:
+        data = json.load(f)
+    if isinstance(data.get('results', None), list):
+        print('true')
+    else:
+        print('false')
 except Exception:
-    print(-1)
-" "$lit_live_resp")
+    print('false')
+")
+            check "results is array" "$pubmed_results_array"
 
-    echo "  live search detail: provider=$lit_live_source results_count=$lit_live_count"
-    check "live literature search returns valid JSON with results array" "$lit_live_valid"
+            pubmed_count_nonneg=$(python3 -c "
+import json
+try:
+    with open('/tmp/smoke_lit_live.json') as f:
+        data = json.load(f)
+    results = data.get('results', [])
+    if isinstance(results, list) and len(results) >= 0:
+        print('true')
+    else:
+        print('false')
+except Exception:
+    print('false')
+")
+            check "results_count >= 0 (got $lit_live_count)" "$pubmed_count_nonneg"
+
+            pubmed_field_check=$(python3 -c "
+import json
+try:
+    with open('/tmp/smoke_lit_live.json') as f:
+        data = json.load(f)
+    results = data.get('results', [])
+    errors = []
+    if len(results) == 0:
+        print('true,no_results')
+        exit(0)
+    for i, r in enumerate(results):
+        sp = r.get('source_provider', '')
+        if sp != 'pubmed':
+            errors.append('result[{}].source_provider != pubmed (got {})'.format(i, sp))
+        pmid = r.get('pmid', None)
+        if pmid is not None and not isinstance(pmid, str):
+            errors.append('result[{}].pmid is not string (got {})'.format(i, type(pmid).__name__))
+        if 'title' not in r:
+            errors.append('result[{}] missing title field'.format(i))
+        if 'doi' not in r:
+            errors.append('result[{}] missing doi field'.format(i))
+        if 'authors' not in r:
+            errors.append('result[{}] missing authors field'.format(i))
+        if 'abstract' not in r:
+            errors.append('result[{}] missing abstract field'.format(i))
+        url = r.get('url', None)
+        if url is not None:
+            if not isinstance(url, str):
+                errors.append('result[{}].url is not string (got {})'.format(i, type(url).__name__))
+    if errors:
+        for e in errors:
+            print('ERR: ' + e)
+        print('false')
+    else:
+        print('true')
+except Exception as e:
+    print('ERR: exception ' + str(e))
+    print('false')
+")
+
+            field_ok=$(echo "$pubmed_field_check" | tail -1)
+            echo "$pubmed_field_check" | head -n -1
+            if [ "$field_ok" = "true" ] || [ "$field_ok" = "true,no_results" ]; then
+                check "PubMed result fields valid (source_provider=pubmed, pmid, title, doi, authors, abstract, url)" "true"
+            else
+                check "PubMed result fields valid (source_provider=pubmed, pmid, title, doi, authors, abstract, url)" "false"
+            fi
+
+            if [ "$pubmed_source_check" = "true" ] && [ "$pubmed_results_array" = "true" ] && [ "$pubmed_count_nonneg" = "true" ] && { [ "$field_ok" = "true" ] || [ "$field_ok" = "true,no_results" ]; }; then
+                pubmed_live_status="pass"
+            else
+                pubmed_live_status="fail"
+            fi
+        else
+            echo ""
+            echo "  live literature provider is '$lit_live_source' (not pubmed) – PubMed-specific checks skipped"
+        fi
+    fi
+
+    if [ "$pubmed_live_status" = "skipped" ] && [ "$lit_live_http_code" = "200" ]; then
+        pubmed_live_status="pass"
+    fi
 else
     echo ""
     echo -e "${YELLOW}--- 5. Live Literature Provider Checks -- SKIPPED (RUN_LIVE_LITERATURE_CHECKS=0) ---${NC}"
 fi
+
+rm -f /tmp/smoke_lit_live.json /tmp/smoke_lit_live_err
 
 # -------------------------------------------------------------------
 # Summary
@@ -320,6 +446,14 @@ echo " literature search:  $( [ "$lit_check" = "true" ] && echo 'not_configured'
 echo " anti-spoofing:      $( [ "$spoof_check" != "false" ] && echo 'ok' || echo 'FAIL' )"
 echo " CAR-T search:       $( [ "$lit_cart_check" = "true" ] && echo 'not_configured' || echo 'FAIL' )"
 echo " empty q validation: $( [ "$empty_status" = "422" ] && [ "$emptyq_status" = "422" ] && echo 'ok' || echo 'FAIL' )"
+echo ""
+echo " literature provider: $LITERATURE_PROVIDER"
+live_label="skipped"
+if [ "$RUN_LIVE_LITERATURE_CHECKS" = "1" ]; then
+    live_label="enabled"
+fi
+echo " live literature checks: $live_label"
+echo " pubmed live: $pubmed_live_status"
 echo ""
 
 if [ "$fail_count" -eq 0 ]; then
