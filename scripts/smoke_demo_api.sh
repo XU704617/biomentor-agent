@@ -473,7 +473,13 @@ if [ "$RUN_EVIDENCE_LINK_CHECKS" = "1" ]; then
     evidence_search_http_code=$(curl -sS --max-time 10 -o /tmp/smoke_evidence_search.json -w "%{http_code}" \
         -X POST "$BACKEND_BASE/api/evidence/search" \
         -H "Content-Type: application/json" \
-        -d '{"query":"mRNA","limit":3}' 2>/dev/null || echo "000")
+        -d '{
+            "task_title": "mRNA vaccine delivery strategy",
+            "task_description": null,
+            "case_title": "mRNA vaccine",
+            "query": "mRNA vaccine delivery",
+            "limit": 3
+        }' 2>/dev/null || echo "000")
 
     if [ "$evidence_search_http_code" = "000" ]; then
         echo -e "  ${YELLOW}[WARN]${NC} POST /api/evidence/search – endpoint unreachable (connection failed)"
@@ -507,7 +513,25 @@ except Exception:
     evidence_note_http_code=$(curl -sS --max-time 10 -o /tmp/smoke_evidence_note.json -w "%{http_code}" \
         -X POST "$BACKEND_BASE/api/evidence/note" \
         -H "Content-Type: application/json" \
-        -d '{"papers":[{"pmid":"12345","title":"test"}]}' 2>/dev/null || echo "000")
+        -d '{
+            "task_title": "mRNA vaccine delivery strategy",
+            "task_description": null,
+            "selected_literature": [
+                {
+                    "id": "123",
+                    "title": "Example metadata-only paper",
+                    "authors": ["Example A"],
+                    "year": 2024,
+                    "venue": "Example Journal",
+                    "doi": null,
+                    "pmid": "123",
+                    "url": "https://pubmed.ncbi.nlm.nih.gov/123/",
+                    "abstract": null,
+                    "source_provider": "pubmed",
+                    "raw_id": "123"
+                }
+            ]
+        }' 2>/dev/null || echo "000")
 
     if [ "$evidence_note_http_code" = "000" ]; then
         echo -e "  ${YELLOW}[WARN]${NC} POST /api/evidence/note – endpoint unreachable (connection failed)"
