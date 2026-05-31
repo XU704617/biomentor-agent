@@ -1,14 +1,25 @@
 export interface LiteratureSearchItem {
-  title: string;
-  source: string;
-  url: string;
+  id?: string | null;
+  title?: string | null;
+  authors?: string[];
+  year?: number | null;
+  venue?: string | null;
+  doi?: string | null;
+  pmid?: string | null;
+  url?: string | null;
+  abstract?: string | null;
+  source_provider?: string;
+  raw_id?: string | null;
 }
+
+export type LiteratureSource = "not_configured" | "semantic_scholar" | "crossref";
 
 export interface LiteratureSearchResponse {
   query: string;
+  source: LiteratureSource | string;
   results: LiteratureSearchItem[];
-  source: string;
-  message: string;
+  message?: string;
+  error?: string;
 }
 
 export async function searchLiterature(
@@ -33,14 +44,16 @@ export async function searchLiterature(
     );
     clearTimeout(timeout);
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(
-        errorData?.error || `请求失败 (${response.status})`
-      );
+      throw new Error(data?.error || data?.message || `请求失败 (${response.status})`);
     }
 
-    const data: LiteratureSearchResponse = await response.json();
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+
     return data;
   } catch (error) {
     clearTimeout(timeout);
