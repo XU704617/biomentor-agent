@@ -86,6 +86,32 @@ const proteinAliases = new Map(
         teachingFocus: "酸性蛋白酶、催化天冬氨酸、胃内蛋白质消化与活性位点",
       },
     },
+    {
+      keys: ["mcherry", "m cherry", "red fluorescent protein mcherry"],
+      value: {
+        id: "mcherry",
+        label: "mCherry 红色荧光蛋白",
+        accession: "",
+        pdbId: "2H5Q",
+        organism: "Discosoma sp. / engineered fluorescent protein",
+        source: "RCSB PDB",
+        confidence: null,
+        teachingFocus: "单体红色荧光蛋白、β 桶结构、发色团成熟和荧光标记应用",
+      },
+    },
+    {
+      keys: ["mrfp1", "mrfp-1", "monomeric red fluorescent protein 1"],
+      value: {
+        id: "mrfp1",
+        label: "mRFP1 单体红色荧光蛋白",
+        accession: "",
+        pdbId: "9LSW",
+        organism: "Engineered fluorescent protein",
+        source: "RCSB PDB",
+        confidence: null,
+        teachingFocus: "红色荧光蛋白变体、β 桶结构、钙结合序列改造和荧光报告应用",
+      },
+    },
   ].flatMap(({ keys, value }) => keys.map((key) => [key, value])),
 );
 
@@ -101,6 +127,7 @@ const proteinKeywordAliases = new Map([
   ["溶菌酶", "lysozyme"],
   ["胶原蛋白", "collagen"],
   ["肌红蛋白", "myoglobin"],
+  ["红色荧光蛋白", "red fluorescent protein"],
   ["血红蛋白", "hemoglobin"],
   ["绿色荧光蛋白", "green fluorescent protein"],
   ["肿瘤抑制蛋白", "tumor protein p53"],

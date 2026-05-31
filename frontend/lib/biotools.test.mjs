@@ -93,6 +93,20 @@ test("supports Chinese protein aliases and does not fall back to unrelated demos
   assert.deepEqual(unknown, []);
 });
 
+test("recognizes fluorescent protein variants before broad remote search", () => {
+  const cherry = searchProteinCandidates("mCherry");
+  assert.ok(cherry.length >= 1);
+  assert.match(cherry[0].label, /mCherry/i);
+  assert.equal(cherry[0].pdbId, "2H5Q");
+  assert.equal(cherry[0].sourceKind, "experimental");
+
+  const rfp = searchProteinCandidates("mRFP1");
+  assert.ok(rfp.length >= 1);
+  assert.match(rfp[0].label, /mRFP1/i);
+  assert.equal(rfp[0].pdbId, "9LSW");
+  assert.equal(rfp[0].sourceKind, "experimental");
+});
+
 test("direct UniProt accessions keep curated experimental structures when available", () => {
   const pepsin = searchProteinCandidates("P00790");
   assert.equal(pepsin[0].accession, "P00790");

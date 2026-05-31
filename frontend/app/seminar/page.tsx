@@ -8,6 +8,7 @@ import {
   BrainCircuit,
   CheckCircle2,
   FileUp,
+  Library,
   Loader2,
   MessageSquare,
   PenLine,
@@ -18,6 +19,8 @@ import {
 } from "lucide-react";
 
 import { industryCases } from "@/data/industryCases";
+import { getPaperById, knowledgePapers } from "@/data/knowledgeBase";
+import { getSelectedPapers } from "@/lib/selectedPapers";
 import type { DefenseBrief, DefenseTranscriptItem } from "@/lib/defense-flow";
 
 type Difficulty = "basic" | "standard" | "challenge";
@@ -148,16 +151,22 @@ export default function SeminarPage() {
   }, []);
 
   async function createBriefFromText() {
+    await createBriefFromSource(sourceText, sourceLabel, "manual");
+  }
+
+  async function createBriefFromSource(text: string, label: string, sourceType = "manual") {
     setIsLoading(true);
     setStatusText("正在凝练答辩资料包");
     try {
       const res = await fetch("/api/ai/defense/brief", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceType: "manual", sourceLabel, text: sourceText }),
+        body: JSON.stringify({ sourceType, sourceLabel: label, text }),
       });
       const result = await res.json();
       if (!result?.data) throw new Error("empty brief");
+      setSourceLabel(label);
+      setSourceText(text);
       setBrief(result.data);
       setStage("brief");
     } catch {
@@ -165,6 +174,40 @@ export default function SeminarPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function importKnowledgeBasePapers() {
+    const selectedIds = getSelectedPapers().map((item) => item.paperId);
+    const papers = (selectedIds.length > 0
+      ? selectedIds.map((id) => getPaperById(id)).filter(Boolean)
+      : knowledgePapers.filter((paper) => paper.recommendedFor.includes("答辩材料")).slice(0, 3)
+    ) as typeof knowledgePapers;
+
+    if (papers.length === 0) {
+      setStatusText("当前知识库没有可导入的文献。你可以先到文献工作台选择文献，或直接上传 PDF/DOCX/PPTX。");
+      return;
+    }
+
+    const label = selectedIds.length > 0 ? "知识库导入：已选文献" : "知识库导入：推荐文献";
+    const text = [
+      `题目：${papers[0].direction} 方向文献答辩`,
+      `来源：${label}`,
+      `背景：本资料来自 BioMentor Agent 内置知识库，用于把文献元数据、研究问题、方法摘要和教学价值凝练为答辩材料。`,
+      ...papers.flatMap((paper, index) => [
+        `文献${index + 1}：${paper.titleZh}`,
+        `英文题名：${paper.title}`,
+        `方向：${paper.direction}`,
+        `核心问题：${paper.coreProblem}`,
+        `方法：${paper.methodSummary}`,
+        `关键发现：${paper.keyFinding}`,
+        `答辩价值：${paper.defenseValue}`,
+        `关键词：${paper.keywords.join("、")}`,
+      ]),
+      "科学问题：这些文献如何共同支撑一个清晰、可验证、可表达的研究主题？",
+      "方法：围绕研究背景、核心问题、方法路线、证据链、局限性和应用价值组织答辩。",
+    ].join("\n");
+
+    await createBriefFromSource(text, label, "knowledge_base");
   }
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -364,6 +407,21 @@ export default function SeminarPage() {
                     <Upload className="h-4 w-4" />
                     上传文件
                   </button>
+                  <button
+                    onClick={importKnowledgeBasePapers}
+                    disabled={isLoading}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/85 bg-white/70 px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-white disabled:opacity-45"
+                  >
+                    <Library className="h-4 w-4" />
+                    从知识库导入
+                  </button>
+                  <Link
+                    href="/paper-workbench"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/85 bg-white/50 px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-white"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    选择知识库文件
+                  </Link>
                 </div>
               </main>
               <aside className="space-y-4">

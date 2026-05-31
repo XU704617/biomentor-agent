@@ -27,20 +27,20 @@ const modules = [
     accent: "#60a5fa",
   },
   {
+    href: "/knowledge-map",
+    title: "知识图谱",
+    desc: "以可视化网络呈现概念、通路和知识之间的结构关系。",
+    tags: ["关系网络", "学习路径", "结构认知"],
+    icon: Network,
+    accent: "#a78bfa",
+  },
+  {
     href: "/research",
     title: "科研实战",
     desc: "围绕真实科研任务，训练文献阅读、实验设计和数据分析能力。",
     tags: ["文献", "实验设计", "数据分析"],
     icon: FlaskConical,
     accent: "#22d3ee",
-  },
-  {
-    href: "/tools",
-    title: "生物工具箱",
-    desc: "提供蛋白结构、质粒图谱、序列分析和通路探索等动手工具。",
-    tags: ["蛋白结构", "质粒图谱", "序列分析"],
-    icon: BrainCircuit,
-    accent: "#34d399",
   },
   {
     href: "/cases",
@@ -51,20 +51,20 @@ const modules = [
     accent: "#fbbf24",
   },
   {
-    href: "/knowledge-map",
-    title: "知识图谱",
-    desc: "以可视化网络呈现概念、通路和知识之间的结构关系。",
-    tags: ["关系网络", "学习路径", "结构认知"],
-    icon: Network,
-    accent: "#a78bfa",
-  },
-  {
     href: "/seminar",
     title: "学术研讨",
     desc: "模拟学术讨论、汇报和答辩场景，训练科研表达能力。",
     tags: ["讨论", "汇报", "答辩表达"],
     icon: MessageCircle,
     accent: "#fb7185",
+  },
+  {
+    href: "/tools",
+    title: "生物工具箱",
+    desc: "提供蛋白结构、质粒图谱、序列分析和通路探索等动手工具。",
+    tags: ["蛋白结构", "质粒图谱", "序列分析"],
+    icon: BrainCircuit,
+    accent: "#34d399",
   },
 ];
 

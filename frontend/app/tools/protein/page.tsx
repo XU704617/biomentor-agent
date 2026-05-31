@@ -35,7 +35,7 @@ interface ProteinCandidate {
   matchType?: string;
 }
 
-const suggestions = ["GFP", "Cas9", "4HHB", "P42212", "insulin", "TP53"];
+const suggestions = ["GFP", "mCherry", "mRFP1", "Cas9", "4HHB", "P42212", "insulin", "TP53"];
 const initialProteinCandidates = searchProteinCandidates("GFP") as ProteinCandidate[];
 const styles = [
   { key: "cartoon", label: "卡通", icon: Layers },
@@ -232,6 +232,19 @@ export default function ProteinPage() {
             <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
               <aside className="liquid-card p-4 space-y-3">
                 <div className="text-xs font-bold text-brand-faint">候选结果</div>
+                {candidates.length === 0 && !isSearching && (
+                  <div className="rounded-2xl border border-white/80 bg-white/55 p-4 text-sm leading-6 text-brand-muted">
+                    <div className="font-display text-base font-black text-[#111827]">未找到匹配结构</div>
+                    <p className="mt-2">
+                      可能原因是 UniProt/RCSB/AlphaFold 暂无该名称对应条目，或该蛋白使用了别名。请尝试输入英文全名、基因名、PDB ID 或 UniProt ID。
+                    </p>
+                  </div>
+                )}
+                {isSearching && (
+                  <div className="rounded-2xl border border-white/80 bg-white/55 p-4 text-sm font-semibold text-brand-muted">
+                    正在查询 UniProt / RCSB / AlphaFold…
+                  </div>
+                )}
                 {candidates.map((candidate) => (
                   <button
                     key={`${candidate.id}-${candidate.pdbId || ""}-${candidate.accession || ""}`}
