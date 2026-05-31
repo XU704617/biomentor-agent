@@ -17,7 +17,7 @@ interface KnowledgePoint { id: number; title: string; content: string; }
 interface StudyTip { id: number; title: string; content: string; }
 interface SummaryData { knowledgePoints: KnowledgePoint[]; keywords: string[]; studyTips: StudyTip[]; ocrEngine?: string; }
 
-const PY_BACKEND = "http://localhost:8000";
+// const PY_BACKEND = "http://localhost:8000";
 
 export default function ExplorePage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function ExplorePage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [messages, setMessages] = useState<Message[]>([
-    { role: "ai", content: "你好，我是 BioMentor AI 导师。上传教材 PDF 或 DOCX，系统会用真实 OCR 提取文字并分析知识点。" },
+    { role: "ai", content: "你好，我是 BioMentor AI 导师。上传教材 PDF，系统会直接发送给 AI 分析知识点。" },
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
@@ -44,19 +44,6 @@ export default function ExplorePage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  /** Real OCR: send file to Python backend → get extracted text */
-  const realOcr = async (file: File): Promise<{ text: string; engine: string }> => {
-    const form = new FormData();
-    form.append("file", file);
-    const res = await fetch(`${PY_BACKEND}/api/photo-learning/ocr`, { method: "POST", body: form });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "OCR failed" }));
-      throw new Error(err.detail || "OCR 识别失败");
-    }
-    const data = await res.json();
-    return { text: data.text, engine: data.engine };
-  };
-
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files) return;
     setIsAnalyzing(true);
@@ -65,7 +52,6 @@ export default function ExplorePage() {
     try {
       const fileList = Array.from(files);
       const pdfFiles = fileList.filter(f => f.type.includes("pdf"));
-      const docFiles = fileList.filter(f => !f.type.includes("pdf"));
 
       let allContent = "";
       const newFiles: UploadedFile[] = [];
@@ -86,19 +72,6 @@ export default function ExplorePage() {
           size: formatFileSize(pdfFile.size),
           text: "PDF文件",
           engine: "DeepSeek Direct",
-        });
-      }
-
-      for (const file of docFiles) {
-        setMessages((prev) => [...prev, { role: "ai", content: `正在用 OCR 识别 ${file.name} …` }]);
-        const { text, engine } = await realOcr(file);
-        allContent += (allContent ? "\n\n" : "") + text;
-        newFiles.push({
-          name: file.name,
-          type: "doc",
-          size: formatFileSize(file.size),
-          text,
-          engine,
         });
       }
 
@@ -188,16 +161,13 @@ export default function ExplorePage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-electric/8 text-accent-electric text-[11px] font-semibold font-body mb-4">
             <ScanLine className="w-3 h-3" />
-            真实 OCR + AI 分析
+            PDF 直接 AI 分析
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
             知识探索中心
           </h1>
           <p className="text-gray-600">
-            上传教材 PDF 或 DOCX，真实 OCR 提取文字，AI 总结知识要点、生成练习题、提供学习建议
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            OCR 引擎：PDF → PyMuPDF | DOCX → python-docx
+            上传教材 PDF，直接发送给 AI 分析，总结知识要点、生成练习题、提供学习建议
           </p>
         </div>
 
@@ -206,7 +176,7 @@ export default function ExplorePage() {
           <div className="flex items-center gap-2 mb-4">
             <Upload className="w-5 h-5 text-blue-500" />
             <h3 className="font-semibold text-gray-800">上传教材资料</h3>
-            <span className="text-sm text-gray-500">支持 PDF、DOCX，最大 50MB</span>
+            <span className="text-sm text-gray-500">支持 PDF，最大 50MB</span>
           </div>
           <div
             className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
@@ -216,14 +186,14 @@ export default function ExplorePage() {
             onClick={() => fileInputRef.current?.click()}
           >
             <input ref={fileInputRef} type="file" className="hidden"
-              accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept="application/pdf"
               multiple onChange={(e) => handleFileUpload(e.target.files)} />
             <div className="flex flex-col items-center">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
                 <Upload className="w-6 h-6 text-blue-500" />
               </div>
               <p className="text-gray-700 font-medium">点击或拖拽上传文件</p>
-              <p className="text-gray-400 text-sm">PDF, DOCX — 真实 OCR</p>
+              <p className="text-gray-400 text-sm">PDF — 直接 AI 分析</p>
             </div>
           </div>
 
@@ -255,10 +225,10 @@ export default function ExplorePage() {
             <div className="glass-card rounded-2xl p-6 text-center">
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-3" />
               <p className="text-gray-700 font-medium">
-                {step === "ocr" ? "正在进行真实 OCR 识别…" : "AI 正在分析教材内容…"}
+                {step === "ocr" ? "正在将 PDF 发送给 AI…" : "AI 正在分析教材内容…"}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {step === "ocr" ? "PDF 用 PyMuPDF，DOCX 用 python-docx" : "调用 DeepSeek 大模型分析"}
+                调用 DeepSeek 大模型直接分析 PDF
               </p>
             </div>
           </div>
@@ -319,7 +289,7 @@ export default function ExplorePage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center flex-1 text-gray-400">
                     <BookOpen className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="text-center">上传教材后，系统将用真实 OCR 提取文字并分析</p>
+                    <p className="text-center">上传教材 PDF 后，系统将直接发送给 AI 分析</p>
                     <Link href="/photo-learning" className="mt-4 inline-flex items-center gap-2 text-sm text-accent-electric hover:text-brand-ink transition-colors">
                       <Camera className="w-4 h-4" /> 或使用拍照学练（高级模式）
                       <ChevronRight className="w-3.5 h-3.5" />
