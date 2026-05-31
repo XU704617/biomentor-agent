@@ -117,6 +117,8 @@ export default function CasesPage() {
   const displayedCases = isSearching ? sortedCases : sortedCases.slice(0, displayLimit);
   const hasMore = !isSearching && displayLimit < sortedCases.length;
 
+  const recommendedCaseIds = ["case-004", "case-002", "case-005", "case-001", "case-003"];
+
   useEffect(() => {
     if (searchQuery.trim() !== "" || selectedCategory !== "") {
       setDisplayLimit(sortedCases.length);
@@ -236,6 +238,16 @@ export default function CasesPage() {
                 精选案例优先展示，可通过搜索和筛选查看完整案例库。
               </p>
 
+              <div className="rounded-xl bg-gradient-to-r from-amber-50/60 to-orange-50/40 border border-amber-200/40 p-4 mb-5">
+                <p className="text-xs text-amber-800 font-body mb-1">
+                  <span className="font-semibold">优先体验推荐</span>
+                  <span className="text-amber-700/80 ml-1">带「优先体验」标签的案例为推荐演示案例，覆盖 mRNA 疫苗、CAR-T、CRISPR、细胞凋亡、PD-1 等核心技术，文献丰富度高，演示效果稳定。</span>
+                </p>
+                <p className="text-[11px] text-amber-700/70 font-body">
+                  完整测试路线：/cases → 点击案例 → /research?caseId=... → 查看 4 个科研训练任务 → 点击文献支撑 → 生成文献笔记
+                </p>
+              </div>
+
               <div className="flex items-center justify-between mb-5">
                 <p className="text-xs text-brand-faint font-body">
                   共 <span className="font-semibold text-brand-ink">{sortedCases.length}</span> 个产业案例{selectedCategory && ` · ${selectedCategory}`}{searchQuery && ` · 搜索"${searchQuery}"`}{!isSearching && displayedCases.length < sortedCases.length && ` · 显示 ${displayedCases.length} 个精选`}
@@ -293,6 +305,7 @@ export default function CasesPage() {
                         key={c.id}
                         caseData={c}
                         onViewDetail={() => setSelectedCase(c)}
+                        isRecommended={recommendedCaseIds.includes(c.id)}
                       />
                     ))}
                   </div>

@@ -7,6 +7,7 @@ import type { IndustryCase } from "@/data/industryCases";
 interface IndustryCaseCardProps {
   caseData: IndustryCase;
   onViewDetail?: () => void;
+  isRecommended?: boolean;
 }
 
 const evidenceColors: Record<string, string> = {
@@ -21,7 +22,7 @@ const abilityColors = [
   "bg-teal-50 text-teal-700",
 ];
 
-export function IndustryCaseCard({ caseData, onViewDetail }: IndustryCaseCardProps) {
+export function IndustryCaseCard({ caseData, onViewDetail, isRecommended }: IndustryCaseCardProps) {
   const c = caseData;
 
   const migrationSummary = [
@@ -31,7 +32,14 @@ export function IndustryCaseCard({ caseData, onViewDetail }: IndustryCaseCardPro
   ].join(" → ");
 
   return (
-    <div className="glass-card rounded-2xl p-5 flex flex-col group h-full">
+    <div className="glass-card rounded-2xl p-5 flex flex-col group h-full relative">
+      {isRecommended && (
+        <div className="absolute top-3 right-3 z-10">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 text-white text-[9px] font-bold shadow-sm">
+            优先体验
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-2">
           <span className="badge badge-electric text-[10px]">{c.industryDirection}</span>
