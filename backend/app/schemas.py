@@ -722,6 +722,7 @@ class EvidenceSearchRequest(BaseModel):
     case_title: str | None = None
     query: str | None = None
     limit: int = Field(default=5, ge=1, le=20)
+    recommended_keywords: list[str] = []
 
 
 class EvidenceSearchResponse(BaseModel):
