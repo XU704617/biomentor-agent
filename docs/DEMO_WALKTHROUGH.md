@@ -137,6 +137,28 @@ curl "http://localhost:9090/api/literature/search?q=mRNA&limit=5"
 
 > 详细信息参见 [文献检索合同文档](./LITERATURE_SEARCH_CONTRACT.md)。
 
+### 第 8 步：Evidence Link 演示
+
+#### 8.1 在任务卡下查找相关文献
+
+1. 访问科研实战页面：`http://localhost:3001/research?caseId=case-004`
+2. 在某个科研任务卡下，找到 **Evidence Link** 区域。
+3. 系统会根据任务卡的 topic 自动调用 `/api/literature/search` 接口。
+4. 展示 provider 返回的文献 metadata 列表。
+
+#### 8.2 用户手动选择文献
+
+- 浏览检索结果，手动选择与当前任务最相关的文献（1-N 条）。
+- 系统不做自动匹配或推荐排序。
+
+#### 8.3 生成 metadata-based evidence note
+
+- 用户选中文献后，系统基于 metadata 生成 evidence note。
+- Evidence note 包含：标题、作者、年份、期刊、DOI/PMID、摘要、来源 provider。
+- 缺失字段显示为"未提供"。
+
+> **重要说明**：Evidence note 仅基于 metadata 组装，不代表全文阅读、不代表证据强度判断、不生成最终科研结论。详细信息参见 [Evidence Link 工作流](./EVIDENCE_LINK_WORKFLOW.md)。
+
 ---
 
 ## 演示要点说明
