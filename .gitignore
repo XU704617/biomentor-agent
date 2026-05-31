@@ -21,6 +21,7 @@ backend/chroma_db/
 node_modules/
 .next/
 out/
+*.tsbuildinfo
 
 # IDE
 .idea/
@@ -32,9 +33,11 @@ out/
 .DS_Store
 Thumbs.db
 
-# Local brainstorming mockups
-.superpowers/
+# Local generated artifacts
+docs/
+*.log
+*.md
+!README.md
 *.db-shm
 *.db-wal
 backend/.venv-conda/
-.trae/
