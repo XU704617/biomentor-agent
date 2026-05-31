@@ -123,12 +123,12 @@ curl "http://localhost:9090/api/literature/search?q=mRNA&limit=5"
 - 这是文献检索接口的预留入口。
 - `source: "not_configured"` 表示当前未配置任何文献数据源。
 - `results` 为空是因为默认不发起外部 API 调用。
-- 支持通过 `LITERATURE_PROVIDER` 环境变量配置 Semantic Scholar 或 Crossref。
+- 支持通过 `LITERATURE_PROVIDER` 环境变量配置 Semantic Scholar、Crossref 或 PubMed。
 - **不伪造** DOI、PMID、文献标题、作者、期刊、年份。
 
 #### 7.3 配置 provider 后的演示（可选）
 
-如果已配置 `LITERATURE_PROVIDER=semantic_scholar` 或 `crossref`：
+如果已配置 `LITERATURE_PROVIDER=semantic_scholar`、`crossref` 或 `pubmed`：
 
 1. 在 `/research` 页面输入关键词搜索。
 2. 展示返回的真实文献元数据（标题、作者、年份、期刊等）。
@@ -145,11 +145,11 @@ curl "http://localhost:9090/api/literature/search?q=mRNA&limit=5"
 
 | 问题 | 说明 |
 |------|------|
-| 能查真实文献吗？ | 支持可配置 provider（Semantic Scholar、Crossref），但默认 not_configured。文献检索是入口能力，不是 evidence grounding。 |
+| 能查真实文献吗？ | 支持可配置 provider（Semantic Scholar、Crossref、PubMed），但默认 not_configured。文献检索是入口能力，不是 evidence grounding。 |
 | 科研任务是真实实验方案吗？ | 不是。是训练引导内容，不能替代导师建议。 |
 | 能上传实验数据吗？ | 不能。尚无文件上传和数据分析功能。 |
 | 能导出报告吗？ | 不能。报告导出功能尚未实现。 |
-| 有 PubMed 吗？ | 尚未接入 PubMed 作为 provider 选项。 |
+| 有 PubMed 吗？ | 前端已支持 pubmed source/provider label，后端实现待完善。PubMed 支持基本文献元数据检索，不等同于全文解析或 evidence grounding。 |
 | 能做 AI 证据总结吗？ | 不能。文献检索入口不做 AI 证据总结或 evidence grounding。 |
 
 > **诚实演示原则**：展示当前已完成的功能，同时坦诚说明未完成的功能和能力边界。不夸大、不虚假宣传。

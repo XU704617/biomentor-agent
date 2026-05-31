@@ -227,6 +227,7 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
     switch (provider) {
       case "semantic_scholar": return "Semantic Scholar";
       case "crossref": return "Crossref";
+      case "pubmed": return "NCBI PubMed";
       default: return provider || "未知来源";
     }
   };

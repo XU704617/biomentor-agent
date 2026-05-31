@@ -37,7 +37,7 @@ BioMentor Agent 的 literature search **当前是"可配置文献检索入口/�
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `query` | `string \| null` | 用户输入的检索查询词。未提供查询时可为 null。 |
-| `source` | `string` | 当前使用的文献数据源标识，如 `"semantic_scholar"`、`"crossref"`、`"not_configured"`。 |
+| `source` | `string` | 当前使用的文献数据源标识，如 `"semantic_scholar"`、`"crossref"`、`"pubmed"`、`"not_configured"`。 |
 | `results` | `LiteratureSearchItem[]` | 检索结果列表。无结果时为空数组 `[]`。 |
 | `message` | `string \| null` | 可选的提示信息，用于向调用方传递状态说明。 |
 | `error` | `string \| null` | 可选的错误信息。仅在 provider 调用失败或配置异常时非 null。 |
@@ -73,7 +73,7 @@ BioMentor Agent 的 literature search **当前是"可配置文献检索入口/�
 | `pmid` | `string \| null` | PubMed ID。缺失时为 null。 |
 | `url` | `string \| null` | 文献公开访问链接。缺失时为 null。 |
 | `abstract` | `string \| null` | 摘要文本。缺失时为 null。 |
-| `source_provider` | `string` | 数据来源 provider 标识，如 `"semantic_scholar"`、`"crossref"`。 |
+| `source_provider` | `string` | 数据来源 provider 标识，如 `"semantic_scholar"`、`"crossref"`、`"pubmed"`。 |
 | `raw_id` | `string \| null` | provider 原生 ID。缺失时为 null。 |
 
 ### 2.3 字段缺失约定
@@ -95,13 +95,16 @@ BioMentor Agent 的 literature search **当前是"可配置文献检索入口/�
 
 | 环境变量 | 可选值 | 默认值 | 说明 |
 |----------|--------|--------|------|
-| `LITERATURE_PROVIDER` | `not_configured`、`semantic_scholar`、`crossref` | `not_configured` | 选择文献检索数据源。 |
+| `LITERATURE_PROVIDER` | `not_configured`、`semantic_scholar`、`crossref`、`pubmed` | `not_configured` | 选择文献检索数据源。 |
 
 可选环境变量：
 
 | 环境变量 | 说明 |
 |----------|------|
 | `LITERATURE_SEMANTIC_SCHOLAR_API_KEY` | Semantic Scholar API 密钥。仅当 `LITERATURE_PROVIDER=semantic_scholar` 时使用。 |
+| `LITERATURE_NCBI_API_KEY` | NCBI Entrez API 密钥。仅当 `LITERATURE_PROVIDER=pubmed` 时使用（可选，可提高限流额度）。 |
+| `LITERATURE_NCBI_TOOL` | NCBI 工具标识，建议设为 `biomentor-agent`。仅当 `LITERATURE_PROVIDER=pubmed` 时使用。 |
+| `LITERATURE_NCBI_EMAIL` | 联系邮箱，建议配置以便 NCBI 在必要时联系。仅当 `LITERATURE_PROVIDER=pubmed` 时使用（可选但建议）。 |
 
 ### 3.2 默认行为（not_configured）
 
@@ -123,6 +126,12 @@ export LITERATURE_SEMANTIC_SCHOLAR_API_KEY=your_api_key_here
 
 # 使用 Crossref
 export LITERATURE_PROVIDER=crossref
+
+# 使用 PubMed
+export LITERATURE_PROVIDER=pubmed
+export LITERATURE_NCBI_API_KEY=your_ncbi_api_key_here  # 可选
+export LITERATURE_NCBI_TOOL=biomentor-agent
+export LITERATURE_NCBI_EMAIL=your_email@example.com     # 可选但建议
 ```
 
 ---
@@ -168,6 +177,39 @@ export LITERATURE_PROVIDER=crossref
 - 摘要字段（`abstract`）为可选字段，大量记录不包含摘要。
 - PMID 仅在出版社主动注册时才会出现在 Crossref 记录中。
 
+### 4.3 PubMed (NCBI Entrez)
+
+**可用能力：**
+
+- PubMed metadata search：通过 NCBI Entrez E-utilities 进行文献元数据检索。
+- 通过 PMID 检索基本文献元数据。
+- 可显示标题、作者、年份、期刊、PMID、DOI、URL 等真实返回字段。
+
+**查询链路：**
+
+```
+ESearch -> PMID list
+ESummary -> metadata summary
+EFetch XML abstract parsing 留作后续
+```
+
+**不等于：**
+
+- 全文解析或论文全文内容获取。
+- evidence grounding 或科研证据验证。
+- 自动科研查证。
+- AI 文献总结或自动文献综述。
+- 不保证每条记录都有 DOI 或 abstract。
+
+**注意事项：**
+
+- PubMed 是 NCBI 维护的生物医学文献数据库，覆盖范围以生物医学和生命科学为主。
+- ESummary 返回的摘要字段可能为空（取决于 PubMed 记录是否包含摘要文本）。
+- DOI 字段在 PubMed 记录中为可选字段，不保证每条记录都有 DOI。
+- 默认情况下，NCBI E-utilities 对无 API key 的请求限流为每秒 3 次；配置 API key 后可提高至每秒 10 次。
+- 建议配置 `LITERATURE_NCBI_TOOL` 和 `LITERATURE_NCBI_EMAIL` 以符合 NCBI 使用规范。
+- Live provider 检查默认不作为本地 smoke 必过条件。
+
 ---
 
 ## 五、禁止宣传与允许宣传
@@ -178,8 +220,9 @@ export LITERATURE_PROVIDER=crossref
 |----------|------|
 | "已完成真实文献证据链" | 当前未实现 evidence grounding，不能宣称具备证据链能力。 |
 | "已完成自动科研查证" | 文献检索不等同于自动科研查证。 |
-| "已完成 PubMed 接入" | PubMed 尚未接入为 provider 选项。 |
-| "已完成论文全文解析" | 系统不解析论文全文，仅获取元数据。 |
+| "已完成证据验证" | 文献检索入口不提供证据验证。 |
+| "已完成全文解析" | 系统不解析论文全文，仅获取元数据。 |
+| "已完成 AI 总结" | 系统不做 AI 文献总结或自动综述。 |
 | "已完成 evidence grounding" | evidence grounding 是更高级的能力，当前仅提供文献检索入口。 |
 
 ### 5.2 允许宣传（可以说）
@@ -190,6 +233,8 @@ export LITERATURE_PROVIDER=crossref
 | "支持可配置 provider 的准备" |
 | "未配置 provider 时显示 not_configured" |
 | "不伪造 DOI/PMID/标题/作者/期刊/年份" |
+| "支持 PubMed metadata search" |
+| "支持通过 PMID 检索基本文献元数据" |
 
 ---
 
