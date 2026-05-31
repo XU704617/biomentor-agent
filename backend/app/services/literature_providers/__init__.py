@@ -17,7 +17,7 @@ class BaseLiteratureProvider(ABC):
         raise NotImplementedError
 
 
-def get_provider(provider_name: str, api_key: str = "") -> BaseLiteratureProvider | None:
+def get_provider(provider_name: str, api_key: str = "", ncbi_api_key: str = "", ncbi_tool: str = "biomentor-agent", ncbi_email: str = "") -> BaseLiteratureProvider | None:
     provider_name = provider_name.lower().strip()
     if provider_name == "semantic_scholar":
         from app.services.literature_providers.semantic_scholar import (
@@ -27,4 +27,7 @@ def get_provider(provider_name: str, api_key: str = "") -> BaseLiteratureProvide
     if provider_name == "crossref":
         from app.services.literature_providers.crossref import CrossrefProvider
         return CrossrefProvider()
+    if provider_name == "pubmed":
+        from app.services.literature_providers.pubmed import PubMedProvider
+        return PubMedProvider(api_key=ncbi_api_key, tool=ncbi_tool, email=ncbi_email)
     return None
