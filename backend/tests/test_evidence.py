@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 
 from app.main import app
 
@@ -7,6 +8,16 @@ client = TestClient(app)
 
 
 class TestEvidenceSearchNotConfigured:
+
+    @pytest.fixture(autouse=True)
+    def auto_patch_settings(self):
+        with patch("app.services.literature_service.get_settings") as mock_settings:
+            mock_settings.return_value.LITERATURE_PROVIDER = "not_configured"
+            mock_settings.return_value.LITERATURE_SEMANTIC_SCHOLAR_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_TOOL = "biomentor-agent"
+            mock_settings.return_value.LITERATURE_NCBI_EMAIL = ""
+            yield
 
     def test_not_configured_returns_empty_results(self):
         response = client.post(
@@ -368,6 +379,16 @@ class TestEvidenceNoteMissingTaskTitle:
 
 
 class TestLiteratureTestsStillWork:
+
+    @pytest.fixture(autouse=True)
+    def auto_patch_settings(self):
+        with patch("app.services.literature_service.get_settings") as mock_settings:
+            mock_settings.return_value.LITERATURE_PROVIDER = "not_configured"
+            mock_settings.return_value.LITERATURE_SEMANTIC_SCHOLAR_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_TOOL = "biomentor-agent"
+            mock_settings.return_value.LITERATURE_NCBI_EMAIL = ""
+            yield
 
     def test_literature_search_unchanged(self):
         response = client.get("/api/literature/search?q=mRNA&limit=5")

@@ -108,7 +108,7 @@ export function createLocalKnowledgeAnswer(context) {
     answer,
     keyPoints,
     nextSteps: [
-      `先复述“${node.name || "当前节点"}”的核心含义`,
+      `先复述"${node.name || "当前节点"}"的核心含义`,
       "沿着图谱查看前置知识和相关应用",
       moduleLinks.length ? `进入「${moduleLinks[0].label}」做一次练习` : "选择一个相关模块完成练习",
     ],
@@ -124,7 +124,7 @@ function buildLocalKnowledgeChatAnswer(question, node, disciplineName, dimension
   if (/实验解析|实验结构|区别|预测/i.test(question) && /AlphaFold|结构|预测/i.test(contextText)) {
     return `AlphaFold 与实验解析结构的核心区别是证据来源不同：AlphaFold 给出基于序列和模型学习得到的结构预测，适合快速提出结构假设；X 射线晶体学、冷冻电镜或 NMR 等实验结构来自真实样品测量，更适合支持高置信结论。围绕 ${nodeName} 学习时，可以先用预测结构定位可能的结构域或突变影响，再用实验结构、功能实验或文献证据验证。`;
   }
-  return `针对“${question}”，可以先把它放回 ${disciplineName} / ${dimensionName} / ${nodeName} 这个上下文中理解。${node.summary || "当前节点提供了概念、前沿和应用之间的连接。"} 如果要继续深入，建议追问它的前置知识、证据来源和可用的站内工具练习。`;
+  return `针对"${question}"，可以先把它放回 ${disciplineName} / ${dimensionName} / ${nodeName} 这个上下文中理解。${node.summary || "当前节点提供了概念、前沿和应用之间的连接。"} 如果要继续深入，建议追问它的前置知识、证据来源和可用的站内工具练习。`;
 }
 
 function safeParseJson(raw) {

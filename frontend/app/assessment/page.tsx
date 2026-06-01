@@ -7,7 +7,7 @@ import Link from "next/link";
 interface QuizItem { id: number; title: string; description: string; status: string; total_score: number; created_at: string; }
 interface AttemptItem { quizTitle: string; score: number | null; maxScore: number; date: string; status: string; }
 
-const PY = "http://localhost:8000";
+const PY = "http://localhost:8099";
 
 export default function AssessmentPage() {
   const [quizzes, setQuizzes] = useState<QuizItem[]>([]);

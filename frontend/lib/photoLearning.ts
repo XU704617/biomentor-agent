@@ -89,7 +89,7 @@ export function analyzeTextWithKnowledgeBase(text: string): PhotoLearningResult 
   // 用前 6 个最相关的关键词搜索
   const searchKeywords = extractedKeywords.slice(0, 6).length > 0
     ? extractedKeywords.slice(0, 6)
-    : ["CRISPR", "基因"]; // fallback
+    : []; // 无关键词时不搜索，避免返回无关内容
 
   for (const kw of searchKeywords) {
     const result = searchKnowledge(kw);

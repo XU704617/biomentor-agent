@@ -204,4 +204,5 @@ export interface GeneratedQuestion {
   explanation: string;
   relatedConceptIds: string[];
   relatedPaperIds?: string[];
+  _llmUnavailable?: boolean;
 }

@@ -19,6 +19,7 @@ interface IndustryAnswerResponse {
   nextTasks: string[];
   sourceScope: "based_on_local_cases" | "extended_reasoning" | "no_direct_match";
   disclaimer: string;
+  _source?: "deepseek" | "local_fallback";
 }
 
 function buildCasesContext(): string {
@@ -136,7 +137,9 @@ function buildFallbackResponse(query: string): IndustryAnswerResponse {
 
   return {
     query,
-    answer: `根据当前产业案例库，找到 ${matchedCases.length} 个可能与您问题相关的案例。建议点击案例卡片查看详情，或使用"查看详情"按钮深入阅读科研基础和产业应用信息。`,
+    answer: `⚠️ LLM 不可用，以下为基于本地案例库匹配的结果。
+
+根据当前产业案例库，找到 ${matchedCases.length} 个可能与您问题相关的案例。建议点击案例卡片查看详情，或使用"查看详情"按钮深入阅读科研基础和产业应用信息。`,
     relatedKnowledgePoints: relevantCases.flatMap((c) => c.relatedKnowledgePoints).slice(0, 8),
     matchedCases,
     researchFrontiers: [],
@@ -145,7 +148,8 @@ function buildFallbackResponse(query: string): IndustryAnswerResponse {
     recommendedKeywords: uniqueKeywords,
     nextTasks: relevantCases.map((c) => c.linkedResearchTask),
     sourceScope: matchedCases.length > 0 ? "based_on_local_cases" : "no_direct_match",
-    disclaimer: "本回答基于当前产业案例库自动生成，用于课程学习和科研训练，不构成医疗或临床建议。",
+    disclaimer: "⚠️ 本回答基于本地案例库模板匹配生成，非 AI 实时分析。用于课程学习和科研训练，不构成医疗或临床建议。",
+    _source: "local_fallback",
   };
 }
 
@@ -251,7 +255,7 @@ export async function POST(request: NextRequest) {
             : "本回答用于课程学习和科研训练，不构成医疗或临床建议。",
       };
 
-      return NextResponse.json(result);
+      return NextResponse.json({ ...result, _source: "deepseek" as const });
     } catch (fetchError) {
       clearTimeout(timeout);
       console.error("[industry/answer] API 调用异常:", fetchError instanceof Error ? fetchError.message : fetchError);

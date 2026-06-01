@@ -73,29 +73,23 @@ export function convertApiCaseToFrontend(apiCase: ApiIndustryCase): IndustryCase
   };
 }
 
-export async function fetchIndustryCases(): Promise<IndustryCase[]> {
+export async function fetchIndustryCases(): Promise<(IndustryCase & { _dataSource?: string })[]> {
   const data = await apiFetch<{ items: ApiIndustryCase[] }>("/api/industry/cases?page_size=100");
   if (data?.items && data.items.length > 0) {
-    return data.items.map(convertApiCaseToFrontend);
+    return data.items.map(c => ({ ...convertApiCaseToFrontend(c), _dataSource: "api" }));
   }
-  return mockCases;
+  return mockCases.map(c => ({ ...c, _dataSource: "local_fallback" }));
 }
 
-export async function searchIndustryCases(query: string): Promise<IndustryCase[]> {
+export async function searchIndustryCases(query: string): Promise<(IndustryCase & { _dataSource?: string })[]> {
   const data = await apiFetch<ApiIndustryCase[]>(`/api/industry/cases/search?q=${encodeURIComponent(query)}`);
   if (data && data.length > 0) {
-    return data.map(convertApiCaseToFrontend);
+    return data.map(c => ({ ...convertApiCaseToFrontend(c), _dataSource: "api" }));
   }
   const lower = query.toLowerCase();
-  return mockCases.filter(
-    (c) =>
-      c.title.toLowerCase().includes(lower) ||
-      c.industryDirection.toLowerCase().includes(lower) ||
-      c.category.toLowerCase().includes(lower) ||
-      c.relatedKnowledgePoints.some((k) => k.toLowerCase().includes(lower)) ||
-      c.recommendedKeywords.some((k) => k.toLowerCase().includes(lower)) ||
-      c.coreProblem.toLowerCase().includes(lower),
-  );
+  return mockCases
+    .filter(c => c.title.toLowerCase().includes(lower) || c.industryDirection.toLowerCase().includes(lower) || c.category.toLowerCase().includes(lower) || c.relatedKnowledgePoints.some(k => k.toLowerCase().includes(lower)) || c.recommendedKeywords.some(k => k.toLowerCase().includes(lower)) || c.coreProblem.toLowerCase().includes(lower))
+    .map(c => ({ ...c, _dataSource: "local_fallback" }));
 }
 
 export async function getIndustryAnswer(query: string): Promise<IndustryAnswer> {
@@ -117,28 +111,30 @@ export async function getIndustryAnswer(query: string): Promise<IndustryAnswer> 
           abilityDirections: [],
           recommendedKeywords: data.recommendedKeywords || [],
           researchTasks: [],
+          _dataSource: "api" as const,
         };
       }
     }
   } catch {
-    // API 不可达，静默 fallback 到 mock
+    // API down, fallback
   }
-  return getMockAnswer(query);
+  return { ...getMockAnswer(query), _dataSource: "local_fallback" as const };
 }
 
-export async function getIndustryCaseById(caseId: string): Promise<IndustryCase | null> {
+export async function getIndustryCaseById(caseId: string): Promise<(IndustryCase & { _dataSource?: string }) | null> {
   const data = await apiFetch<ApiIndustryCase>(`/api/industry/cases/${caseId}`);
   if (data) {
-    return convertApiCaseToFrontend(data);
-  }
-  return mockCases.find((c) => c.id === caseId) || null;
-}
-
-export async function getRelatedResearchTasks(caseId: string): Promise<string[]> {
-  const data = await apiFetch<{ tasks: string[] }>(`/api/industry/cases/${caseId}/research-tasks`);
-  if (data?.tasks) {
-    return data.tasks;
+    return { ...convertApiCaseToFrontend(data), _dataSource: "api" as const };
   }
   const found = mockCases.find((c) => c.id === caseId);
-  return found ? [found.linkedResearchTask] : [];
+  return found ? { ...found, _dataSource: "local_fallback" as const } : null;
+}
+
+export async function getRelatedResearchTasks(caseId: string): Promise<{ tasks: string[]; _dataSource?: string }> {
+  const data = await apiFetch<{ tasks: string[] }>(`/api/industry/cases/${caseId}/research-tasks`);
+  if (data?.tasks) {
+    return { tasks: data.tasks, _dataSource: "api" as const };
+  }
+  const found = mockCases.find((c) => c.id === caseId);
+  return { tasks: found ? [found.linkedResearchTask] : [], _dataSource: "local_fallback" as const };
 }

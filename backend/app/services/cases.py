@@ -96,14 +96,14 @@ class IndustryCaseService:
         return self._general_answer(query)
 
     def _general_answer(self, query: str) -> dict[str, Any]:
-        """Fallback general answer when no specific case is provided."""
+        """General answer when no specific case is provided. Clearly marked as non-AI."""
         q = query.lower()
         if any(k in q for k in ["crispr", "基因编辑"]):
-            return {"query": query, "answer": "CRISPR基因编辑技术可用于基因治疗（如镰刀细胞贫血的CTX001疗法）、作物改良（抗病品种培育）和功能基因组学研究。在产业应用中需要注意脱靶效应和递送效率等关键技术挑战。", "sources": []}
+            return {"query": query, "answer": "⚠️ 当前回答来自平台知识库模板，非 AI 实时生成。\n\nCRISPR基因编辑技术可用于基因治疗（如镰刀细胞贫血的CTX001疗法）、作物改良（抗病品种培育）和功能基因组学研究。在产业应用中需要注意脱靶效应和递送效率等关键技术挑战。", "sources": []}
         if any(k in q for k in ["凋亡", "apoptosis"]):
-            return {"query": query, "answer": "细胞凋亡是程序性细胞死亡的主要形式，Bcl-2家族蛋白（Bax/Bcl-2）和caspase家族在其中发挥核心作用。BCL-2抑制剂Venetoclax已成功用于血液肿瘤治疗。", "sources": []}
+            return {"query": query, "answer": "⚠️ 当前回答来自平台知识库模板，非 AI 实时生成。\n\n细胞凋亡是程序性细胞死亡的主要形式，Bcl-2家族蛋白（Bax/Bcl-2）和caspase家族在其中发挥核心作用。BCL-2抑制剂Venetoclax已成功用于血液肿瘤治疗。", "sources": []}
         if any(k in q for k in ["mrna", "lnp", "递送"]):
-            return {"query": query, "answer": "LNP（脂质纳米颗粒）是mRNA药物递送的关键技术。通过AI多目标优化，可实现组织选择性递送，突破传统LNP肝脏偏向性的局限。", "sources": []}
+            return {"query": query, "answer": "⚠️ 当前回答来自平台知识库模板，非 AI 实时生成。\n\nLNP（脂质纳米颗粒）是mRNA药物递送的关键技术。通过AI多目标优化，可实现组织选择性递送，突破传统LNP肝脏偏向性的局限。", "sources": []}
         return {"query": query, "answer": f"关于「{query}」的相关信息，建议从知识库中的产业案例和科研文献中查找。BioMentor知识库已收录12篇前沿文献和5个产业案例。", "sources": []}
 
     # ── LLM-Powered Case Q&A / Tutoring ──────────────────────────
@@ -149,10 +149,11 @@ class IndustryCaseService:
 
     def _fallback_answer(self, query: str, case: IndustryCase) -> str:
         q = query.lower()
+        prefix = "⚠️ AI 服务暂不可用，以下为基于案例数据库字段的模板回答：\n\n"
         if any(k in q for k in ["背景", "问题", "挑战"]):
-            return f"该案例聚焦{case.industry_direction}领域。{case.problem_statement}"
+            return f"{prefix}该案例聚焦{case.industry_direction}领域。{case.problem_statement}"
         if any(k in q for k in ["技术", "方法", "方案"]):
-            return f"核心思路是结合{', '.join(case.knowledge_points[:3] if case.knowledge_points else ['相关知识'])}进行系统性分析。{case.analysis_text[:200] if case.analysis_text else ''}"
+            return f"{prefix}核心思路是结合{', '.join(case.knowledge_points[:3] if case.knowledge_points else ['相关知识'])}进行系统性分析。{case.analysis_text[:200] if case.analysis_text else ''}"
         if any(k in q for k in ["产业", "应用", "转化"]):
-            return f"{case.title}属于{case.industry_direction}方向。{case.background[:200] if case.background else ''}"
-        return f"关于「{query}」，建议从{case.industry_direction}产业背景入手。{case.background[:300] if case.background else ''}"
+            return f"{prefix}{case.title}属于{case.industry_direction}方向。{case.background[:200] if case.background else ''}"
+        return f"{prefix}关于「{query}」，建议从{case.industry_direction}产业背景入手。{case.background[:300] if case.background else ''}"

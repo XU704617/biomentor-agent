@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import math
 import re
 import shutil
@@ -182,6 +183,10 @@ def resolve_protein_structure(query: str) -> dict:
             "alphafold_api_url": f"{ALPHAFOLD_API_BASE}/{accession}",
         }
     elif record is None:
+        # Try UniProt search for unknown proteins
+        uniprot_result = _search_uniprot(raw)
+        if uniprot_result:
+            return uniprot_result
         record = PROTEINS["gfp"]
 
     pdb_id = record["pdb_id"].upper()
@@ -195,6 +200,64 @@ def resolve_protein_structure(query: str) -> dict:
         "alphafold_url": f"{ALPHAFOLD_FILE_BASE}/AF-{accession}-F1-model_v4.pdb" if accession else "",
         "alphafold_api_url": f"{ALPHAFOLD_API_BASE}/{accession}" if accession else "",
     }
+
+
+def _search_uniprot(query: str) -> dict | None:
+    """Search UniProt for a protein by keyword. Returns structure info or None."""
+    import httpx
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.get(
+                "https://rest.uniprot.org/uniprotkb/search",
+                params={
+                    "query": f"{query} AND (reviewed:true)",
+                    "fields": "accession,protein_name,organism_name,xref_pdb",
+                    "format": "json",
+                    "size": 1,
+                },
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            results = data.get("results", [])
+            if not results:
+                return None
+
+            entry = results[0]
+            accession = entry.get("primaryAccession", "")
+            protein_name = ""
+            if entry.get("proteinDescription", {}).get("recommendedName"):
+                protein_name = entry["proteinDescription"]["recommendedName"]["fullName"]["value"]
+            organism = ""
+            if entry.get("organism", {}).get("scientificName"):
+                organism = entry["organism"]["scientificName"]
+
+            # Check for PDB cross-references
+            pdb_id = ""
+            xrefs = entry.get("uniProtKBCrossReferences", [])
+            for xref in xrefs:
+                if xref.get("database") == "PDB":
+                    pdb_id = xref.get("id", "").upper()
+                    break
+
+            label = protein_name or f"UniProt {accession}"
+            structure_url = f"{RCSB_DOWNLOAD_BASE}/{pdb_id}.pdb" if pdb_id else ""
+            alphafold_url = f"{ALPHAFOLD_FILE_BASE}/AF-{accession}-F1-model_v4.pdb" if accession else ""
+
+            return {
+                "label": label,
+                "accession": accession,
+                "pdb_id": pdb_id,
+                "organism": organism,
+                "source": "UniProt + AlphaFold DB",
+                "teaching_focus": f"{protein_name}的结构与功能",
+                "confidence": None,
+                "structure_url": structure_url or alphafold_url,
+                "alphafold_url": alphafold_url,
+                "alphafold_api_url": f"{ALPHAFOLD_API_BASE}/{accession}" if accession else "",
+            }
+    except Exception:
+        return None
 
 
 def sanitize_sequence(sequence: str) -> str:
@@ -230,6 +293,69 @@ def estimate_tm(sequence: str) -> float:
 
 def design_primers(sequence: str, primer_length: int = 20) -> dict:
     seq = sanitize_sequence(sequence)
+
+    # Try primer3-py for professional primer design
+    try:
+        import primer3
+        # Adjust parameters for short sequences
+        min_primer = max(15, min(18, len(seq) // 4))
+        max_primer = min(25, len(seq) // 3)
+        opt_primer = min(primer_length, max_primer)
+        min_product = max(50, len(seq) // 2)
+        max_product = len(seq)
+
+        result = primer3.design_primers(
+            seq_args={
+                "SEQUENCE_ID": "query",
+                "SEQUENCE_TEMPLATE": seq,
+            },
+            global_args={
+                "PRIMER_OPT_SIZE": opt_primer,
+                "PRIMER_MIN_SIZE": min_primer,
+                "PRIMER_MAX_SIZE": max_primer,
+                "PRIMER_MIN_TM": 50.0,
+                "PRIMER_MAX_TM": 70.0,
+                "PRIMER_OPT_TM": 58.0,
+                "PRIMER_MIN_GC": 20.0,
+                "PRIMER_MAX_GC": 80.0,
+                "PRIMER_PRODUCT_SIZE_RANGE": [[min_product, max_product]],
+                "PRIMER_NUM_RETURN": 3,
+            },
+        )
+        primers = []
+        num_returned = result.get("PRIMER_PAIR_NUM_RETURNED", 0)
+        for i in range(num_returned):
+            fwd = {
+                "sequence": result.get(f"PRIMER_LEFT_{i}_SEQUENCE", ""),
+                "length": result.get(f"PRIMER_LEFT_{i}", [0, 0])[1],
+                "tm": round(result.get(f"PRIMER_LEFT_{i}_TM", 0.0), 1),
+                "gc_percent": round(result.get(f"PRIMER_LEFT_{i}_GC_PERCENT", 0.0), 1),
+            }
+            rev = {
+                "sequence": result.get(f"PRIMER_RIGHT_{i}_SEQUENCE", ""),
+                "length": result.get(f"PRIMER_RIGHT_{i}", [0, 0])[1],
+                "tm": round(result.get(f"PRIMER_RIGHT_{i}_TM", 0.0), 1),
+                "gc_percent": round(result.get(f"PRIMER_RIGHT_{i}_GC_PERCENT", 0.0), 1),
+            }
+            primers.append({
+                "forward": fwd,
+                "reverse": rev,
+                "product_length": result.get(f"PRIMER_PAIR_{i}_PRODUCT_SIZE", 0),
+                "tm_delta": round(abs(fwd["tm"] - rev["tm"]), 1),
+                "penalty": round(result.get(f"PRIMER_PAIR_{i}_PENALTY", 0.0), 3),
+            })
+        if primers:
+            return {
+                "engine": "primer3-py",
+                "primers": primers,
+                **primers[0],
+            }
+    except ImportError:
+        pass
+    except Exception:
+        pass
+
+    # Built-in fallback
     if len(seq) < primer_length * 2:
         primer_length = max(12, min(20, len(seq) // 2))
     forward = seq[:primer_length]
@@ -248,7 +374,7 @@ def design_primers(sequence: str, primer_length: int = 20) -> dict:
         "reverse": describe(reverse),
         "product_length": len(seq),
         "tm_delta": round(abs(estimate_tm(forward) - estimate_tm(reverse)), 1),
-        "engine": "primer3-py" if shutil.which("primer3_core") else "built-in fallback",
+        "engine": "built-in fallback (install primer3-py for professional design)",
     }
 
 
@@ -272,11 +398,71 @@ def restriction_sites(sequence: str) -> dict[str, list[int]]:
     return results
 
 
-def analyze_sequence(sequence: str) -> dict:
+def blast_search_online(sequence: str, timeout: int = 60) -> list[dict]:
+    """Run BLAST search using NCBI online API via biopython.
+
+    Returns real alignment results or empty list on failure.
+    This function is synchronous and may block for up to `timeout` seconds.
+    """
+    try:
+        from Bio.Blast import NCBIWWW, NCBIXML
+
+        # Limit sequence length for reasonable query times
+        query_seq = sequence[:5000]
+
+        result_handle = NCBIWWW.qblast(
+            program="blastn",
+            database="nt",
+            sequence=query_seq,
+            hitlist_size=5,
+            expect=0.001,
+        )
+
+        results = []
+        for record in NCBIXML.parse(result_handle):
+            for alignment in record.alignments[:5]:
+                for hsp in alignment.hsps[:1]:
+                    identity_pct = (hsp.identities / hsp.align_length) * 100
+                    results.append({
+                        "gene": alignment.hit_def.split(" ")[0] if alignment.hit_def else "unknown",
+                        "organism": alignment.hit_def,
+                        "identity": f"{identity_pct:.1f}%",
+                        "e_value": f"{hsp.expect:.2e}",
+                        "bitscore": round(hsp.bits, 1),
+                        "align_length": hsp.align_length,
+                        "engine": "NCBI BLAST (online)",
+                    })
+        result_handle.close()
+
+        return results or [{
+            "gene": "no significant hits",
+            "organism": "-",
+            "identity": "-",
+            "e_value": "-",
+            "engine": "NCBI BLAST (online)",
+        }]
+    except ImportError:
+        return [{
+            "error": "biopython not installed, install with: pip install biopython",
+            "engine": "unavailable",
+        }]
+    except Exception as e:
+        return [{
+            "error": f"BLAST search failed: {str(e)[:120]}",
+            "engine": "NCBI BLAST (online, error)",
+        }]
+
+
+async def blast_search_async(sequence: str, timeout: int = 60) -> list[dict]:
+    """Async wrapper for BLAST search — runs in thread pool to avoid blocking."""
+    return await asyncio.to_thread(blast_search_online, sequence, timeout)
+
+
+def analyze_sequence(sequence: str, include_blast: bool = False) -> dict:
     seq = sanitize_sequence(sequence)
     invalid_count = len([base for base in seq if base not in "ATGC"])
     valid = "".join(base for base in seq if base in "ATGC")
-    return {
+    result = {
         "sequence": valid,
         "length": len(valid),
         "invalid_count": invalid_count,
@@ -285,16 +471,12 @@ def analyze_sequence(sequence: str) -> dict:
         "translation": translate_dna(valid),
         "primers": design_primers(valid),
         "restriction_sites": restriction_sites(valid),
-        "blast": [
-            {
-                "gene": "EGFP" if "GAATTC" in valid else "putative coding sequence",
-                "organism": "Aequorea victoria" if "GAATTC" in valid else "Synthetic construct",
-                "identity": "98.7%" if "GAATTC" in valid else "87.4%",
-                "e_value": "0.0" if "GAATTC" in valid else "3e-42",
-                "engine": "BLAST+ unavailable; demo-compatible fallback",
-            }
-        ],
+        "blast": [],
     }
+    # BLAST is optional — use async endpoint for real BLAST results
+    if include_blast and len(valid) >= 20:
+        result["blast"] = blast_search_online(valid)
+    return result
 
 
 def parse_plasmid_features(content: str, sequence_length: int | None = None) -> list[dict]:
@@ -356,6 +538,10 @@ def parse_plasmid_features(content: str, sequence_length: int | None = None) -> 
 def pathway_record(key: str) -> dict:
     record = PATHWAYS.get(key)
     if record is None:
+        # Try Reactome search for unknown pathways
+        reactome_result = _search_reactome(key)
+        if reactome_result:
+            return reactome_result
         record = PATHWAYS["cell-cycle"]
     return {
         **record,
@@ -364,11 +550,68 @@ def pathway_record(key: str) -> dict:
     }
 
 
+def _search_reactome(query: str) -> dict | None:
+    """Search Reactome for a pathway by keyword. Returns pathway info or None."""
+    import httpx
+    import re as _re
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.get(
+                f"{REACTOME_CONTENT_BASE}/search/query",
+                params={
+                    "query": query,
+                    "species": "Homo sapiens",
+                    "pageSize": 5,
+                },
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            # Reactome search returns results in 'results' -> list of objects with 'entries'
+            result_groups = data.get("results", [])
+            for group in result_groups:
+                entries = group.get("entries", []) if isinstance(group, dict) else []
+                for entry in entries:
+                    if entry.get("type") in ("Pathway", "TopLevelPathway"):
+                        st_id = entry.get("stId", "")
+                        raw_name = entry.get("name", "")
+                        # Strip HTML highlighting tags
+                        name = _re.sub(r"<[^>]+>", "", raw_name) if raw_name else query
+                        summary = entry.get("summation", "")
+                        summary = _re.sub(r"<[^>]+>", "", summary) if summary else ""
+                        return {
+                            "name": name,
+                            "reactome_id": st_id,
+                            "focus": summary[:200] or f"Reactome 通路: {name}",
+                            "nodes": [],
+                            "edges": [],
+                            "reactome_url": f"{REACTOME_CONTENT_BASE}/content/detail/{st_id}",
+                            "reactome_search_url": f"{REACTOME_CONTENT_BASE}/search/query?query={name}&species=Homo%20sapiens&pageSize=8",
+                        }
+    except Exception:
+        return None
+
+
 def external_tool_status() -> dict:
+    has_primer3 = False
+    try:
+        import primer3
+        has_primer3 = True
+    except ImportError:
+        pass
+    has_biopython = False
+    try:
+        import Bio
+        has_biopython = True
+    except ImportError:
+        pass
     return {
         "blast+": bool(shutil.which("blastn") or shutil.which("blastp")),
+        "blast_online": has_biopython,
         "mafft": bool(shutil.which("mafft")),
         "pLannotate": bool(shutil.which("pLannotate") or shutil.which("plannotate")),
         "primer3_core": bool(shutil.which("primer3_core")),
+        "primer3_py": has_primer3,
+        "biopython": has_biopython,
         "fallbacks_enabled": True,
     }

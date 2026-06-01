@@ -1,21 +1,19 @@
 """
 Real OCR Service — Extract text from uploaded files.
-- PDF: PyMuPDF (fitz)
-- DOCX: python-docx
-- Images: DeepSeek Vision API (base64 → text)
+- PDF: PyMuPDF (fitz) — local, no API needed
+- DOCX: python-docx — local, no API needed
+- Images: PIL + local OCR (DeepSeek does not support vision API)
 """
 
 from __future__ import annotations
 
 import base64
 import io
-import json
 import os
 from typing import Any
 
 import fitz  # PyMuPDF
 from docx import Document
-from openai import OpenAI
 
 
 class OcrService:
@@ -35,15 +33,7 @@ class OcrService:
     }
 
     def __init__(self):
-        self._vision_client: OpenAI | None = None
-
-    @property
-    def vision_client(self) -> OpenAI:
-        if self._vision_client is None:
-            api_key = os.getenv("OPENAI_API_KEY", "")
-            base_url = os.getenv("OPENAI_BASE_URL", "https://api.deepseek.com")
-            self._vision_client = OpenAI(api_key=api_key, base_url=base_url)
-        return self._vision_client
+        self._vision_model: str = ""
 
     def extract(self, file_bytes: bytes, mime_type: str, filename: str = "") -> dict[str, Any]:
         """Main entry: extract text from any supported file type."""
@@ -67,7 +57,7 @@ class OcrService:
             engine = "PyMuPDF"
         elif handler_type == "image":
             text = self._extract_image(file_bytes, mime_type)
-            engine = "DeepSeek Vision"
+            engine = self._vision_model or "local"
         elif handler_type == "docx":
             text = self._extract_docx(file_bytes)
             engine = "python-docx"
@@ -75,7 +65,6 @@ class OcrService:
             text = file_bytes.decode("utf-8", errors="replace")
             engine = "utf-8"
         else:
-            # Try as text
             try:
                 text = file_bytes.decode("utf-8", errors="replace")
                 engine = "utf-8 fallback"
@@ -110,28 +99,40 @@ class OcrService:
         return "\n".join(paragraphs)
 
     def _extract_image(self, data: bytes, mime_type: str) -> str:
-        """Extract text from image using DeepSeek Vision API."""
-        try:
-            image_b64 = base64.b64encode(data).decode("utf-8")
-            data_uri = f"data:{mime_type};base64,{image_b64}"
+        """Extract text from image using EasyOCR (local, no API needed).
 
-            response = self.vision_client.chat.completions.create(
-                model=os.getenv("LLM_MODEL", "deepseek-chat"),
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": "请仔细识别这张图片中的所有中文和英文文本内容，逐字逐句输出，不要遗漏任何文字。如果是课本或教材内容，请保留原文格式（段落、标题等）。只输出识别到的文字，不要加任何解释。",
-                            },
-                            {"type": "image_url", "image_url": {"url": data_uri}},
-                        ],
-                    }
-                ],
-                max_tokens=4000,
-                temperature=0.1,
-            )
-            return response.choices[0].message.content or ""
+        EasyOCR is a pure-Python OCR engine that supports Chinese + English.
+        First run downloads model weights (~100MB), cached for subsequent calls.
+        """
+        try:
+            import easyocr
+            import numpy as np
+            from PIL import Image
+
+            # Lazy-init reader (singleton, cached after first init)
+            if not hasattr(self, '_easyocr_reader'):
+                lang_list = os.getenv("EASYOCR_LANG", "ch_sim,en").split(",")
+                self._easyocr_reader = easyocr.Reader(
+                    [l.strip() for l in lang_list],
+                    gpu=False,
+                )
+                self._vision_model = "EasyOCR (local)"
+
+            img = Image.open(io.BytesIO(data))
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            arr = np.array(img)
+
+            results = self._easyocr_reader.readtext(arr)
+            if not results:
+                return "[OCR 未识别到文字] 图片中可能没有文字。"
+
+            lines = [text for (_, text, _) in results if text.strip()]
+            return "\n".join(lines) if lines else "[OCR 未识别到文字]"
+
+        except ImportError as e:
+            self._vision_model = "unavailable"
+            return f"[OCR 不可用] 缺少依赖。请运行: pip install easyocr Pillow numpy"
         except Exception as e:
-            return f"[OCR 识别失败: {str(e)}]"
+            self._vision_model = "error"
+            return f"[OCR 识别失败: {e}]"

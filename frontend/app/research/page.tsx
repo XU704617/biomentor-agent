@@ -562,7 +562,7 @@ function DefaultResearchPage() {
                 <Search className="w-6 h-6 text-brand-faint/60" />
               </div>
               <p className="text-sm text-brand-muted font-body max-w-sm mx-auto leading-relaxed">
-                输入主题后，AI 将生成研究问题、背景说明、匹配案例、相关知识点、实验设计框架、证据判断和科研训练任务。当前版本提供关键词和检索策略建议，不涉及真实文献检索。
+                输入主题后，AI 将生成研究问题、背景说明、匹配案例、相关知识点、实验设计框架、证据判断和科研训练任务，并可进一步发起真实文献检索。
               </p>
             </div>
           )}
@@ -786,9 +786,9 @@ function DefaultResearchPage() {
 
               <div className="mt-4 p-3 rounded-xl bg-amber-50/50 border border-amber-100/50">
                 <p className="text-[11px] text-brand-muted font-body leading-relaxed">
-                  <span className="font-semibold text-brand-ink">AI 文献检索：接口预留 / 开发中</span>
+                  <span className="font-semibold text-brand-ink">AI 文献检索：已接入真实检索</span>
                   <br />
-                  当前版本提供关键词和检索策略建议，真实文献结果需接入外部检索 API 后生成。
+                  当前版本已接入后端真实文献检索接口，可直接返回 PubMed 检索结果；若未命中，可继续调整关键词重试。
                 </p>
               </div>
             </div>

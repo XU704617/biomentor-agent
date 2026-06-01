@@ -103,7 +103,11 @@ class GradingService:
         return grade
 
     def _rule_based_grade(self, response: Response, question: Question) -> Grade | None:
-        """Keyword-overlap fallback when LLM is unavailable."""
+        """Keyword-overlap fallback when LLM is unavailable.
+
+        Clearly marks results as low-confidence rule-based evaluation
+        so users are not misled into thinking this is AI grading.
+        """
         rubric = question.rubric or []
         student_answer = response.answer_text
         reference_answer = question.answer
@@ -121,7 +125,7 @@ class GradingService:
             self.db.add(grade)
             response.score = 0.0
             response.max_score = float(sum(d.get("max_score", 3) for d in rubric)) if rubric else 10.0
-            response.grader_type = GraderType.ai
+            response.grader_type = GraderType.auto
             response.graded_at = _utcnow()
             self.db.commit()
             self.db.refresh(grade)
@@ -137,18 +141,19 @@ class GradingService:
 
         score_breakdown = [
             {"dimension": d.get("dimension", ""), "score": round(d.get("max_score", 3) * overlap_ratio, 1),
-             "max_score": d.get("max_score", 3), "comment": "关键词覆盖评估"}
+             "max_score": d.get("max_score", 3), "comment": "⚠️ 关键词覆盖评估（LLM 不可用，评分仅供参考）"}
             for d in rubric
-        ] if rubric else [{"dimension": "综合", "score": scored, "max_score": max_score, "comment": "关键词覆盖评估"}]
+        ] if rubric else [{"dimension": "综合", "score": scored, "max_score": max_score, "comment": "⚠️ 关键词覆盖评估（LLM 不可用，评分仅供参考）"}]
 
-        confidence = round(0.4 + overlap_ratio * 0.3, 2)
+        # Lower confidence since this is rule-based, not AI
+        confidence = round(min(0.3 + overlap_ratio * 0.2, 0.5), 2)
 
         if overlap_ratio > 0.6:
-            feedback = "回答覆盖了大部分关键概念，结构较完整。建议补充更多具体细节和机制解释。"
+            feedback = "⚠️ LLM 服务不可用，以下为关键词匹配评估：回答覆盖了大部分关键概念，结构较完整。建议补充更多具体细节和机制解释。"
         elif overlap_ratio > 0.3:
-            feedback = "回答触及了一些关键点，但还可以更系统。建议按照「定义→机制→意义」的结构组织答案。"
+            feedback = "⚠️ LLM 服务不可用，以下为关键词匹配评估：回答触及了一些关键点，但还可以更系统。建议按照「定义→机制→意义」的结构组织答案。"
         else:
-            feedback = "回答需要补充更多核心概念。建议先回顾相关知识点，再尝试从定义、机制和应用三个层面作答。"
+            feedback = "⚠️ LLM 服务不可用，以下为关键词匹配评估：回答需要补充更多核心概念。建议先回顾相关知识点，再尝试从定义、机制和应用三个层面作答。"
 
         grade = Grade(
             response_id=response.id,
@@ -157,13 +162,13 @@ class GradingService:
             missing_points=[],
             feedback=feedback,
             confidence=confidence,
-            needs_review=confidence < settings.GRADING_CONFIDENCE_THRESHOLD,
+            needs_review=True,
         )
         self.db.add(grade)
 
         response.score = scored
         response.max_score = max_score
-        response.grader_type = GraderType.ai
+        response.grader_type = GraderType.auto
         response.graded_at = _utcnow()
         self.db.commit()
         self.db.refresh(grade)

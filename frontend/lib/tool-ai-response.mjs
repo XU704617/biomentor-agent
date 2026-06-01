@@ -35,7 +35,7 @@ export function createHelpfulToolFallback(tool, request) {
   if (request?.mode === "question" && question) {
     const title = context.title || label;
     const lower = `${question} ${title} ${highlights.join(" ")}`.toLowerCase();
-    let directAnswer = `你的问题是“${question}”。结合当前${label}结果，可以先围绕“${title}”里的已知事实来判断：${factText}${highlightText}`;
+    let directAnswer = `你的问题是"${question}"。结合当前${label}结果，可以先围绕"${title}"里的已知事实来判断：${factText}${highlightText}`;
 
     if (
       tool === "protein" &&
@@ -45,13 +45,13 @@ export function createHelpfulToolFallback(tool, request) {
       directAnswer =
         "胃蛋白酶通常在强酸环境中活性最高，常见教学范围可记为最适 pH 约 1.5-2.5；接近中性时活性会明显下降。它属于酸性天冬氨酸蛋白酶，所以理解活性 pH 时要把胃内酸性环境、活性位点质子化状态和底物蛋白切割联系起来。";
     } else if (/结构域|domain|活性位点|位点/i.test(question)) {
-      directAnswer = `针对“${question}”，建议先看“${title}”的结构域/功能区域与当前高亮要点。${highlightText}${factText}`;
+      directAnswer = `针对"${question}"，建议先看"${title}"的结构域/功能区域与当前高亮要点。${highlightText}${factText}`;
     } else if (/实验|设计|验证|引物|克隆|表达/i.test(question)) {
-      directAnswer = `针对实验设计问题，先把当前${label}结果转成可验证变量：对象是“${title}”，关键依据是${facts.length ? facts.map((item) => item.label).join("、") : "当前结构化结果"}。后续应优先设计对照、读出指标和风险检查，避免把工具输出直接当作实验结论。`;
+      directAnswer = `针对实验设计问题，先把当前${label}结果转成可验证变量：对象是"${title}"，关键依据是${facts.length ? facts.map((item) => item.label).join("、") : "当前结构化结果"}。后续应优先设计对照、读出指标和风险检查，避免把工具输出直接当作实验结论。`;
     }
 
     return {
-      answer: warningText ? `${directAnswer}${warningText}` : directAnswer,
+      answer: `⚠️ [LLM不可用] ${warningText ? `${directAnswer}${warningText}` : directAnswer}`,
       quickQuestions: [
         `这个回答对应哪些证据？`,
         `下一步应该用哪个工具验证？`,
@@ -63,7 +63,7 @@ export function createHelpfulToolFallback(tool, request) {
   }
 
   return {
-    answer: `围绕“${context.title || label}”，可以先按“事实识别 → 结构/组成 → 功能机制 → 应用场景”的顺序理解。${factText}${highlightText}${warningText}`,
+    answer: `⚠️ [LLM不可用] 围绕"${context.title || label}"，可以先按"事实识别 → 结构/组成 → 功能机制 → 应用场景"的顺序理解。${factText}${highlightText}${warningText}`,
     quickQuestions: [
       `这个${label}最关键的功能是什么？`,
       `这些结果应该按什么顺序解读？`,

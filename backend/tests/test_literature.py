@@ -10,6 +10,16 @@ client = TestClient(app)
 
 class TestLiteratureSearchNotConfigured:
 
+    @pytest.fixture(autouse=True)
+    def auto_patch_settings(self):
+        with patch("app.services.literature_service.get_settings") as mock_settings:
+            mock_settings.return_value.LITERATURE_PROVIDER = "not_configured"
+            mock_settings.return_value.LITERATURE_SEMANTIC_SCHOLAR_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_TOOL = "biomentor-agent"
+            mock_settings.return_value.LITERATURE_NCBI_EMAIL = ""
+            yield
+
     def test_not_configured_returns_empty_results_with_placeholder_message(self):
         response = client.get("/api/literature/search?q=mRNA&limit=5")
         assert response.status_code == 200
@@ -35,6 +45,16 @@ class TestLiteratureSearchNotConfigured:
 
 
 class TestLiteratureSearchLimitBounds:
+
+    @pytest.fixture(autouse=True)
+    def auto_patch_settings(self):
+        with patch("app.services.literature_service.get_settings") as mock_settings:
+            mock_settings.return_value.LITERATURE_PROVIDER = "not_configured"
+            mock_settings.return_value.LITERATURE_SEMANTIC_SCHOLAR_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_API_KEY = ""
+            mock_settings.return_value.LITERATURE_NCBI_TOOL = "biomentor-agent"
+            mock_settings.return_value.LITERATURE_NCBI_EMAIL = ""
+            yield
 
     def test_limit_zero_is_rejected_by_fastapi(self):
         response = client.get("/api/literature/search?q=test&limit=0")

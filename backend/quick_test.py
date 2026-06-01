@@ -3,9 +3,8 @@ import os, sys, json, time
 
 # Set env before any imports
 os.environ["DATABASE_URL"] = "sqlite:///./_ignore.db"
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "sk-placeholder")
-os.environ["OPENAI_BASE_URL"] = "https://api.deepseek.com"
-os.environ["LLM_MODEL"] = "deepseek-chat"
+os.environ.setdefault("OPENAI_BASE_URL", "https://api.deepseek.com/v1")
+os.environ.setdefault("LLM_MODEL", "deepseek-chat")
 os.environ["AGENT_TIMEOUT_SECONDS"] = "60"
 
 sys.path.insert(0, ".")

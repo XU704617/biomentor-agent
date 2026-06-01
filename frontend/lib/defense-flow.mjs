@@ -144,7 +144,7 @@ export function generateLocalDefenseQuestion({ brief, difficulty = "standard", t
   const role = COMMITTEE_ROLES[turnIndex % COMMITTEE_ROLES.length];
   const title = brief?.title || "当前课题";
   const questionPool = {
-    mechanism: `请你用一到两句话说明“${title}”背后的核心机制链路：关键变量如何影响表型或结论？`,
+    mechanism: `请你用一到两句话说明"${title}"背后的核心机制链路：关键变量如何影响表型或结论？`,
     method: `你的方法设计如何排除替代解释？请说明至少一个关键对照、一个读出指标和一个失败风险。`,
     evidence: `目前哪些证据最能支持你的结论？如果出现相反结果，你会优先检查哪一环？`,
     application: `这个研究如果要进入应用或产业场景，最大的转化价值和风险边界分别是什么？`,
@@ -152,7 +152,7 @@ export function generateLocalDefenseQuestion({ brief, difficulty = "standard", t
   const challengeTail = difficulty === "challenge" ? " 请特别注意不要只给结论，要说明证据边界。" : "";
   return {
     committeeRole: role.label,
-    question: `${questionPool[role.id]}${challengeTail}`,
+    question: `⚠️ [LLM不可用，模板提问] ${questionPool[role.id]}${challengeTail}`,
     intent: role.focus,
     hiddenRubric: ["问题聚焦", "证据意识", "方法严谨", "表达清晰"],
   };
@@ -165,20 +165,22 @@ export function generateLocalDefenseReport({ brief, transcript = [] } = {}) {
     .join(" ");
   const hasEvidence = /证据|数据|对照|测序|验证|实验|结果/i.test(studentText);
   const hasLimits = /局限|风险|不足|替代|边界|混杂/i.test(studentText);
-  const base = 68 + (hasEvidence ? 8 : 0) + (hasLimits ? 6 : 0);
-  const totalScore = Math.min(92, base);
+  // Rule-based scoring — clearly marked as approximate
+  const base = 60 + (hasEvidence ? 8 : 0) + (hasLimits ? 6 : 0);
+  const totalScore = Math.min(82, base);
 
   return {
     totalScore,
+    _warning: "⚠️ LLM不可用，以下评分为基于关键词匹配的规则评估，仅供参考",
     dimensions: [
-      scoreItem("科学问题", totalScore - 2, "科学问题是否聚焦、可研究"),
-      scoreItem("背景理解", totalScore - 4, "能否把主题放回学科背景"),
-      scoreItem("方法设计", totalScore + (hasEvidence ? 2 : -5), "技术路线、对照和可行性"),
-      scoreItem("证据链", totalScore + (hasEvidence ? 1 : -6), "证据是否能支撑结论"),
-      scoreItem("局限意识", totalScore + (hasLimits ? 2 : -8), "是否主动说明边界与替代解释"),
-      scoreItem("表达组织", totalScore - 1, "回答结构和学术表达清晰度"),
+      scoreItem("科学问题", totalScore - 2, "科学问题是否聚焦、可研究（规则评估）"),
+      scoreItem("背景理解", totalScore - 4, "能否把主题放回学科背景（规则评估）"),
+      scoreItem("方法设计", totalScore + (hasEvidence ? 2 : -5), "技术路线、对照和可行性（规则评估）"),
+      scoreItem("证据链", totalScore + (hasEvidence ? 1 : -6), "证据是否能支撑结论（规则评估）"),
+      scoreItem("局限意识", totalScore + (hasLimits ? 2 : -8), "是否主动说明边界与替代解释（规则评估）"),
+      scoreItem("表达组织", totalScore - 1, "回答结构和学术表达清晰度（规则评估）"),
     ],
-    committeeFeedback: `围绕“${brief?.title || "当前主题"}”，你的回答已经能覆盖基本研究思路。下一轮应继续加强证据链、对照设置和局限性说明。`,
+    committeeFeedback: `⚠️ LLM不可用，以下为规则评估：围绕"${brief?.title || "当前主题"}"，你的回答已经能覆盖基本研究思路。下一轮应继续加强证据链、对照设置和局限性说明。`,
     weakPoints: hasLimits
       ? ["进一步量化关键证据", "把工具结果与研究假设对应起来"]
       : ["局限性和替代解释说明不足", "需要更清楚地区分结论与推测"],

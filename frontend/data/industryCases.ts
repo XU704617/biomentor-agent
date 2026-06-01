@@ -54,6 +54,7 @@ export interface IndustryAnswer {
   nextTasks?: string[];
   sourceScope?: "based_on_local_cases" | "extended_reasoning" | "no_direct_match";
   disclaimer?: string;
+  _dataSource?: "api" | "local_fallback";
 }
 
 export interface AbilityMapping {

@@ -6,17 +6,17 @@ import Link from "next/link";
 
 interface WrongQ { id: string; question: string; course: string; chapter: string; yourAnswer: string; correctAnswer: string; explanation: string; wrongCount: number; lastWrongDate: string; }
 
-const PY = "http://localhost:8000";
+const PY = "http://localhost:8099";
 
 export default function WrongQuestionsPage() {
   const [items, setItems] = useState<WrongQ[]>([]);
   const [loading, setLoading] = useState(true);
+  const [backendOffline, setBackendOffline] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("全部课程");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Try backend first, fall back to knowledge-base seeded data
     fetch(`${PY}/api/questions/?status=published&limit=8`)
       .then(r => r.json())
       .then(d => {
@@ -27,17 +27,21 @@ export default function WrongQuestionsPage() {
             question: String(q.stem || q.question || "题目加载中"),
             course: String(q.course || q.course_name || "生物课程"),
             chapter: String(q.chapter || `第${i+1}章`),
-            yourAnswer: "未掌握",
+            yourAnswer: "查看解析",
             correctAnswer: String(q.answer || "请查看解析"),
             explanation: String(q.explanation || "请参考课程材料"),
-            wrongCount: Math.floor(Math.random() * 3) + 1,
-            lastWrongDate: new Date().toISOString().slice(0, 10),
+            wrongCount: 0,
+            lastWrongDate: "--",
           })));
         } else {
+          setBackendOffline(true);
           setItems(getFallbackQuestions());
         }
       })
-      .catch(() => setItems(getFallbackQuestions()))
+      .catch(() => {
+        setBackendOffline(true);
+        setItems(getFallbackQuestions());
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -55,6 +59,14 @@ export default function WrongQuestionsPage() {
       <div className="max-w-4xl mx-auto pt-8 md:pt-16">
         <h1 className="font-display font-extrabold text-brand-ink mb-2" style={{ fontSize: "clamp(28px, 4vw, 48px)" }}>错题本</h1>
         <p className="text-brand-muted mb-6">回顾答错的题目，针对性查漏补缺</p>
+
+        {backendOffline && (
+          <div className="mb-6 bg-amber-50 border border-amber-400 rounded-xl p-4 text-center">
+            <XCircle className="w-5 h-5 text-amber-600 inline-block mr-2" />
+            <span className="text-amber-800 font-medium">后端服务不可用，当前显示的是示例数据</span>
+            <p className="text-amber-600 text-sm mt-1">这些不是你的真实错题记录。请确认后端服务已启动（http://localhost:8099）。</p>
+          </div>
+        )}
 
         <div className="flex gap-3 mb-6">
           <div className="relative flex-1">
@@ -108,9 +120,9 @@ export default function WrongQuestionsPage() {
 
 function getFallbackQuestions(): WrongQ[] {
   return [
-    { id: "wq-1", question: "在CRISPR-Cas9系统中，tracrRNA的主要功能是什么？", course: "基因工程", chapter: "第三章", yourAnswer: "识别目标DNA序列", correctAnswer: "引导crRNA与Cas9蛋白结合形成功能性核糖核蛋白复合体", explanation: "tracrRNA通过碱基互补配对与pre-crRNA结合，引导crRNA成熟并与Cas9蛋白组装。", wrongCount: 3, lastWrongDate: "2025-05-20" },
-    { id: "wq-2", question: "质粒pBR322中，氨苄青霉素抗性基因编码什么酶？", course: "分子克隆", chapter: "第五章", yourAnswer: "限制性内切酶", correctAnswer: "β-内酰胺酶（TEM-1）", explanation: "AmpR基因编码β-内酰胺酶，通过水解β-内酰胺环使氨苄青霉素失活。", wrongCount: 2, lastWrongDate: "2025-05-18" },
-    { id: "wq-3", question: "PCR反应中，引物的Tm值一般应为多少？", course: "分子生物学", chapter: "第二章", yourAnswer: "45-50°C", correctAnswer: "55-65°C", explanation: "引物Tm值过高导致非特异扩增，过低降低结合效率。", wrongCount: 1, lastWrongDate: "2025-05-15" },
-    { id: "wq-4", question: "Prime Editing与经典CRISPR-Cas9的主要区别是？", course: "基因工程", chapter: "第七章", yourAnswer: "使用不同的Cas蛋白", correctAnswer: "不产生DNA双链断裂，使用逆转录酶实现精准编辑", explanation: "Prime Editing使用Cas9切口酶+逆转录酶融合蛋白+pegRNA，不依赖DSB和供体模板。", wrongCount: 2, lastWrongDate: "2025-05-12" },
+    { id: "wq-demo-1", question: "在CRISPR-Cas9系统中，tracrRNA的主要功能是什么？", course: "示例-基因工程", chapter: "示例数据", yourAnswer: "示例错误答案", correctAnswer: "引导crRNA与Cas9蛋白结合形成功能性核糖核蛋白复合体", explanation: "⚠️ 这些是示例题目，不是你真实的错题记录。tracrRNA通过碱基互补配对与pre-crRNA结合。", wrongCount: 0, lastWrongDate: "示例" },
+    { id: "wq-demo-2", question: "质粒pBR322中，氨苄青霉素抗性基因编码什么酶？", course: "示例-分子克隆", chapter: "示例数据", yourAnswer: "示例错误答案", correctAnswer: "β-内酰胺酶（TEM-1）", explanation: "⚠️ 这些是示例题目，不是你真实的错题记录。AmpR基因编码β-内酰胺酶。", wrongCount: 0, lastWrongDate: "示例" },
+    { id: "wq-demo-3", question: "PCR反应中，引物的Tm值一般应为多少？", course: "示例-分子生物学", chapter: "示例数据", yourAnswer: "示例错误答案", correctAnswer: "55-65°C", explanation: "⚠️ 这些是示例题目，不是你真实的错题记录。", wrongCount: 0, lastWrongDate: "示例" },
+    { id: "wq-demo-4", question: "Prime Editing与经典CRISPR-Cas9的主要区别是？", course: "示例-基因工程", chapter: "示例数据", yourAnswer: "示例错误答案", correctAnswer: "不产生DNA双链断裂，使用逆转录酶实现精准编辑", explanation: "⚠️ 这些是示例题目，不是你真实的错题记录。Prime Editing使用Cas9切口酶+逆转录酶。", wrongCount: 0, lastWrongDate: "示例" },
   ];
 }

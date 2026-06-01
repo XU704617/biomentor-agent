@@ -111,7 +111,7 @@ function generateChoiceQuestion(ctx: QuestionContext): GeneratedQuestion {
   return {
     id: nextId("choice"),
     type: "选择题",
-    question: `以下关于 ${kw} 的描述，正确的是？`,
+    question: `⚠️ 以下关于 ${kw} 的描述，正确的是？（模板生成）`,
     options: [
       "A. 它与细胞代谢无关",
       "B. 它是现代生命科学研究的重要方向",
@@ -119,7 +119,8 @@ function generateChoiceQuestion(ctx: QuestionContext): GeneratedQuestion {
       "D. 已被完全淘汰",
     ],
     answer: "B",
-    explanation: `${kw} 是现代生命科学研究的前沿领域之一，在基础研究和临床应用中都有重要意义。`,
+    explanation: `⚠️ LLM 不可用，以下为模板生成。${kw} 是现代生命科学研究的前沿领域之一，在基础研究和临床应用中都有重要意义。`,
+    _llmUnavailable: true,
     relatedConceptIds: ctx.matchedConcepts.slice(0, 2).map((c) => c.id),
     relatedPaperIds: ctx.matchedPapers.slice(0, 2).map((p) => p.id),
   };
@@ -156,9 +157,9 @@ function generateTrueFalseQuestion(ctx: QuestionContext): GeneratedQuestion {
   return {
     id: nextId("tf"),
     type: "判断题",
-    question: `在${ctx.extractedKeywords[0] || "生物学"}研究中，实验数据的可重复性是保证研究质量的关键因素。（判断对错）`,
+    question: `⚠️ 在${ctx.extractedKeywords[0] || "生物学"}研究中，实验数据的可重复性是保证研究质量的关键因素。（判断对错，模板生成）`,
     answer: "正确",
-    explanation: "实验数据的可重复性是科学研究的基本原则之一，确保研究结果不是偶然或假阳性。",
+    explanation: "⚠️ LLM 不可用，以下为模板生成。实验数据的可重复性是科学研究的基本原则之一，确保研究结果不是偶然或假阳性。",
     relatedConceptIds: [],
     relatedPaperIds: [],
   };
@@ -207,9 +208,9 @@ function generateShortAnswerQuestion(ctx: QuestionContext): GeneratedQuestion {
   return {
     id: nextId("sa"),
     type: "简答题",
-    question: `请简要说明${ctx.extractedKeywords[0] || "该生物学概念"}的基本原理及其在生物医学中的意义。`,
+    question: `⚠️ 请简要说明${ctx.extractedKeywords[0] || "该生物学概念"}的基本原理及其在生物医学中的意义。（模板生成）`,
     answer: `需要从基本定义、作用机制和应用价值三个方面进行阐述。`,
-    explanation: "考查学生对该知识点的整体理解和结构化表达能力。",
+    explanation: "⚠️ LLM 不可用，以下为模板生成。考查学生对该知识点的整体理解和结构化表达能力。",
     relatedConceptIds: ctx.matchedConcepts.slice(0, 2).map((c) => c.id),
     relatedPaperIds: ctx.matchedPapers.slice(0, 1).map((p) => p.id),
   };
@@ -246,9 +247,9 @@ function generateResearchQuestion(ctx: QuestionContext): GeneratedQuestion {
   return {
     id: nextId("research"),
     type: "科研拓展题",
-    question: `关于${ctx.extractedKeywords[0] || "该生物学领域"}，请设计一个简单的实验方案来验证你的假设。包括实验目的、材料、方法和预期结果。`,
+    question: `⚠️ 关于${ctx.extractedKeywords[0] || "该生物学领域"}，请设计一个简单的实验方案来验证你的假设。包括实验目的、材料、方法和预期结果。（模板生成）`,
     answer: "实验方案应包括：明确的实验目的、合适的模型系统（细胞系或模式生物）、清晰的对照组设计、可量化的检测指标、预期的结果及可能的替代解释。",
-    explanation: "考查学生的实验设计能力和科学思维。",
+    explanation: "⚠️ LLM 不可用，以下为模板生成。考查学生的实验设计能力和科学思维。",
     relatedConceptIds: [],
     relatedPaperIds: [],
   };
@@ -285,9 +286,9 @@ function generateIndustryQuestion(ctx: QuestionContext): GeneratedQuestion {
   return {
     id: nextId("industry"),
     type: "产业联系题",
-    question: `${ctx.extractedKeywords[0] || "该项生物技术"}在产业转化中面临哪些主要挑战？如何从基础研究走向实际应用？`,
+    question: `⚠️ ${ctx.extractedKeywords[0] || "该项生物技术"}在产业转化中面临哪些主要挑战？如何从基础研究走向实际应用？（模板生成）`,
     answer: "需要考虑技术成熟度、安全性、生产成本、监管审批和市场接受度等多个维度的挑战。",
-    explanation: "考查学生的产业思维和技术转化意识。",
+    explanation: "⚠️ LLM 不可用，以下为模板生成。考查学生的产业思维和技术转化意识。",
     relatedConceptIds: [],
     relatedPaperIds: [],
   };

@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     GRADING_CONFIDENCE_THRESHOLD: float = 0.75
 
     # ---- Literature ----
-    LITERATURE_PROVIDER: str = "not_configured"
+    LITERATURE_PROVIDER: str = "pubmed"
     LITERATURE_SEMANTIC_SCHOLAR_API_KEY: str = ""
     LITERATURE_NCBI_API_KEY: str = ""
     LITERATURE_NCBI_TOOL: str = "biomentor-agent"

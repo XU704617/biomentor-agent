@@ -11,79 +11,43 @@ interface DiagnosisProfile {
   recommendations: { title: string; description: string; href: string }[];
 }
 
-const PY = "http://localhost:8000";
+const PY = "http://localhost:8099";
 
 export default function DiagnosisPage() {
   const [data, setData] = useState<DiagnosisProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [backendOffline, setBackendOffline] = useState(false);
 
   useEffect(() => {
     fetch(`${PY}/api/diagnosis/profile/1`)
       .then(r => r.json())
       .then(d => {
-        // Map backend data to UI format
         const abilityProfile = d.ability_profile || d;
-        setData({
-          totalHours: 128.5,
-          masteryRate: Math.round((abilityProfile.mastery_level || 0.75) * 100),
-          activeDays: 42,
-          radarData: [
-            { name: "分子生物学", value: abilityProfile.molecular_biology || 78 },
-            { name: "基因工程", value: abilityProfile.genetic_engineering || 65 },
-            { name: "蛋白质科学", value: abilityProfile.protein_science || 82 },
-            { name: "代谢工程", value: abilityProfile.metabolic_engineering || 58 },
-            { name: "细胞生物学", value: abilityProfile.cell_biology || 71 },
-            { name: "生物信息学", value: abilityProfile.bioinformatics || 45 },
-          ],
-          weakPoints: (abilityProfile.weak_points && abilityProfile.weak_points.length > 0
-            ? abilityProfile.weak_points.map((w: { topic?: string; name?: string; mastery?: number }, i: number) => ({
-                topic: w.topic || w.name || "未知",
-                mastery: w.mastery || 40 + i * 10,
-                color: ["#f43f5e", "#f59e0b", "#f43f5e", "#f59e0b", "#f43f5e"][i] || "#f43f5e",
-              }))
-            : [
-                { topic: "CRISPR-Cas9机制", mastery: 40, color: "#f43f5e" },
-                { topic: "质粒设计", mastery: 55, color: "#f59e0b" },
-                { topic: "代谢通路调控", mastery: 48, color: "#f43f5e" },
-                { topic: "RNA干扰机制", mastery: 62, color: "#f59e0b" },
-                { topic: "蛋白质表达系统", mastery: 50, color: "#f43f5e" },
-              ]),
-          recommendations: (abilityProfile.recommendations && abilityProfile.recommendations.length > 0
-            ? abilityProfile.recommendations.map((r: { title?: string; label?: string; description?: string; reason?: string; href?: string }, i: number) => ({
-                title: r.title || r.label || "推荐学习",
-                description: r.description || r.reason || "基于你的薄弱环节推荐",
-                href: r.href || ["/explore", "/knowledge-map", "/research", "/tools"][i] || "/explore",
-              }))
-            : [
-                { title: "CRISPR系统深度学习", description: "从sgRNA设计到PAM识别，系统理解基因编辑原理", href: "/explore" },
-                { title: "质粒载体设计实践", description: "在序列工具中分析pET载体元件", href: "/tools/sequence" },
-                { title: "代谢通路可视化", description: "用通路图谱工具跟踪代谢流", href: "/tools/pathway" },
-                { title: "文献研读训练", description: "选择2篇前沿文献进行实验思路分析", href: "/paper-workbench" },
-              ]),
-        });
+        // Only use backend data, no hardcoded fallback stats
+        const hasProfile = abilityProfile && Object.keys(abilityProfile).length > 0 && !d.error;
+        setData(hasProfile ? {
+          totalHours: abilityProfile.total_hours,
+          masteryRate: abilityProfile.mastery_level != null ? Math.round(abilityProfile.mastery_level * 100) : undefined,
+          activeDays: abilityProfile.active_days,
+          radarData: (abilityProfile.abilities || []).map((a: { name: string; score: number }) => ({
+            name: a.name, value: a.score,
+          })),
+          weakPoints: (abilityProfile.weak_points || abilityProfile.weaknesses || []).map((w: { topic?: string; name?: string; mastery?: number; score?: number }, i: number) => ({
+            topic: w.topic || w.name || `薄弱项 ${i + 1}`,
+            mastery: Math.round((w.mastery || w.score || 0.4) * 100),
+            color: ["#f43f5e", "#f59e0b", "#f43f5e", "#f59e0b", "#f43f5e"][i] || "#f43f5e",
+          })),
+          recommendations: (abilityProfile.recommendations || []).map((r: { title?: string; label?: string; description?: string; reason?: string; href?: string }, i: number) => ({
+            title: r.title || r.label || "推荐学习",
+            description: r.description || r.reason || "",
+            href: r.href || ["/explore", "/knowledge-map", "/research", "/tools"][i] || "/explore",
+          })),
+        } : null);
+        setBackendOffline(!hasProfile);
       })
       .catch(() => {
-        // Fallback to demo data if backend unavailable
-        setData({
-          radarData: [
-            { name: "分子生物学", value: 78 }, { name: "基因工程", value: 65 },
-            { name: "蛋白质科学", value: 82 }, { name: "代谢工程", value: 58 },
-            { name: "细胞生物学", value: 71 }, { name: "生物信息学", value: 45 },
-          ],
-          weakPoints: [
-            { topic: "CRISPR-Cas9机制", mastery: 40, color: "#f43f5e" },
-            { topic: "质粒设计", mastery: 55, color: "#f59e0b" },
-            { topic: "代谢通路调控", mastery: 48, color: "#f43f5e" },
-            { topic: "RNA干扰机制", mastery: 62, color: "#f59e0b" },
-            { topic: "蛋白质表达系统", mastery: 50, color: "#f43f5e" },
-          ],
-          recommendations: [
-            { title: "CRISPR系统深度学习", description: "从sgRNA设计到PAM识别", href: "/explore" },
-            { title: "质粒载体设计实践", description: "分析pET载体元件", href: "/tools/sequence" },
-            { title: "代谢通路可视化", description: "用通路图谱工具跟踪代谢流", href: "/tools/pathway" },
-            { title: "文献研读训练", description: "选择前沿文献进行实验思路分析", href: "/paper-workbench" },
-          ],
-        });
+        setBackendOffline(true);
+        setData({ radarData: [], weakPoints: [], recommendations: [] });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -106,12 +70,20 @@ export default function DiagnosisPage() {
           <p className="text-brand-muted text-base md:text-lg font-body max-w-xl mx-auto">基于你的学习数据，AI 分析薄弱环节并推荐学习路径</p>
         </div>
 
+        {backendOffline && (
+          <div className="max-w-2xl mx-auto mb-8 bg-amber-50 border border-amber-400 rounded-xl p-4 text-center">
+            <AlertTriangle className="w-5 h-5 text-amber-600 inline-block mr-2" />
+            <span className="text-amber-800 font-medium">后端服务不可用</span>
+            <p className="text-amber-600 text-sm mt-1">当前无法获取你的真实学习数据。请确认后端服务已启动（http://localhost:8099），然后刷新页面。</p>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-10">
           {[
-            { icon: <Clock className="w-5 h-5" />, label: "学习时长", value: `${data.totalHours || 128.5}h`, color: "#2563eb" },
-            { icon: <TrendingUp className="w-5 h-5" />, label: "掌握率", value: `${data.masteryRate || 76}%`, color: "#059669" },
-            { icon: <CalendarDays className="w-5 h-5" />, label: "活跃天数", value: `${data.activeDays || 42}天`, color: "#7c3aed" },
+            { icon: <Clock className="w-5 h-5" />, label: "学习时长", value: data.totalHours != null ? `${data.totalHours}h` : "--", color: "#2563eb" },
+            { icon: <TrendingUp className="w-5 h-5" />, label: "掌握率", value: data.masteryRate != null ? `${data.masteryRate}%` : "--", color: "#059669" },
+            { icon: <CalendarDays className="w-5 h-5" />, label: "活跃天数", value: data.activeDays != null ? `${data.activeDays}天` : "--", color: "#7c3aed" },
           ].map((s) => (
             <div key={s.label} className="glass-card rounded-2xl p-5 text-center">
               <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: s.color + "15" }}>
