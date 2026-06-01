@@ -36,6 +36,24 @@ function getQuestionTypeLabel(type: string): string {
   return type;
 }
 
+function getFileKind(file: File | null): "image" | "pdf" | "document" | "unknown" {
+  if (!file) return "unknown";
+  const lowerName = file.name.toLowerCase();
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) return "pdf";
+  if (
+    file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    file.type === "text/plain" ||
+    file.type === "text/markdown" ||
+    lowerName.endsWith(".docx") ||
+    lowerName.endsWith(".txt") ||
+    lowerName.endsWith(".md")
+  ) {
+    return "document";
+  }
+  return "unknown";
+}
+
 export default function ExplorePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +63,7 @@ export default function ExplorePage() {
   const [statusText, setStatusText] = useState("等待上传文件");
   const [result, setResult] = useState<PhotoLearningAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const uploadedKind = getFileKind(uploadedFile);
 
   useEffect(() => {
     return () => {
@@ -66,7 +85,13 @@ export default function ExplorePage() {
     setPreviewUrl(file.type.startsWith("image/") ? URL.createObjectURL(file) : null);
     setResult(null);
     setError(null);
-    setStatusText("文件已就绪，等待开始解析");
+    setStatusText(
+      getFileKind(file) === "image"
+        ? "图片已就绪，等待开始 OCR + LLM 解析"
+        : getFileKind(file) === "pdf"
+          ? "PDF 已就绪，等待开始 PDF LLM 识别"
+          : "文档已就绪，等待开始解析"
+    );
   };
 
   const handleClear = () => {
@@ -88,7 +113,13 @@ export default function ExplorePage() {
 
     setIsProcessing(true);
     setError(null);
-    setStatusText("正在上传文件并调用后端真实 OCR");
+    setStatusText(
+      uploadedKind === "image"
+        ? "正在上传图片并调用后端 OCR + LLM 解析"
+        : uploadedKind === "pdf"
+          ? "正在上传 PDF 并调用后端 PDF LLM 识别"
+          : "正在上传文档并调用后端解析"
+    );
 
     try {
       const form = new FormData();
@@ -104,10 +135,15 @@ export default function ExplorePage() {
         throw new Error(payload.detail || "知识探索处理失败");
       }
 
-      setStatusText("OCR 已完成，正在整理后端 LLM 解析结果");
       const payload = (await response.json()) as PhotoLearningAnalysis;
       setResult(payload);
-      setStatusText("真实 OCR + 后端 LLM 解析完成");
+      setStatusText(
+        uploadedKind === "image"
+          ? "图片 OCR + 后端 LLM 解析完成"
+          : uploadedKind === "pdf"
+            ? "PDF LLM 解析完成"
+            : "文档解析完成"
+      );
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "知识探索处理失败";
       setError(message);
@@ -135,11 +171,11 @@ export default function ExplorePage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-electric/8 text-accent-electric text-[11px] font-semibold font-body mb-4">
             <ScanLine className="w-3 h-3" />
-            真实图片 OCR + 后端真实 LLM 解析
+            PDF 直连 LLM，只有图片走 OCR
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">知识探索中心</h1>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            上传教材图片、PDF、DOCX 或文本文件，页面会直接调用后端 `photo_learning` 全链路，完成真实 OCR、关键词提取、知识匹配和题目生成。
+            上传教材图片、PDF、DOCX 或文本文件，页面会直接调用后端 `photo_learning` 全链路：PDF 直连 LLM，图片走 OCR，其余文档走文本提取后统一解析。
           </p>
         </div>
 
@@ -171,13 +207,15 @@ export default function ExplorePage() {
                   <div>
                     <FileText className="w-10 h-10 text-blue-500 mx-auto mb-3" />
                     <p className="text-sm text-gray-700 font-medium break-all">{uploadedFile.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">{Math.round(uploadedFile.size / 1024)} KB</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {Math.round(uploadedFile.size / 1024)} KB · {uploadedKind === "pdf" ? "PDF LLM" : "文档解析"}
+                    </p>
                   </div>
                 ) : (
                   <div>
                     <ImageIcon className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                     <p className="text-sm text-gray-700 font-medium">点击上传图片、PDF、DOCX 或文本</p>
-                    <p className="text-xs text-gray-500 mt-1">支持图片 OCR，不再只限 PDF / DOCX</p>
+                    <p className="text-xs text-gray-500 mt-1">PDF 直连 LLM，只有图片走 OCR</p>
                   </div>
                 )}
               </div>
@@ -189,7 +227,17 @@ export default function ExplorePage() {
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {isProcessing ? "处理中" : "开始真实解析"}
+                  {isProcessing
+                    ? uploadedKind === "pdf"
+                      ? "PDF 识别中"
+                      : uploadedKind === "image"
+                        ? "OCR + LLM 处理中"
+                        : "文档解析中"
+                    : uploadedKind === "pdf"
+                      ? "开始 PDF LLM 识别"
+                      : uploadedKind === "image"
+                        ? "开始 OCR + LLM 解析"
+                        : "开始文档解析"}
                 </button>
                 <button
                   onClick={handleClear}
@@ -221,9 +269,9 @@ export default function ExplorePage() {
               </div>
               <ul className="text-sm text-gray-600 space-y-2 list-disc pl-5">
                 <li>图片：后端 EasyOCR 本地识别</li>
-                <li>PDF：后端 PyMuPDF 提取文本</li>
-                <li>DOCX：后端 python-docx 提取文本</li>
-                <li>解析：统一走后端 `photo_learning` 的真实 LLM 管线</li>
+                <li>PDF：后端 PDF LLM 直连识别</li>
+                <li>DOCX / TXT / MD：后端提取文本后统一进入 LLM 解析</li>
+                <li>冲突处理：优先走 PDF LLM 路径，不再把 PDF 当 OCR</li>
               </ul>
               <Link href="/photo-learning" className="inline-flex items-center gap-1 text-sm text-blue-600 mt-4 hover:text-blue-700">
                 打开拍照学练
@@ -239,10 +287,12 @@ export default function ExplorePage() {
                   <Sparkles className="w-5 h-5 text-blue-500" />
                   <h2 className="font-semibold text-gray-800">解析结果</h2>
                 </div>
-                {result?.ocr_engine && (
+                {(result?.processing_engine || result?.ocr_engine) && (
                   <span className="text-xs text-gray-500">
-                    OCR: {result.ocr_engine}
-                    {typeof result.ocr_char_count === "number" ? ` · ${result.ocr_char_count} 字` : ""}
+                    解析引擎: {result.processing_engine || result.ocr_engine}
+                    {typeof (result.processing_char_count ?? result.ocr_char_count) === "number"
+                      ? ` · ${result.processing_char_count ?? result.ocr_char_count} 字`
+                      : ""}
                   </span>
                 )}
               </div>
@@ -356,7 +406,9 @@ export default function ExplorePage() {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">OCR 文本</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                      {result.source_kind === "image" ? "OCR 文本" : "内容摘录"}
+                    </h3>
                     <textarea
                       value={result.raw_text}
                       readOnly
@@ -369,7 +421,7 @@ export default function ExplorePage() {
                 <div className="min-h-[480px] flex flex-col items-center justify-center text-gray-400">
                   <BookOpen className="w-16 h-16 mb-4 opacity-50" />
                   <p className="text-center max-w-md">
-                    上传文件后，这里会展示后端真实 OCR 与后端真实 LLM 的完整解析结果。
+                    上传文件后，这里会展示按文件类型自动分流后的完整解析结果。
                   </p>
                 </div>
               )}

@@ -651,11 +651,20 @@ class GeneratedQuestion(BaseModel):
 class PhotoLearningResponse(BaseModel):
     raw_text: str = ""
     extracted_keywords: list[str] = []
+    domain: str = ""
     matched_concepts: list[dict[str, Any]] = []
     matched_papers: list[dict[str, Any]] = []
     matched_tasks: list[dict[str, Any]] = []
     summary: str = ""
+    learning_suggestions: list[str] = []
     questions: list[GeneratedQuestion] = []
+    source_kind: str = ""
+    processing_engine: str = ""
+    processing_char_count: int = 0
+    processing_filename: str = ""
+    ocr_engine: str = ""
+    ocr_char_count: int = 0
+    ocr_filename: str = ""
 
 
 # ---------------------------------------------------------------------------

@@ -19,6 +19,7 @@ export interface PhotoLearningAnalysis {
   raw_text: string;
   extracted_keywords: string[];
   domain?: string;
+  source_kind?: string;
   matched_concepts: Array<{
     id: number;
     name: string;
@@ -36,6 +37,9 @@ export interface PhotoLearningAnalysis {
   summary: string;
   learning_suggestions?: string[];
   questions: BackendQuestion[];
+  processing_engine?: string;
+  processing_char_count?: number;
+  processing_filename?: string;
   ocr_engine?: string;
   ocr_char_count?: number;
   ocr_filename?: string;

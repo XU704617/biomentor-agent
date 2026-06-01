@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas import PhotoLearningRequest, PhotoLearningResponse
-from app.services.photo_learning import PhotoLearningService
+from app.services.photo_learning import KEYWORD_DICT, PhotoLearningService
 from app.services.ocr import OcrService
 
 router = APIRouter(prefix="/api/photo-learning", tags=["photo-learning"])
@@ -59,18 +59,13 @@ async def full_pipeline(
     if len(data) > 50 * 1024 * 1024:
         raise HTTPException(400, "文件超过50MB限制")
 
-    ocr_result = ocr_service.extract(data, mime, file.filename)
+    ocr_result = {"success": True}
     if not ocr_result["success"]:
         raise HTTPException(400, ocr_result.get("error", "OCR失败"))
 
     # Step 2: Analyze
     service = PhotoLearningService(db)
-    analysis = service.analyze(ocr_result["text"])
-
-    # Merge
-    analysis["ocr_engine"] = ocr_result["engine"]
-    analysis["ocr_char_count"] = ocr_result["char_count"]
-    analysis["ocr_filename"] = ocr_result["filename"]
+    analysis = service.analyze_uploaded_file(data, mime, file.filename)
     return analysis
 
 
@@ -78,6 +73,6 @@ async def full_pipeline(
 def get_keyword_dict():
     """Return the built-in biology keyword dictionary for frontend reference."""
     return {
-        "total": len(PhotoLearningService.KEYWORD_DICT),
-        "keywords": PhotoLearningService.KEYWORD_DICT,
+        "total": len(KEYWORD_DICT),
+        "keywords": KEYWORD_DICT,
     }

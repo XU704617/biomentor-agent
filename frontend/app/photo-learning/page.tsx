@@ -37,6 +37,31 @@ function getQuestionTypeLabel(type: string): string {
   return type;
 }
 
+function getFileKind(file: File | null): "image" | "pdf" | "document" | "unknown" {
+  if (!file) return "unknown";
+  const lowerName = file.name.toLowerCase();
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) return "pdf";
+  if (
+    file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    file.type === "text/plain" ||
+    file.type === "text/markdown" ||
+    lowerName.endsWith(".docx") ||
+    lowerName.endsWith(".txt") ||
+    lowerName.endsWith(".md")
+  ) {
+    return "document";
+  }
+  return "unknown";
+}
+
+function getReadyStatus(kind: "image" | "pdf" | "document" | "unknown"): string {
+  if (kind === "image") return "图片已就绪，将先做 OCR 再做 LLM 解析";
+  if (kind === "pdf") return "PDF 已就绪，将直接走 PDF LLM 识别";
+  if (kind === "document") return "文档已就绪，将直接走文档解析";
+  return "文件已就绪，等待开始解析";
+}
+
 export default function PhotoLearningPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +74,7 @@ export default function PhotoLearningPage() {
   const [statusText, setStatusText] = useState("等待上传图片或文档");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PhotoLearningAnalysis | null>(null);
+  const uploadedKind = getFileKind(uploadedFile);
 
   useEffect(() => {
     return () => {
@@ -72,7 +98,7 @@ export default function PhotoLearningPage() {
     setOcrEngine("");
     setResult(null);
     setError(null);
-    setStatusText("文件已就绪，可以先做 OCR，再做 LLM 解析");
+    setStatusText(getReadyStatus(getFileKind(file)));
   };
 
   const handleClear = () => {
@@ -94,6 +120,44 @@ export default function PhotoLearningPage() {
 
   const handleStartOcr = async () => {
     if (!uploadedFile) return;
+
+    if (uploadedKind !== "image") {
+      setIsRecognizing(true);
+      setError(null);
+      setStatusText(
+        uploadedKind === "pdf"
+          ? "正在调用后端 PDF LLM 识别"
+          : "正在调用后端文档解析"
+      );
+
+      try {
+        const form = new FormData();
+        form.append("file", uploadedFile);
+
+        const response = await fetch(`${PHOTO_PIPELINE_BACKEND}/api/photo-learning/full-pipeline`, {
+          method: "POST",
+          body: form,
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ detail: "解析失败" }));
+          throw new Error(payload.detail || "解析失败");
+        }
+
+        const payload = (await response.json()) as PhotoLearningAnalysis;
+        setOcrText(payload.raw_text || "");
+        setOcrEngine(payload.processing_engine || payload.ocr_engine || "");
+        setResult(payload);
+        setStatusText(uploadedKind === "pdf" ? "PDF LLM 解析完成" : "文档解析完成");
+      } catch (caughtError) {
+        const message = caughtError instanceof Error ? caughtError.message : "解析失败";
+        setError(message);
+        setStatusText(uploadedKind === "pdf" ? "PDF LLM 解析失败" : "文档解析失败");
+      } finally {
+        setIsRecognizing(false);
+      }
+      return;
+    }
 
     setIsRecognizing(true);
     setError(null);
@@ -132,7 +196,7 @@ export default function PhotoLearningPage() {
   };
 
   const handleAnalyze = async () => {
-    if (!ocrText.trim()) return;
+    if (uploadedKind !== "image" || !ocrText.trim()) return;
 
     setIsAnalyzing(true);
     setError(null);
@@ -151,7 +215,12 @@ export default function PhotoLearningPage() {
       }
 
       const payload = (await response.json()) as PhotoLearningAnalysis;
-      setResult({ ...payload, ocr_engine: ocrEngine || payload.ocr_engine });
+      setResult({
+        ...payload,
+        ocr_engine: ocrEngine || payload.ocr_engine,
+        processing_engine: payload.processing_engine || ocrEngine || payload.ocr_engine,
+        source_kind: payload.source_kind || "image",
+      });
       setStatusText("OCR 后端 LLM 解析完成");
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "LLM 解析失败";
@@ -180,13 +249,13 @@ export default function PhotoLearningPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-electric/8 text-accent-electric text-[11px] font-semibold font-body mb-5">
             <ScanLine className="w-3 h-3" />
-            真实 OCR + 后端真实 LLM 解析
+            PDF 直连 LLM，只有图片走 OCR
           </div>
           <h1 className="font-display font-extrabold text-brand-ink leading-[1.1] tracking-[-0.03em] mb-3" style={{ fontSize: "clamp(28px, 4vw, 48px)" }}>
             拍照学练
           </h1>
           <p className="text-brand-muted text-base md:text-lg font-body max-w-2xl mx-auto">
-            图片先走真实 OCR，得到文本后再直连后端 `photo_learning/analyze`，输出关键词、知识匹配、学习建议和题目。
+            PDF 直接走后端 PDF LLM 识别；只有图片先做 OCR，再进入后端 `photo_learning/analyze`，输出关键词、知识匹配、学习建议和题目。
           </p>
         </div>
 
@@ -215,13 +284,13 @@ export default function PhotoLearningPage() {
                 <div>
                   <FileText className="w-10 h-10 text-accent-electric mx-auto mb-3" />
                   <p className="text-sm text-brand-muted font-body mb-1 break-all">{uploadedFile.name}</p>
-                  <p className="text-xs text-brand-faint font-body">文件已就绪</p>
+                  <p className="text-xs text-brand-faint font-body">{getReadyStatus(uploadedKind)}</p>
                 </div>
               ) : (
                 <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
                   <ImageIcon className="w-10 h-10 text-brand-faint/40 mx-auto mb-3" />
                   <p className="text-sm text-brand-muted font-body mb-1">点击上传图片、PDF 或 DOCX</p>
-                  <p className="text-xs text-brand-faint font-body">先 OCR，再进入后端 LLM 解析</p>
+                  <p className="text-xs text-brand-faint font-body">PDF 直连 LLM，只有图片走 OCR</p>
                 </div>
               )}
               <input ref={fileInputRef} type="file" accept={ACCEPTED_TYPES} onChange={handleFileChange} className="hidden" />
@@ -231,13 +300,25 @@ export default function PhotoLearningPage() {
               <button onClick={handleStartOcr} disabled={!uploadedFile || isRecognizing}
                 className="btn-hero cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 {isRecognizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
-                {isRecognizing ? "OCR 识别中" : "开始真实 OCR"}
+                {isRecognizing
+                  ? uploadedKind === "pdf"
+                    ? "PDF 识别中"
+                    : uploadedKind === "image"
+                      ? "OCR 识别中"
+                      : "文档解析中"
+                  : uploadedKind === "pdf"
+                    ? "开始 PDF LLM 识别"
+                    : uploadedKind === "image"
+                      ? "开始图片 OCR"
+                      : "开始文档解析"}
               </button>
-              <button onClick={handleAnalyze} disabled={!ocrText.trim() || isAnalyzing}
-                className="btn-hero-secondary cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                {isAnalyzing ? "LLM 解析中" : "开始后端 LLM 解析"}
-              </button>
+              {uploadedKind === "image" && (
+                <button onClick={handleAnalyze} disabled={!ocrText.trim() || isAnalyzing}
+                  className="btn-hero-secondary cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {isAnalyzing ? "LLM 解析中" : "开始后端 LLM 解析"}
+                </button>
+              )}
               <button onClick={handleClear}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 border border-black/5 text-brand-ink hover:bg-white transition-all cursor-pointer">
                 <X className="w-4 h-4" /> 清空
@@ -255,7 +336,9 @@ export default function PhotoLearningPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-accent-amber" />
-                  <h2 className="font-display font-bold text-sm text-brand-ink">OCR 文本</h2>
+                  <h2 className="font-display font-bold text-sm text-brand-ink">
+                    {uploadedKind === "image" ? "OCR 文本" : "内容摘录"}
+                  </h2>
                 </div>
                 <span className="text-xs text-brand-faint font-body">
                   {ocrText.length} 字符{ocrEngine ? ` · ${ocrEngine}` : ""}

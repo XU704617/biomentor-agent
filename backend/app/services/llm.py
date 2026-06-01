@@ -10,6 +10,7 @@ Handles provider differences:
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -263,6 +264,88 @@ class LLMService:
             {"role": "user", "content": user_prompt},
         ]
         return self.chat(messages=messages, model=model, temperature=temperature, max_tokens=max_tokens)
+
+    def generate_json_from_file(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        schema: dict,
+        file_bytes: bytes,
+        filename: str,
+        model: str | None = None,
+        temperature: float = 0.2,
+        max_output_tokens: int | None = None,
+    ) -> dict[str, Any]:
+        model = model or self.settings.LLM_MODEL
+        max_output_tokens = max_output_tokens or self.settings.LLM_MAX_TOKENS
+        max_retries = self.settings.AGENT_MAX_RETRIES
+
+        if not self.available:
+            return {}
+
+        props = schema.get("properties", {})
+        required = schema.get("required", [])
+        field_descs = []
+        for name, prop in props.items():
+            ptype = prop.get("type", "string")
+            is_array = "array of " if ptype == "array" else ""
+            item_type = ""
+            if ptype == "array" and "items" in prop:
+                item_type = prop["items"].get("type", "string")
+            desc = f'- "{name}": {is_array}{item_type or ptype}'
+            if name in required:
+                desc += " (必填)"
+            field_descs.append(desc)
+
+        instructions = (
+            f"{system_prompt}\n\n"
+            "你必须输出一个纯 JSON 对象，不要包含 markdown 代码块标记。\n"
+            "JSON 必须包含以下字段：\n"
+            + "\n".join(field_descs)
+            + "\n\n直接输出 JSON，不要输出任何其他内容。"
+        )
+
+        file_b64 = base64.b64encode(file_bytes).decode("ascii")
+        input_payload = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": user_prompt},
+                    {
+                        "type": "input_file",
+                        "filename": filename or "document.pdf",
+                        "file_data": file_b64,
+                        "detail": "high",
+                    },
+                ],
+            }
+        ]
+
+        last_error: Exception | None = None
+        for attempt in range(max_retries + 1):
+            start = time.time()
+            for client_label, client in self.clients:
+                try:
+                    response = client.responses.create(
+                        model=model,
+                        instructions=instructions,
+                        input=input_payload,
+                        temperature=temperature,
+                        max_output_tokens=max_output_tokens,
+                    )
+                    _elapsed = int((time.time() - start) * 1000)
+                    parsed = self._extract_json(response.output_text or "")
+                    if parsed:
+                        return parsed
+                    last_error = RuntimeError(f"[{client_label}] empty or invalid JSON from file response")
+                except Exception as e:
+                    last_error = RuntimeError(f"[{client_label}] {e}")
+                    continue
+
+            if attempt < max_retries:
+                time.sleep(2 ** attempt)
+
+        raise RuntimeError(f"LLM file call failed after {max_retries + 1} attempts: {last_error}")
 
     # ── Helpers ───────────────────────────────────────────────────
 

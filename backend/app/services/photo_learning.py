@@ -4,12 +4,14 @@ Photo Learning Service — LLM-powered OCR text analysis, concept extraction, qu
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.models import KnowledgePoint, ResearchPaper
 from app.services.llm import get_llm
+from app.services.ocr import OcrService
 from app.services.prompts import PHOTO_ANALYSIS_SYSTEM, PHOTO_ANALYSIS_USER, PHOTO_ANALYSIS_SCHEMA
 from app.services.questions import QuestionService
 
@@ -33,21 +35,82 @@ class PhotoLearningService:
         self.db = db
         self.llm = get_llm()
         self.question_service = QuestionService(db)
+        self.ocr_service = OcrService()
+
+    def analyze_uploaded_file(self, file_bytes: bytes, mime_type: str, filename: str = "") -> dict[str, Any]:
+        file_kind = self._resolve_file_kind(mime_type, filename)
+
+        if file_kind == "pdf":
+            analysis = self._analyze_pdf_with_llm(file_bytes, filename)
+            return self._attach_processing_metadata(
+                analysis,
+                file_kind="pdf",
+                engine="pdf-llm",
+                char_count=len(analysis.get("raw_text", "")),
+                filename=filename,
+            )
+
+        extracted = self.ocr_service.extract(file_bytes, mime_type, filename)
+        if not extracted.get("success"):
+            raise RuntimeError(extracted.get("error", "File extraction failed"))
+
+        analysis = self.analyze(str(extracted.get("text", "")))
+        return self._attach_processing_metadata(
+            analysis,
+            file_kind=file_kind,
+            engine=str(extracted.get("engine", "")),
+            char_count=int(extracted.get("char_count", 0) or 0),
+            filename=str(extracted.get("filename", filename)),
+        )
 
     def analyze(self, text: str, image_base64: str | None = None) -> dict[str, Any]:
         """Full photo learning pipeline: OCR text -> LLM analysis -> questions."""
+
+        llm_result = self._run_text_analysis(text)
+        return self._build_analysis(text, llm_result)
+
+    def _run_text_analysis(self, text: str) -> dict[str, Any]:
+        """Analyze already extracted text with the standard LLM schema."""
 
         if not self.llm.available:
             raise RuntimeError("LLM service unavailable for photo learning analysis")
 
         user_prompt = PHOTO_ANALYSIS_USER.format(text=text[:3000])
-        llm_result = self.llm.generate_json(
+        return self.llm.generate_json(
             system_prompt=PHOTO_ANALYSIS_SYSTEM,
             user_prompt=user_prompt,
             schema=PHOTO_ANALYSIS_SCHEMA,
             temperature=0.3,
         )
 
+    def _analyze_pdf_with_llm(self, file_bytes: bytes, filename: str) -> dict[str, Any]:
+        """Read PDF directly with LLM file input instead of OCR/text extraction."""
+
+        if not self.llm.available:
+            raise RuntimeError("LLM service unavailable for PDF analysis")
+
+        llm_result = self.llm.generate_json_from_file(
+            system_prompt=PHOTO_ANALYSIS_SYSTEM,
+            user_prompt=(
+                f"学生上传了一份 PDF 文档（文件名：{filename or 'document.pdf'}）。"
+                "请直接阅读 PDF 内容并完成分析。"
+                "如果内容较长，优先抓取主题、核心概念、定义、机制、实验流程和结论。"
+                "请尽量填写 source_excerpt，给出一段适合前端展示的内容摘录或梳理。"
+            ),
+            schema=PHOTO_ANALYSIS_SCHEMA,
+            file_bytes=file_bytes,
+            filename=filename or "document.pdf",
+            temperature=0.2,
+        )
+
+        raw_text = str(llm_result.get("source_excerpt", "")).strip()
+        if not raw_text:
+            summary = str(llm_result.get("summary", "")).strip()
+            raw_text = f"[PDF direct LLM parsing] {filename or 'document.pdf'}\n\n{summary}"
+
+        return self._build_analysis(raw_text, llm_result)
+
+    def _build_analysis(self, text: str, llm_result: dict[str, Any]) -> dict[str, Any]:
         llm_keywords = llm_result.get("keywords", [])
         domain = llm_result.get("domain", "")
         summary = llm_result.get("summary", "")
@@ -82,6 +145,39 @@ class PhotoLearningService:
             "learning_suggestions": llm_result.get("learning_suggestions", []),
             "questions": questions,
         }
+
+    def _attach_processing_metadata(
+        self,
+        analysis: dict[str, Any],
+        *,
+        file_kind: str,
+        engine: str,
+        char_count: int,
+        filename: str,
+    ) -> dict[str, Any]:
+        analysis["source_kind"] = file_kind
+        analysis["processing_engine"] = engine
+        analysis["processing_char_count"] = char_count
+        analysis["processing_filename"] = filename
+        analysis["ocr_engine"] = engine
+        analysis["ocr_char_count"] = char_count
+        analysis["ocr_filename"] = filename
+        return analysis
+
+    def _resolve_file_kind(self, mime_type: str, filename: str) -> str:
+        ext = os.path.splitext(filename or "")[1].lower()
+        if (mime_type or "").startswith("image/") or ext in {".png", ".jpg", ".jpeg", ".webp", ".bmp"}:
+            return "image"
+        if mime_type == "application/pdf" or ext == ".pdf":
+            return "pdf"
+        if (
+            mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            or ext == ".docx"
+        ):
+            return "docx"
+        if mime_type in {"text/plain", "text/markdown"} or ext in {".txt", ".md"}:
+            return "text"
+        return "unknown"
 
     def _dict_extract(self, text: str) -> list[str]:
         found: set[str] = set()

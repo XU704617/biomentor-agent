@@ -156,6 +156,7 @@ PHOTO_ANALYSIS_SCHEMA = {
         "domain": {"type": "string"},
         "subdomain": {"type": "string"},
         "summary": {"type": "string"},
+        "source_excerpt": {"type": "string"},
         "key_concepts": {"type": "array", "items": {"type": "string"}},
         "learning_suggestions": {"type": "array", "items": {"type": "string"}},
         "questions": {
