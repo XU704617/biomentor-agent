@@ -184,6 +184,9 @@ class ResearchPaperOut(BaseModel):
     key_finding: str = ""
     teaching_value: str = ""
     research_value: str = ""
+    pdf_filename: str = ""
+    pdf_storage_path: str = ""
+    pdf_text_char_count: int = 0
     evidence_level: str = "medium"
     reading_difficulty: str = "medium"
     suggested_reading_order: int = 0
@@ -216,6 +219,9 @@ class ResearchPaperCreate(BaseModel):
     key_finding: str = ""
     teaching_value: str = ""
     research_value: str = ""
+    pdf_filename: str = ""
+    pdf_storage_path: str = ""
+    pdf_text_char_count: int = 0
     related_concepts: list[str] = []
 
 
@@ -233,6 +239,9 @@ class ResearchPaperUpdate(BaseModel):
     key_finding: str | None = None
     teaching_value: str | None = None
     research_value: str | None = None
+    pdf_filename: str | None = None
+    pdf_storage_path: str | None = None
+    pdf_text_char_count: int | None = None
     related_concepts: list[str] | None = None
 
 

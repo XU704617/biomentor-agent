@@ -4,13 +4,64 @@ Paper Service — LLM-powered research paper analysis, learning plans, defense o
 
 from __future__ import annotations
 
+import re
+import uuid
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.models import ResearchPaper
+from app.config import get_settings
 from app.services.llm import get_llm
+from app.services.ingestion import IngestionService
 from app.services.prompts import PAPER_ANALYSIS_SYSTEM, PAPER_ANALYSIS_USER, PAPER_ANALYSIS_SCHEMA
+
+PAPER_IMPORT_SYSTEM = """你是科研论文信息抽取助手。请从上传的 PDF 文本中提取结构化文献信息。
+
+要求：
+1. 只根据提供的 PDF 文本抽取，不要编造不存在的信息。
+2. 如果 PDF 中没有明确中文标题，可将 title_zh 留空字符串。
+3. year 必须是四位数字；无法确认时返回 0。
+4. keywords 与 related_concepts 请返回简洁列表。
+5. source_type 固定返回“学术文献”。
+6. teaching_value 与 research_value 要从教学和科研角度分别概括，不要泛泛而谈。
+"""
+
+PAPER_IMPORT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string"},
+        "title_zh": {"type": "string"},
+        "direction": {"type": "string"},
+        "venue": {"type": "string"},
+        "year": {"type": "integer"},
+        "source_type": {"type": "string"},
+        "keywords": {"type": "array", "items": {"type": "string"}},
+        "abstract": {"type": "string"},
+        "core_problem": {"type": "string"},
+        "method_summary": {"type": "string"},
+        "key_finding": {"type": "string"},
+        "teaching_value": {"type": "string"},
+        "research_value": {"type": "string"},
+        "related_concepts": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": [
+        "title",
+        "direction",
+        "year",
+        "source_type",
+        "keywords",
+        "abstract",
+        "core_problem",
+        "method_summary",
+        "key_finding",
+        "teaching_value",
+        "research_value",
+        "related_concepts",
+    ],
+    "additionalProperties": False,
+}
 
 
 class PaperService:
@@ -18,6 +69,7 @@ class PaperService:
     def __init__(self, db: Session):
         self.db = db
         self.llm = get_llm()
+        self.settings = get_settings()
 
     def list_papers(self, direction: str | None = None, difficulty: str | None = None,
                     page: int = 1, page_size: int = 20) -> tuple[list[ResearchPaper], int]:
@@ -38,6 +90,73 @@ class PaperService:
         self.db.refresh(paper)
         return paper
 
+    def import_pdf(self, filename: str, content: bytes) -> ResearchPaper:
+        if not filename.lower().endswith(".pdf"):
+            raise ValueError("Only PDF files are supported")
+        if not self.llm.available:
+            raise RuntimeError("LLM service unavailable for paper PDF import")
+
+        storage_dir = Path(self.settings.UPLOAD_DIR) / "research_papers"
+        storage_dir.mkdir(parents=True, exist_ok=True)
+
+        safe_stem = re.sub(r"[^A-Za-z0-9._-]+", "_", Path(filename).stem).strip("._") or "paper"
+        storage_name = f"{safe_stem}-{uuid.uuid4().hex[:12]}.pdf"
+        storage_path = storage_dir / storage_name
+        storage_path.write_bytes(content)
+
+        extracted_text = IngestionService.extract_text_from_pdf(str(storage_path)).strip()
+        if not extracted_text or extracted_text.startswith("[PDF"):
+            storage_path.unlink(missing_ok=True)
+            raise RuntimeError("Failed to extract readable text from PDF")
+
+        user_prompt = (
+            f"原始文件名：{filename}\n"
+            "请从以下 PDF 文本中抽取文献信息并输出 JSON。\n\n"
+            f"{extracted_text[:16000]}"
+        )
+        parsed = self.llm.generate_json(
+            system_prompt=PAPER_IMPORT_SYSTEM,
+            user_prompt=user_prompt,
+            schema=PAPER_IMPORT_SCHEMA,
+            temperature=0.1,
+        )
+
+        if (
+            not parsed.get("title")
+            or not parsed.get("direction")
+            or not parsed.get("abstract")
+            or not parsed.get("core_problem")
+            or not parsed.get("method_summary")
+            or not parsed.get("key_finding")
+        ):
+            storage_path.unlink(missing_ok=True)
+            raise RuntimeError("LLM returned incomplete paper metadata")
+
+        year = parsed.get("year")
+        if not isinstance(year, int) or year < 1000 or year > 2100:
+            year = 0
+
+        payload = {
+            "title": str(parsed.get("title", "")).strip(),
+            "title_zh": str(parsed.get("title_zh", "")).strip(),
+            "direction": str(parsed.get("direction", "")).strip(),
+            "venue": str(parsed.get("venue", "")).strip(),
+            "year": year,
+            "source_type": str(parsed.get("source_type", "学术文献")).strip() or "学术文献",
+            "keywords": self._normalize_text_list(parsed.get("keywords")),
+            "abstract": str(parsed.get("abstract", "")).strip(),
+            "core_problem": str(parsed.get("core_problem", "")).strip(),
+            "method_summary": str(parsed.get("method_summary", "")).strip(),
+            "key_finding": str(parsed.get("key_finding", "")).strip(),
+            "teaching_value": str(parsed.get("teaching_value", "")).strip(),
+            "research_value": str(parsed.get("research_value", "")).strip(),
+            "related_concepts": self._normalize_text_list(parsed.get("related_concepts")),
+            "pdf_filename": filename,
+            "pdf_storage_path": str(storage_path.resolve()),
+            "pdf_text_char_count": len(extracted_text),
+        }
+        return self.create_paper(payload)
+
     def update_paper(self, paper_id: int, data: dict) -> ResearchPaper | None:
         paper = self.get_paper(paper_id)
         if not paper:
@@ -55,6 +174,12 @@ class PaperService:
         paper = self.get_paper(paper_id)
         if not paper:
             return False
+
+        if paper.pdf_storage_path:
+            try:
+                Path(paper.pdf_storage_path).unlink(missing_ok=True)
+            except Exception:
+                pass
 
         self.db.delete(paper)
         self.db.commit()
@@ -148,3 +273,10 @@ class PaperService:
             "  · 计算与实验融合的新范式", "  · 前沿文献转化为可教可学的教学资源",
         ]
         return outline
+
+    def _normalize_text_list(self, value: Any) -> list[str]:
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, str):
+            return [item.strip() for item in re.split(r"[，,;；\n]", value) if item.strip()]
+        return []

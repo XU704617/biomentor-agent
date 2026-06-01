@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -6,6 +6,26 @@ from app.schemas import ResearchPaperOut, ResearchPaperUpdate
 from app.services.papers import PaperService
 
 router = APIRouter(prefix="/api/research/papers", tags=["paper-library"])
+
+
+@router.post("/import-pdf", response_model=ResearchPaperOut, status_code=201)
+async def import_paper_pdf(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    filename = file.filename or "paper.pdf"
+    if not filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    service = PaperService(db)
+    try:
+        content = await file.read()
+        imported = service.import_pdf(filename=filename, content=content)
+        return imported
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.patch("/{paper_id}", response_model=ResearchPaperOut)

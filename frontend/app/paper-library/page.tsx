@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BookOpen,
   FilePlus2,
@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Sparkles,
   Trash2,
+  Upload,
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
@@ -29,6 +30,9 @@ interface ResearchPaper {
   teaching_value: string;
   research_value: string;
   related_concepts: string[];
+  pdf_filename: string;
+  pdf_storage_path: string;
+  pdf_text_char_count: number;
 }
 
 interface ResearchPaperListResponse {
@@ -86,6 +90,7 @@ export default function PaperLibraryPage() {
   const [papers, setPapers] = useState<ResearchPaper[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [importingPdf, setImportingPdf] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [analysisLoadingId, setAnalysisLoadingId] = useState<number | null>(null);
   const [planLoadingId, setPlanLoadingId] = useState<number | null>(null);
@@ -93,6 +98,7 @@ export default function PaperLibraryPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [insight, setInsight] = useState<InsightState>(null);
+  const pdfInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadPapers = async () => {
     setLoading(true);
@@ -189,6 +195,40 @@ export default function PaperLibraryPage() {
     }
   };
 
+  const handleImportPdf = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportingPdf(true);
+    clearMessages();
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`${API_BASE}/api/research/papers/import-pdf`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({ detail: "PDF 导入失败" }));
+        throw new Error(body.detail || "PDF 导入失败");
+      }
+
+      const importedPaper = (await response.json()) as ResearchPaper;
+      setSuccess(`PDF 已解析并入库：${importedPaper.title_zh || importedPaper.title}`);
+      await loadPapers();
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "PDF 导入失败");
+    } finally {
+      setImportingPdf(false);
+      if (pdfInputRef.current) {
+        pdfInputRef.current.value = "";
+      }
+    }
+  };
+
   const handleAnalyze = async (paperId: number) => {
     setAnalysisLoadingId(paperId);
     clearMessages();
@@ -251,38 +291,67 @@ export default function PaperLibraryPage() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[420px_minmax(0,1fr)] gap-6">
-          <div className="glass-card rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FilePlus2 className="w-5 h-5 text-accent-electric" />
-              <h2 className="font-display font-bold text-sm text-brand-ink">新增文献</h2>
+          <div className="space-y-6">
+            <div className="glass-card rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Upload className="w-5 h-5 text-accent-electric" />
+                <h2 className="font-display font-bold text-sm text-brand-ink">上传 PDF 自动入库</h2>
+              </div>
+              <p className="text-sm text-brand-muted leading-6 mb-4">
+                上传论文 PDF 后，后端会保存原始文件、提取文本，并调用真实 LLM 自动抽取标题、方向、摘要、方法和关键发现后写入文献库。
+              </p>
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={handleImportPdf}
+                disabled={importingPdf}
+                className="block w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-accent-electric/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-accent-electric"
+              />
+              <div className="mt-4 text-xs text-brand-faint">
+                后端保存目录：`backend/uploads/research_papers`
+              </div>
+              {importingPdf && (
+                <div className="mt-4 inline-flex items-center gap-2 text-sm text-brand-muted">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  正在解析 PDF 并写入文献库
+                </div>
+              )}
             </div>
 
-            <form onSubmit={handleCreate} className="space-y-3">
-              <input value={form.title} onChange={(e) => updateField("title", e.target.value)} placeholder="英文标题" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
-              <input value={form.title_zh} onChange={(e) => updateField("title_zh", e.target.value)} placeholder="中文标题" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
-              <input value={form.direction} onChange={(e) => updateField("direction", e.target.value)} placeholder="研究方向" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
-              <div className="grid grid-cols-[1fr_110px] gap-3">
-                <input value={form.venue} onChange={(e) => updateField("venue", e.target.value)} placeholder="期刊 / 会议" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
-                <input type="number" value={form.year} onChange={(e) => updateField("year", Number(e.target.value))} placeholder="年份" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
+            <div className="glass-card rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <FilePlus2 className="w-5 h-5 text-accent-electric" />
+                <h2 className="font-display font-bold text-sm text-brand-ink">手动新增文献</h2>
               </div>
-              <input value={form.keywords} onChange={(e) => updateField("keywords", e.target.value)} placeholder="关键词，逗号分隔" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" />
-              <input value={form.related_concepts} onChange={(e) => updateField("related_concepts", e.target.value)} placeholder="关联概念，逗号分隔" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" />
-              <textarea value={form.abstract} onChange={(e) => updateField("abstract", e.target.value)} placeholder="摘要" rows={4} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
-              <textarea value={form.core_problem} onChange={(e) => updateField("core_problem", e.target.value)} placeholder="核心问题" rows={3} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
-              <textarea value={form.method_summary} onChange={(e) => updateField("method_summary", e.target.value)} placeholder="方法概述" rows={3} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
-              <textarea value={form.key_finding} onChange={(e) => updateField("key_finding", e.target.value)} placeholder="关键发现" rows={3} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
-              <textarea value={form.teaching_value} onChange={(e) => updateField("teaching_value", e.target.value)} placeholder="教学价值" rows={2} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
-              <textarea value={form.research_value} onChange={(e) => updateField("research_value", e.target.value)} placeholder="研究价值" rows={2} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-accent-electric to-accent-cyan text-white font-medium disabled:opacity-50"
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FilePlus2 className="w-4 h-4" />}
-                {submitting ? "提交中" : "加入知识库"}
-              </button>
-            </form>
+              <form onSubmit={handleCreate} className="space-y-3">
+                <input value={form.title} onChange={(e) => updateField("title", e.target.value)} placeholder="英文标题" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
+                <input value={form.title_zh} onChange={(e) => updateField("title_zh", e.target.value)} placeholder="中文标题" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
+                <input value={form.direction} onChange={(e) => updateField("direction", e.target.value)} placeholder="研究方向" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
+                <div className="grid grid-cols-[1fr_110px] gap-3">
+                  <input value={form.venue} onChange={(e) => updateField("venue", e.target.value)} placeholder="期刊 / 会议" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
+                  <input type="number" value={form.year} onChange={(e) => updateField("year", Number(e.target.value))} placeholder="年份" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" required />
+                </div>
+                <input value={form.keywords} onChange={(e) => updateField("keywords", e.target.value)} placeholder="关键词，逗号分隔" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" />
+                <input value={form.related_concepts} onChange={(e) => updateField("related_concepts", e.target.value)} placeholder="关联概念，逗号分隔" className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none" />
+                <textarea value={form.abstract} onChange={(e) => updateField("abstract", e.target.value)} placeholder="摘要" rows={4} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
+                <textarea value={form.core_problem} onChange={(e) => updateField("core_problem", e.target.value)} placeholder="核心问题" rows={3} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
+                <textarea value={form.method_summary} onChange={(e) => updateField("method_summary", e.target.value)} placeholder="方法概述" rows={3} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
+                <textarea value={form.key_finding} onChange={(e) => updateField("key_finding", e.target.value)} placeholder="关键发现" rows={3} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
+                <textarea value={form.teaching_value} onChange={(e) => updateField("teaching_value", e.target.value)} placeholder="教学价值" rows={2} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
+                <textarea value={form.research_value} onChange={(e) => updateField("research_value", e.target.value)} placeholder="研究价值" rows={2} className="w-full rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm outline-none resize-y" />
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-accent-electric to-accent-cyan text-white font-medium disabled:opacity-50"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FilePlus2 className="w-4 h-4" />}
+                  {submitting ? "提交中" : "加入知识库"}
+                </button>
+              </form>
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -342,6 +411,14 @@ export default function PaperLibraryPage() {
                           <p className="text-sm text-brand-muted mt-3 leading-6">
                             核心问题：{paper.core_problem}
                           </p>
+                        )}
+
+                        {paper.pdf_filename && (
+                          <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-xs text-brand-muted">
+                            <p>已保存 PDF：{paper.pdf_filename}</p>
+                            <p className="break-all mt-1">存储路径：{paper.pdf_storage_path}</p>
+                            <p className="mt-1">提取字符数：{paper.pdf_text_char_count}</p>
+                          </div>
                         )}
 
                         {paper.keywords.length > 0 && (
