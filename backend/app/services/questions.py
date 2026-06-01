@@ -86,6 +86,7 @@ class QuestionService:
         self, knowledge_points: list[str], evidence_text: str,
         question_types: list[str], count: int = 5,
         difficulty: str = "medium", course_id: int | None = None,
+        strict: bool = False,
     ) -> list[Question]:
         """Generate questions using LLM with structured JSON output.
         Falls back to template-based generation if LLM unavailable or fails.
@@ -93,13 +94,17 @@ class QuestionService:
         if not knowledge_points:
             knowledge_points = ["通用生物学"]
 
-        if self.llm.available:
-            try:
-                return self._llm_generate(knowledge_points, evidence_text, question_types, count, difficulty, course_id)
-            except Exception:
-                pass  # fall through to template fallback
+        if not self.llm.available:
+            if strict:
+                raise RuntimeError("LLM service unavailable for question generation")
+            return self._template_generate(knowledge_points, evidence_text, question_types, count, difficulty, course_id)
 
-        return self._template_generate(knowledge_points, evidence_text, question_types, count, difficulty, course_id)
+        try:
+            return self._llm_generate(knowledge_points, evidence_text, question_types, count, difficulty, course_id)
+        except Exception:
+            if strict:
+                raise
+            return self._template_generate(knowledge_points, evidence_text, question_types, count, difficulty, course_id)
 
     def _llm_generate(
         self, knowledge_points: list[str], evidence: str,
@@ -157,14 +162,18 @@ class QuestionService:
         question_types: list[str], count: int, difficulty: str,
         course_id: int | None,
     ) -> list[Question]:
-        """Template-based fallback when LLM is unavailable."""
+        """Template-based fallback when LLM is unavailable.
+
+        Marks questions as low-confidence template-generated so users
+        know these are not AI-generated.
+        """
         generated: list[Question] = []
         type_cycle = question_types if question_types else ["choice", "truefalse", "short_answer"]
         kp_str = "、".join(knowledge_points[:5])
 
         templates = {
             "choice": (
-                f"关于 {kp_str}，以下描述正确的是？",
+                f"⚠️ [模板题] 关于 {kp_str}，以下描述正确的是？",
                 [
                     {"label": "A", "text": f"{kp_str}仅存在于原核生物中"},
                     {"label": "B", "text": f"{kp_str}是现代生命科学研究的重要方向之一"},
@@ -172,31 +181,31 @@ class QuestionService:
                     {"label": "D", "text": f"{kp_str}已被证实与任何疾病无关"},
                 ],
                 "B",
-                f"{kp_str}是现代生命科学研究的核心领域，在基础研究和临床转化中均有重要意义。",
+                f"{kp_str}是现代生命科学研究的核心领域，在基础研究和临床转化中均有重要意义。（⚠️ LLM 不可用，此为模板生成题目）",
             ),
             "truefalse": (
-                f"{kp_str}在所有生物体中都发挥相同功能。（判断对错）",
+                f"⚠️ [模板题] {kp_str}在所有生物体中都发挥相同功能。（判断对错）",
                 [],
                 "错误",
-                f"{kp_str}在不同生物体中可能存在差异化的作用机制。",
+                f"{kp_str}在不同生物体中可能存在差异化的作用机制。（⚠️ LLM 不可用，此为模板生成题目）",
             ),
             "short_answer": (
-                f"请简要说明 {kp_str} 的基本原理及其在生物医学中的意义。",
+                f"⚠️ [模板题] 请简要说明 {kp_str} 的基本原理及其在生物医学中的意义。",
                 [],
                 f"应从定义、机制和应用三个维度阐述 {kp_str}。",
-                f"考查对核心概念的完整理解。",
+                f"考查对核心概念的完整理解。（⚠️ LLM 不可用，此为模板生成题目）",
             ),
             "research": (
-                f"请设计一个实验方案来研究 {kp_str} 的功能。包括目的、方法、预期结果。",
+                f"⚠️ [模板题] 请设计一个实验方案来研究 {kp_str} 的功能。包括目的、方法、预期结果。",
                 [],
                 "实验方案应包括明确的假设、对照组设计、关键检测指标和预期结果分析。",
-                "考查科研思维和实验设计能力。",
+                "考查科研思维和实验设计能力。（⚠️ LLM 不可用，此为模板生成题目）",
             ),
             "industry": (
-                f"{kp_str} 相关技术在产业转化中面临哪些挑战？请从技术、成本和监管角度分析。",
+                f"⚠️ [模板题] {kp_str} 相关技术在产业转化中面临哪些挑战？请从技术、成本和监管角度分析。",
                 [],
                 "技术方面需验证稳定性和可扩展性，成本需评估规模化可行性，监管需关注审批路径。",
-                "考查产业思维和技术转化意识。",
+                "考查产业思维和技术转化意识。（⚠️ LLM 不可用，此为模板生成题目）",
             ),
         }
 
@@ -218,8 +227,8 @@ class QuestionService:
                     source_refs=[],
                     difficulty=difficulty,
                     status=QuestionStatus.draft,
-                    created_by="ai",
-                    ai_confidence=0.5,
+                    created_by="template_fallback",
+                    ai_confidence=0.2,
                     needs_review=True,
                 )
                 self.db.add(q)

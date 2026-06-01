@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const FASTAPI_BACKEND =
       process.env.FASTAPI_BACKEND_URL ||
       process.env.NEXT_PUBLIC_API_BASE_URL ||
-      "http://127.0.0.1:9090";
+      "http://localhost:8000";
 
     const { searchParams } = new URL(request.url);
     const query = searchParams.toString();

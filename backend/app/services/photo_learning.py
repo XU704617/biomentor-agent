@@ -37,25 +37,25 @@ class PhotoLearningService:
     def analyze(self, text: str, image_base64: str | None = None) -> dict[str, Any]:
         """Full photo learning pipeline: OCR text -> LLM analysis -> questions."""
 
-        # LLM-powered analysis
-        llm_result = {}
-        if self.llm.available:
-            try:
-                user_prompt = PHOTO_ANALYSIS_USER.format(text=text[:3000])
-                llm_result = self.llm.generate_json(
-                    system_prompt=PHOTO_ANALYSIS_SYSTEM,
-                    user_prompt=user_prompt,
-                    schema=PHOTO_ANALYSIS_SCHEMA,
-                    temperature=0.3,
-                )
-            except Exception:
-                pass
+        if not self.llm.available:
+            raise RuntimeError("LLM service unavailable for photo learning analysis")
+
+        user_prompt = PHOTO_ANALYSIS_USER.format(text=text[:3000])
+        llm_result = self.llm.generate_json(
+            system_prompt=PHOTO_ANALYSIS_SYSTEM,
+            user_prompt=user_prompt,
+            schema=PHOTO_ANALYSIS_SCHEMA,
+            temperature=0.3,
+        )
 
         llm_keywords = llm_result.get("keywords", [])
         domain = llm_result.get("domain", "")
         summary = llm_result.get("summary", "")
 
-        # Fallback: dictionary-based keyword extraction
+        if not llm_keywords or not summary:
+            raise RuntimeError("LLM returned incomplete photo learning analysis")
+
+        # Fallback: dictionary-based keyword extraction (less accurate than LLM)
         fallback_keywords = self._dict_extract(text)
         all_keywords = list(dict.fromkeys(llm_keywords + fallback_keywords))[:12]
 
@@ -68,6 +68,8 @@ class PhotoLearningService:
         # Build summary if LLM didn't provide one
         if not summary:
             summary = self._build_fallback_summary(text, all_keywords, concepts, papers)
+            if not llm_result:
+                summary = "⚠️ LLM 不可用，以下为基于字典匹配的简要分析：\n" + summary
 
         return {
             "raw_text": text,
@@ -108,21 +110,18 @@ class PhotoLearningService:
     ) -> list[dict]:
         kp_names = [c["name"] for c in concepts[:3]] or keywords[:3]
         if not kp_names: return []
-        try:
-            qs = self.question_service.generate_questions(
-                knowledge_points=kp_names, evidence_text=text[:1000],
-                question_types=["choice", "choice", "truefalse", "short_answer", "research", "industry"],
-                count=6, difficulty="medium",
-            )
-            return [
-                {"id": str(q.id), "type": q.type.value, "question": q.stem,
-                 "options": q.options if isinstance(q.options, list) else [],
-                 "answer": q.answer, "explanation": q.explanation,
-                 "related_concept_ids": q.knowledge_point_ids or [], "related_paper_ids": []}
-                for q in qs
-            ]
-        except Exception:
-            return []
+        qs = self.question_service.generate_questions(
+            knowledge_points=kp_names, evidence_text=text[:1000],
+            question_types=["choice", "choice", "truefalse", "short_answer", "research", "industry"],
+            count=6, difficulty="medium", strict=True,
+        )
+        return [
+            {"id": str(q.id), "type": q.type.value, "question": q.stem,
+             "options": q.options if isinstance(q.options, list) else [],
+             "answer": q.answer, "explanation": q.explanation,
+             "related_concept_ids": q.knowledge_point_ids or [], "related_paper_ids": []}
+            for q in qs
+        ]
 
     def _build_fallback_summary(self, text: str, keywords: list[str], concepts: list[dict], papers: list[dict]) -> str:
         kw_list = "、".join(keywords[:6]) or "生物学"

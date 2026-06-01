@@ -38,6 +38,28 @@ class PaperService:
         self.db.refresh(paper)
         return paper
 
+    def update_paper(self, paper_id: int, data: dict) -> ResearchPaper | None:
+        paper = self.get_paper(paper_id)
+        if not paper:
+            return None
+
+        for key, value in data.items():
+            if hasattr(paper, key):
+                setattr(paper, key, value)
+
+        self.db.commit()
+        self.db.refresh(paper)
+        return paper
+
+    def delete_paper(self, paper_id: int) -> bool:
+        paper = self.get_paper(paper_id)
+        if not paper:
+            return False
+
+        self.db.delete(paper)
+        self.db.commit()
+        return True
+
     def search_papers(self, query: str, limit: int = 10) -> list[ResearchPaper]:
         lower = query.lower()
         return self.db.query(ResearchPaper).filter(
@@ -56,28 +78,27 @@ class PaperService:
         paper = self.get_paper(paper_id)
         if not paper: return {"error": "Paper not found"}
 
-        if self.llm.available:
-            try:
-                user_prompt = PAPER_ANALYSIS_USER.format(
-                    title=paper.title_zh or paper.title,
-                    abstract=paper.abstract or paper.core_problem,
-                    methods=paper.method_summary,
-                    findings=paper.key_finding,
-                    direction=paper.direction,
-                )
-                result = self.llm.generate_json(
-                    system_prompt=PAPER_ANALYSIS_SYSTEM, user_prompt=user_prompt,
-                    schema=PAPER_ANALYSIS_SCHEMA, temperature=0.4,
-                )
-                return {"paper_id": paper.id, "title": paper.title_zh, **result}
-            except Exception:
-                pass
+        if not self.llm.available:
+            raise RuntimeError("LLM service unavailable for paper analysis")
 
-        return {"paper_id": paper.id, "title": paper.title_zh, "one_sentence_summary": paper.core_problem,
-                "key_innovation": paper.key_finding, "method_breakdown": [paper.method_summary],
-                "teaching_points": [paper.teaching_value], "discussion_questions": paper.demo_questions or [],
-                "experiment_ideas": [paper.experiment_learning_value], "defense_talking_points": [paper.defense_value],
-                "reading_difficulty": "中等"}
+        user_prompt = PAPER_ANALYSIS_USER.format(
+            title=paper.title_zh or paper.title,
+            abstract=paper.abstract or paper.core_problem,
+            methods=paper.method_summary,
+            findings=paper.key_finding,
+            direction=paper.direction,
+        )
+        result = self.llm.generate_json(
+            system_prompt=PAPER_ANALYSIS_SYSTEM,
+            user_prompt=user_prompt,
+            schema=PAPER_ANALYSIS_SCHEMA,
+            temperature=0.4,
+        )
+
+        if not result.get("one_sentence_summary") or not result.get("teaching_points"):
+            raise RuntimeError("LLM returned incomplete paper analysis")
+
+        return {"paper_id": paper.id, "title": paper.title_zh, **result}
 
     def build_learning_plan(self, paper_id: int) -> dict[str, Any] | None:
         paper = self.get_paper(paper_id)

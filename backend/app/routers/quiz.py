@@ -8,6 +8,31 @@ from app.services.quiz import QuizService
 router = APIRouter(prefix="/api/quiz", tags=["quiz"])
 
 
+def _serialize_quiz(quiz) -> QuizOut:
+    return QuizOut(
+        id=quiz.id,
+        course_id=quiz.course_id,
+        title=quiz.title,
+        description=quiz.description or "",
+        time_limit_minutes=quiz.time_limit_minutes or 0,
+        total_score=quiz.total_score or 0.0,
+        status=quiz.status.value if hasattr(quiz.status, "value") else str(quiz.status),
+        knowledge_point_ids=quiz.knowledge_point_ids or [],
+        quiz_questions=[
+            {
+                "id": item.id,
+                "question_id": item.question_id,
+                "order": item.order,
+                "score": item.score,
+            }
+            for item in (quiz.quiz_questions or [])
+        ],
+        created_at=quiz.created_at,
+        published_at=quiz.published_at,
+        due_at=quiz.due_at,
+    )
+
+
 @router.get("/", response_model=dict)
 def list_quizzes(
     course_id: int | None = Query(None),
@@ -19,7 +44,7 @@ def list_quizzes(
     service = QuizService(db)
     items, total = service.list_quizzes(course_id, status, page, page_size)
     return {
-        "items": [QuizOut.model_validate(q) for q in items],
+        "items": [_serialize_quiz(q) for q in items],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -32,13 +57,13 @@ def get_quiz(quiz_id: int, db: Session = Depends(get_db)):
     quiz = service.get_quiz(quiz_id)
     if not quiz:
         raise HTTPException(404, "Quiz not found")
-    return quiz
+    return _serialize_quiz(quiz)
 
 
 @router.post("/", response_model=QuizOut, status_code=201)
 def create_quiz(data: QuizCreate, db: Session = Depends(get_db)):
     service = QuizService(db)
-    return service.create_quiz(data.model_dump())
+    return _serialize_quiz(service.create_quiz(data.model_dump()))
 
 
 @router.post("/{quiz_id}/publish")

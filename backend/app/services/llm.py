@@ -5,21 +5,22 @@ Supports: OpenAI, DeepSeek, and other compatible providers.
 Handles provider differences:
 - DeepSeek: json_object mode (no json_schema strict), no embeddings API
 - OpenAI: full json_schema + embeddings support
+- GLM/ZhipuAI: used for embeddings when primary LLM lacks support
 """
 
 from __future__ import annotations
 
 import json
-import time
+import os
 import re
+import time
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
 from openai import OpenAI
 
 from app.config import get_settings
-
-settings = get_settings()
 
 
 @dataclass
@@ -37,26 +38,49 @@ class LLMResponse:
 class LLMService:
 
     def __init__(self):
-        self._client: OpenAI | None = None
+        self._clients: list[tuple[str, OpenAI]] | None = None
+        self._http_clients: list[httpx.Client] = []
 
     @property
-    def client(self) -> OpenAI:
-        if self._client is None:
-            self._client = OpenAI(
-                api_key=settings.OPENAI_API_KEY or "sk-placeholder",
-                base_url=settings.OPENAI_BASE_URL,
-                timeout=settings.AGENT_TIMEOUT_SECONDS,
-                max_retries=0,
-            )
-        return self._client
+    def settings(self):
+        return get_settings()
+
+    @property
+    def clients(self) -> list[tuple[str, OpenAI]]:
+        if self._clients is None:
+            self._clients = []
+            self._http_clients = []
+            for proxy_url in self._resolve_proxy_urls():
+                label = proxy_url or "direct"
+                http_client_kwargs: dict[str, Any] = {
+                    "trust_env": False,
+                    "timeout": self.settings.AGENT_TIMEOUT_SECONDS,
+                }
+                if proxy_url:
+                    http_client_kwargs["proxy"] = proxy_url
+                http_client = httpx.Client(**http_client_kwargs)
+                self._http_clients.append(http_client)
+                self._clients.append(
+                    (
+                        label,
+                        OpenAI(
+                            api_key=self.settings.OPENAI_API_KEY or "sk-placeholder",
+                            base_url=self.settings.OPENAI_BASE_URL,
+                            timeout=self.settings.AGENT_TIMEOUT_SECONDS,
+                            max_retries=0,
+                            http_client=http_client,
+                        ),
+                    )
+                )
+        return self._clients
 
     @property
     def available(self) -> bool:
-        return bool(settings.OPENAI_API_KEY)
+        return bool(self.settings.OPENAI_API_KEY)
 
     @property
     def is_deepseek(self) -> bool:
-        return "deepseek" in (settings.OPENAI_BASE_URL or "").lower()
+        return "deepseek" in (self.settings.OPENAI_BASE_URL or "").lower()
 
     # ── Chat Completion ──────────────────────────────────────────
 
@@ -69,17 +93,37 @@ class LLMService:
         response_schema: dict | None = None,
         retries: int | None = None,
     ) -> LLMResponse:
-        model = model or settings.LLM_MODEL
-        temperature = temperature if temperature is not None else settings.LLM_TEMPERATURE
-        max_tokens = max_tokens or settings.LLM_MAX_TOKENS
-        max_retries = retries if retries is not None else settings.AGENT_MAX_RETRIES
+        model = model or self.settings.LLM_MODEL
+        temperature = temperature if temperature is not None else self.settings.LLM_TEMPERATURE
+        max_tokens = max_tokens or self.settings.LLM_MAX_TOKENS
+        max_retries = retries if retries is not None else self.settings.AGENT_MAX_RETRIES
 
         if not self.available:
             return self._fallback_response(messages)
 
-        # Inject JSON schema into system prompt for providers without strict mode
+        # Inject JSON output instructions for providers without strict mode.
+        # Use natural language to describe expected fields, NOT a raw JSON schema,
+        # otherwise DeepSeek may echo the schema back instead of filling it.
         if response_schema:
-            schema_prompt = f"\n\n你必须严格按照以下JSON格式输出，不要输出其他内容：\n```json\n{json.dumps(response_schema, ensure_ascii=False, indent=2)}\n```\n请直接输出符合上述schema的JSON对象。"
+            props = response_schema.get("properties", {})
+            required = response_schema.get("required", [])
+            field_descs = []
+            for name, prop in props.items():
+                ptype = prop.get("type", "string")
+                is_array = "array of " if ptype == "array" else ""
+                item_type = ""
+                if ptype == "array" and "items" in prop:
+                    item_type = prop["items"].get("type", "string")
+                desc = f'- "{name}": {is_array}{item_type or ptype}'
+                if name in required:
+                    desc += " (必填)"
+                field_descs.append(desc)
+
+            schema_prompt = (
+                "\n\n你必须输出一个纯 JSON 对象，不要包含 markdown 代码块标记。"
+                "JSON 必须包含以下字段：\n" + "\n".join(field_descs) +
+                "\n\n直接输出 JSON，不要输出任何其他内容。"
+            )
             if messages and messages[0]["role"] == "system":
                 messages[0]["content"] += schema_prompt
             else:
@@ -106,33 +150,35 @@ class LLMService:
 
         last_error: Exception | None = None
         for attempt in range(max_retries + 1):
-            try:
-                completion = self.client.chat.completions.create(**kwargs)
-                elapsed = int((time.time() - start) * 1000)
+            for client_label, client in self.clients:
+                try:
+                    completion = client.chat.completions.create(**kwargs)
+                    elapsed = int((time.time() - start) * 1000)
 
-                choice = completion.choices[0]
-                content = choice.message.content or ""
+                    choice = completion.choices[0]
+                    content = choice.message.content or ""
 
-                parsed = None
-                if response_schema:
-                    parsed = self._extract_json(content)
+                    parsed = None
+                    if response_schema:
+                        parsed = self._extract_json(content)
 
-                return LLMResponse(
-                    content=content,
-                    parsed=parsed,
-                    model=completion.model,
-                    tokens_prompt=completion.usage.prompt_tokens if completion.usage else 0,
-                    tokens_completion=completion.usage.completion_tokens if completion.usage else 0,
-                    tokens_total=completion.usage.total_tokens if completion.usage else 0,
-                    duration_ms=elapsed,
-                    finish_reason=choice.finish_reason or "stop",
-                )
+                    return LLMResponse(
+                        content=content,
+                        parsed=parsed,
+                        model=completion.model,
+                        tokens_prompt=completion.usage.prompt_tokens if completion.usage else 0,
+                        tokens_completion=completion.usage.completion_tokens if completion.usage else 0,
+                        tokens_total=completion.usage.total_tokens if completion.usage else 0,
+                        duration_ms=elapsed,
+                        finish_reason=choice.finish_reason or "stop",
+                    )
 
-            except Exception as e:
-                last_error = e
-                if attempt < max_retries:
-                    time.sleep(2 ** attempt)
-                continue
+                except Exception as e:
+                    last_error = RuntimeError(f"[{client_label}] {e}")
+                    continue
+
+            if attempt < max_retries:
+                time.sleep(2 ** attempt)
 
         raise RuntimeError(f"LLM call failed after {max_retries + 1} attempts: {last_error}")
 
@@ -145,42 +191,44 @@ class LLMService:
         temperature: float | None = None,
         max_tokens: int | None = None,
     ):
-        model = model or settings.LLM_MODEL
-        temperature = temperature if temperature is not None else settings.LLM_TEMPERATURE
-        max_tokens = max_tokens or settings.LLM_MAX_TOKENS
+        model = model or self.settings.LLM_MODEL
+        temperature = temperature if temperature is not None else self.settings.LLM_TEMPERATURE
+        max_tokens = max_tokens or self.settings.LLM_MAX_TOKENS
 
         if not self.available:
             yield "AI 服务暂未配置。请设置 OPENAI_API_KEY。"
             return
 
         try:
-            stream = self.client.chat.completions.create(
-                model=model, messages=messages,
-                temperature=temperature, max_tokens=max_tokens, stream=True,
-            )
-            for chunk in stream:
-                delta = chunk.choices[0].delta
-                if delta.content:
-                    yield delta.content
+            last_error: Exception | None = None
+            for _client_label, client in self.clients:
+                try:
+                    stream = client.chat.completions.create(
+                        model=model, messages=messages,
+                        temperature=temperature, max_tokens=max_tokens, stream=True,
+                    )
+                    for chunk in stream:
+                        delta = chunk.choices[0].delta
+                        if delta.content:
+                            yield delta.content
+                    return
+                except Exception as e:
+                    last_error = e
+                    continue
+            if last_error is not None:
+                raise last_error
         except Exception as e:
             yield f"\n[错误: {e}]"
 
     # ── Embeddings ────────────────────────────────────────────────
 
     def embed(self, texts: list[str], model: str | None = None) -> list[list[float]]:
-        """Generate embeddings. Returns zero vectors on providers without embeddings API."""
-        model = model or settings.EMBEDDING_MODEL
+        """DeepSeek does not provide an Embedding API.
 
-        if not self.available or self.is_deepseek:
-            dim = 1536
-            return [[0.0] * dim for _ in texts]
-
-        try:
-            response = self.client.embeddings.create(model=model, input=texts)
-            return [d.embedding for d in response.data]
-        except Exception:
-            dim = 1536
-            return [[0.0] * dim for _ in texts]
+        Returns empty list to signal callers to use ChromaDB's built-in
+        embedding function (all-MiniLM-L6-v2, runs locally via ONNX).
+        """
+        return []
 
     def embed_single(self, text: str, model: str | None = None) -> list[float]:
         return self.embed([text], model)[0]
@@ -243,6 +291,82 @@ class LLMService:
             parsed={"message": "AI 服务未配置", "fallback": True},
             model="fallback", tokens_total=0,
         )
+
+    def _resolve_proxy_urls(self) -> list[str | None]:
+        candidates: list[str | None] = []
+
+        for key in ("HTTPS_PROXY", "ALL_PROXY", "HTTP_PROXY"):
+            proxy_url = self._normalize_proxy_url(os.getenv(key, ""))
+            if proxy_url:
+                candidates.append(proxy_url)
+
+        system_proxy = self._load_windows_proxy()
+        if system_proxy:
+            candidates.append(system_proxy)
+
+        candidates.append(None)
+
+        deduped: list[str | None] = []
+        seen: set[str] = set()
+        for candidate in candidates:
+            marker = candidate or "__direct__"
+            if marker in seen:
+                continue
+            seen.add(marker)
+            deduped.append(candidate)
+        return deduped
+
+    def _normalize_proxy_url(self, proxy_url: str) -> str | None:
+        value = proxy_url.strip()
+        if not value:
+            return None
+
+        lowered = value.lower()
+        if lowered in {
+            "http://127.0.0.1:9",
+            "https://127.0.0.1:9",
+            "127.0.0.1:9",
+            "http://localhost:9",
+            "https://localhost:9",
+            "localhost:9",
+        }:
+            return None
+
+        if "://" not in value:
+            return f"http://{value}"
+        return value
+
+    def _load_windows_proxy(self) -> str | None:
+        if os.name != "nt":
+            return None
+
+        try:
+            import winreg
+
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r"Software\Microsoft\Windows\CurrentVersion\Internet Settings",
+            ) as key:
+                proxy_enabled = int(winreg.QueryValueEx(key, "ProxyEnable")[0] or 0)
+                if proxy_enabled != 1:
+                    return None
+                raw_proxy = str(winreg.QueryValueEx(key, "ProxyServer")[0] or "").strip()
+        except Exception:
+            return None
+
+        if not raw_proxy:
+            return None
+
+        if "=" in raw_proxy:
+            pairs = {}
+            for item in raw_proxy.split(";"):
+                if "=" not in item:
+                    continue
+                scheme, address = item.split("=", 1)
+                pairs[scheme.strip().lower()] = address.strip()
+            raw_proxy = pairs.get("https") or pairs.get("http") or ""
+
+        return self._normalize_proxy_url(raw_proxy)
 
 
 _llm_instance: LLMService | None = None

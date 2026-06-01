@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 const FASTAPI_BACKEND =
   process.env.FASTAPI_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "http://127.0.0.1:9090";
+  "http://localhost:8000";
 
 export async function POST(request: NextRequest) {
   try {

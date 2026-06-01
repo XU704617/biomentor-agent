@@ -32,7 +32,6 @@ import type { IndustryCase } from "@/data/industryCases";
 import { getIndustryCaseById } from "@/lib/industryApi";
 import {
   generateResearchTask,
-  generateFallbackResearchTask,
   type ResearchTaskGenerateResponse,
   type ResearchTaskItem,
 } from "@/lib/researchApi";
@@ -50,7 +49,7 @@ const phases = [
     title: "文献调研",
     icon: <BookOpen className="w-5 h-5" />,
     description:
-      "基于知识库和已接入资料，辅助整理关键词、研究问题和证据线索。",
+      "基于本地知识库和已接入资料，辅助整理关键词、研究问题和证据线索；当前版本优先使用本地知识库。",
   },
   {
     num: 2,
@@ -89,14 +88,17 @@ const taskTypeIcons: Record<string, React.ReactNode> = {
   evidence_judgement: <BarChart3 className="w-4 h-4" />,
 };
 
-const PY = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:9090";
+const PY = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 function TaskCard({ task, index, defaultExpanded, caseTitle }: { task: ResearchTaskItem; index: number; defaultExpanded: boolean; caseTitle?: string }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
     <div className="rounded-xl bg-white/60 border border-black/5 overflow-hidden">
-      <div className="p-4 flex items-start gap-3">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full p-4 flex items-start gap-3 text-left hover:bg-white/30 transition-colors"
+      >
         <div className="w-9 h-9 rounded-lg bg-accent-electric/10 flex items-center justify-center shrink-0 mt-0.5">
           {taskTypeIcons[task.type] || <Target className="w-4 h-4" />}
         </div>
@@ -110,45 +112,21 @@ function TaskCard({ task, index, defaultExpanded, caseTitle }: { task: ResearchT
           <h3 className="font-display font-bold text-sm text-brand-ink">{task.title}</h3>
           <p className="text-xs text-brand-muted mt-1 line-clamp-2">{task.goal}</p>
         </div>
-      </div>
-
-      {Array.isArray(task.suggested_keywords) && task.suggested_keywords.length > 0 && (
-        <div className="px-4 pb-2">
-          <div className="flex flex-wrap gap-1">
-            {task.suggested_keywords.map((kw, i) => (
-              <span key={i} className="text-[11px] text-brand-muted bg-white/60 px-1.5 py-0.5 rounded-md font-mono">
-                {kw ?? ''}
-              </span>
-            ))}
-          </div>
+        <div className="shrink-0 text-brand-muted">
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
-      )}
-
-      <div className="px-4 pb-3">
-        <EvidenceLinkPanel task={task} caseTitle={caseTitle} />
-      </div>
-
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full px-4 pb-3 flex items-center justify-center gap-1 text-xs text-accent-electric hover:text-accent-electric/80 transition-colors cursor-pointer"
-      >
-        {expanded ? (
-          <>收起详情 <ChevronUp className="w-3.5 h-3.5" /></>
-        ) : (
-          <>展开详情 <ChevronDown className="w-3.5 h-3.5" /></>
-        )}
       </button>
 
       {expanded && (
         <div className="px-4 pb-4 border-t border-black/5 pt-4 space-y-3">
           <div>
-            <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">详细说明</h4>
+            <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">任务目标</h4>
             <p className="text-sm text-brand-muted leading-relaxed">{task.goal}</p>
           </div>
 
           {Array.isArray(task.steps) && task.steps.length > 0 && (
             <div>
-              <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">推荐步骤</h4>
+              <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">操作步骤</h4>
               <div className="space-y-2">
                 {task.steps.map((step: any, i: number) => {
                   const title = typeof step === "string" ? step : step?.title || "";
@@ -176,18 +154,33 @@ function TaskCard({ task, index, defaultExpanded, caseTitle }: { task: ResearchT
           )}
 
           <div>
-            <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">训练产出</h4>
+            <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">输出要求</h4>
             <p className="text-sm text-brand-muted leading-relaxed">{task.output_requirement}</p>
           </div>
 
+          {Array.isArray(task.suggested_keywords) && task.suggested_keywords.length > 0 && (
+            <div>
+              <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">推荐关键词</h4>
+              <div className="flex flex-wrap gap-1">
+                {task.suggested_keywords.map((kw, i) => (
+                  <span key={i} className="text-[11px] text-brand-muted bg-white/60 px-1.5 py-0.5 rounded-md font-mono">
+                    {kw ?? ''}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {task.example_outline != null && (
             <div>
-              <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">参考结构</h4>
+              <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">示例提纲</h4>
               <pre className="text-xs text-brand-muted bg-white/40 rounded-lg p-3 font-body leading-relaxed whitespace-pre-wrap">
                 {Array.isArray(task.example_outline) ? task.example_outline.join('\n') : String(task.example_outline)}
               </pre>
             </div>
           )}
+
+          <EvidenceLinkPanel task={task} caseTitle={caseTitle} />
         </div>
       )}
     </div>
@@ -232,6 +225,15 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
   const isEmpty = result !== null && result.source !== "not_configured" && result.results.length === 0;
   const hasResults = result !== null && result.source !== "not_configured" && result.results.length > 0;
 
+  const providerLabel = (provider?: string) => {
+    switch (provider) {
+      case "semantic_scholar": return "Semantic Scholar";
+      case "crossref": return "Crossref";
+      case "pubmed": return "NCBI PubMed";
+      default: return provider || "未知来源";
+    }
+  };
+
   return (
     <section className="glass-card rounded-2xl p-6 md:p-8">
       <div className="flex items-center gap-2.5 mb-4">
@@ -239,8 +241,8 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
           <BookOpen className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="font-display font-bold text-base text-brand-ink">文献支撑</h2>
-          <p className="text-xs text-brand-muted font-body">根据当前任务关键词检索参考文献，帮助学生建立研究依据。</p>
+          <h2 className="font-display font-bold text-base text-brand-ink">AI 文献检索</h2>
+          <p className="text-xs text-brand-muted font-body">基于当前研究主题检索相关文献</p>
         </div>
       </div>
 
@@ -288,8 +290,12 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
 
       {!loading && !error && searched && isNotConfigured && (
         <div className="rounded-xl bg-amber-50/40 border border-amber-100/50 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <p className="text-sm font-semibold text-brand-ink">文献检索未配置</p>
+          </div>
           <p className="text-xs text-brand-muted leading-relaxed">
-            暂未检索到相关文献，请调整关键词后重试。
+            {result?.message || "真实文献检索 API 尚未配置，当前仅提供检索入口和关键词建议。"}
           </p>
         </div>
       )}
@@ -297,7 +303,8 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
       {!loading && !error && searched && isEmpty && (
         <div className="py-8 text-center">
           <BookOpen className="w-8 h-8 text-brand-faint/30 mx-auto mb-2" />
-          <p className="text-sm text-brand-muted font-body">暂未检索到相关文献，请调整关键词后重试。</p>
+          <p className="text-sm text-brand-muted font-body">未检索到文献结果</p>
+          <p className="text-xs text-brand-faint mt-1">尝试使用不同的关键词检索</p>
         </div>
       )}
 
@@ -370,6 +377,12 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
                     未提供 PMID
                   </p>
                 )}
+                {item.source_provider && (
+                  <p>
+                    <span className="font-medium text-brand-ink">数据来源：</span>
+                    {providerLabel(item.source_provider)}
+                  </p>
+                )}
               </div>
 
               {item.abstract && (
@@ -391,6 +404,7 @@ function DefaultResearchPage() {
   const [topicInput, setTopicInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ResearchTaskGenerateResponse | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     { role: "ai", content: "欢迎使用 AI 科研导师！输入研究主题生成训练任务后，你可以向我提问。" },
@@ -440,6 +454,7 @@ function DefaultResearchPage() {
     generatingRef.current = true;
     setLoading(true);
     setResult(null);
+    setGenerationError(null);
 
     try {
       const data = await generateResearchTask({
@@ -448,10 +463,8 @@ function DefaultResearchPage() {
         mode: "independent",
       });
       setResult(data);
-    } catch {
-      setResult(
-        generateFallbackResearchTask(topic, null, "independent")
-      );
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : "科研任务生成失败");
     } finally {
       setLoading(false);
       generatingRef.current = false;
@@ -463,11 +476,7 @@ function DefaultResearchPage() {
   };
 
   const sourceScopeLabel = (scope: string | undefined) => {
-    if (!scope) return "基于当前研究主题生成";
-    if (scope.includes("案例库")) return "基于案例信息生成";
-    if (scope.includes("产业案例")) return "基于当前产业案例生成";
-    if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
-    return scope || "基于当前研究主题生成";
+    return scope?.trim() || "来源范围由后端返回";
   };
 
   return (
@@ -547,25 +556,31 @@ function DefaultResearchPage() {
             </div>
           )}
 
-          {!loading && !result && (
+          {!loading && !result && !generationError && (
             <div className="glass-card rounded-2xl p-10 text-center">
               <div className="w-14 h-14 rounded-2xl bg-accent-electric/5 flex items-center justify-center mx-auto mb-4">
                 <Search className="w-6 h-6 text-brand-faint/60" />
               </div>
               <p className="text-sm text-brand-muted font-body max-w-sm mx-auto leading-relaxed">
-                输入主题后，AI 将生成研究问题、背景说明、匹配案例、相关知识点、实验设计框架、证据判断和科研训练任务。当前版本提供关键词和检索策略建议，帮助建立研究基础。
+                输入主题后，AI 将生成研究问题、背景说明、匹配案例、相关知识点、实验设计框架、证据判断和科研训练任务。当前版本提供关键词和检索策略建议，不涉及真实文献检索。
               </p>
+            </div>
+          )}
+
+          {!loading && !result && generationError && (
+            <div className="glass-card rounded-2xl p-10 text-center">
+              <AlertTriangle className="w-8 h-8 mx-auto mb-3 text-amber-500" />
+              <p className="text-sm text-brand-muted font-body mb-2">任务生成失败</p>
+              <p className="text-xs text-brand-faint font-body">{generationError}</p>
             </div>
           )}
 
           {result && !loading && (
             <div className="space-y-5">
-              {/* 来源提示 */}
-              {(result.source_scope || result.disclaimer) && (
+              {result.source_scope && (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50/60 border border-amber-200/50 text-xs text-brand-muted font-body">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>{sourceScopeLabel(result.source_scope || "")}</span>
-                  <span className="text-brand-faint">· {result.disclaimer?.slice(0, 60) || ""}...</span>
                 </div>
               )}
 
@@ -635,7 +650,7 @@ function DefaultResearchPage() {
 
                 <div className="space-y-2.5">
                   {(result.tasks || []).map((task, i) => (
-                    <TaskCard key={i} task={task} index={i} defaultExpanded={false} />
+                    <TaskCard key={i} task={task} index={i} defaultExpanded={i === 0} />
                   ))}
                 </div>
               </section>
@@ -747,7 +762,7 @@ function DefaultResearchPage() {
               ) : kbError || papers.length === 0 ? (
                 <div className="text-center py-6">
                   <BookOpen className="w-5 h-5 text-brand-faint/30 mx-auto mb-2" />
-                  <p className="text-xs text-brand-muted leading-relaxed max-w-xs mx-auto">当前暂无已接入文献材料。后续可在科研实战中发起文献检索，或上传论文/课程资料作为资料补充。</p>
+                  <p className="text-xs text-brand-muted leading-relaxed max-w-xs mx-auto">当前暂无已接入文献材料。后续可在科研实战中发起文献检索，或上传论文/课程资料作为本地知识来源。</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -771,9 +786,9 @@ function DefaultResearchPage() {
 
               <div className="mt-4 p-3 rounded-xl bg-amber-50/50 border border-amber-100/50">
                 <p className="text-[11px] text-brand-muted font-body leading-relaxed">
-                  <span className="font-semibold text-brand-ink">文献支撑：持续更新中</span>
+                  <span className="font-semibold text-brand-ink">AI 文献检索：接口预留 / 开发中</span>
                   <br />
-                  当前提供关键词整理与检索辅助，具体研究判断请结合文献原文和教师指导。
+                  当前版本提供关键词和检索策略建议，真实文献结果需接入外部检索 API 后生成。
                 </p>
               </div>
             </div>
@@ -906,6 +921,7 @@ function DefaultResearchPage() {
 function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase; caseKey: string }) {
   const [result, setResult] = useState<ResearchTaskGenerateResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const caseDataRef = useRef(caseData);
   caseDataRef.current = caseData;
   const generatingRef = useRef(false);
@@ -917,6 +933,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
       if (generatingRef.current) return;
       generatingRef.current = true;
       setLoading(true);
+      setGenerationError(null);
       const cd = caseDataRef.current;
       try {
         const data = await generateResearchTask({
@@ -925,15 +942,9 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
           mode: "case_driven",
         });
         if (!cancelled) setResult(data);
-      } catch {
+      } catch (error) {
         if (!cancelled) {
-          setResult(
-            generateFallbackResearchTask(
-              cd.coreProblem || cd.title,
-              caseKey,
-              "case_driven"
-            )
-          );
+          setGenerationError(error instanceof Error ? error.message : "科研任务生成失败");
         }
       } finally {
         if (!cancelled) {
@@ -951,11 +962,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
   }, [caseKey]);
 
   const sourceScopeLabel = (scope: string | undefined) => {
-    if (!scope) return "基于当前研究主题生成";
-    if (scope.includes("案例库")) return "基于案例信息生成";
-    if (scope.includes("产业案例")) return "基于当前产业案例生成";
-    if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
-    return scope || "基于当前研究主题生成";
+    return scope?.trim() || "来源范围由后端返回";
   };
 
   return (
@@ -1033,13 +1040,13 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
             <section className="glass-card rounded-2xl p-10 text-center">
               <AlertTriangle className="w-8 h-8 mx-auto mb-3 text-amber-500" />
               <p className="text-sm text-brand-muted font-body mb-2">任务生成失败</p>
-              <p className="text-xs text-brand-faint font-body">请检查网络连接后刷新页面重试。</p>
+              <p className="text-xs text-brand-faint font-body">{generationError || "请检查网络连接后刷新页面重试。"}</p>
             </section>
           )}
 
           {result && !loading && (
             <>
-              {(result.source_scope || result.disclaimer) && (
+              {result.source_scope && (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50/60 border border-amber-200/50 text-xs text-brand-muted font-body">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>{sourceScopeLabel(result.source_scope || "")}</span>
@@ -1061,7 +1068,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
 
                 <div className="space-y-2.5 mb-4">
                   {(result.tasks || []).map((task, i) => (
-                    <TaskCard key={i} task={task} index={i} defaultExpanded={false} caseTitle={caseData.title} />
+                    <TaskCard key={i} task={task} index={i} defaultExpanded={i === 0} caseTitle={caseData.title} />
                   ))}
                 </div>
               </section>

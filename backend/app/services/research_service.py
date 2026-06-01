@@ -88,16 +88,18 @@ class ResearchService:
             "reason": f"基于产业方向「{case.industry_direction or '生物制造'}」匹配"
         }]
 
-        if self.llm.available:
-            try:
-                return self._llm_generate(topic, case_context, case.case_key, "case_driven",
-                                          kp_list, kw_list, matched_cases)
-            except Exception:
-                pass
+        if not self.llm.available:
+            raise RuntimeError("LLM service unavailable for research task generation")
 
-        return self._build_fallback_task(topic, case.case_key, "case_driven",
-                                         kp_list, kw_list, matched_cases,
-                                         case_context)
+        return self._llm_generate(
+            topic,
+            case_context,
+            case.case_key,
+            "case_driven",
+            kp_list,
+            kw_list,
+            matched_cases,
+        )
 
     def _independent_task(self, topic: str) -> ResearchTaskGenerateResponse:
         matched_cases, kp_list, kw_list = self._match_local_cases(topic)
@@ -112,16 +114,18 @@ class ResearchService:
         else:
             case_context = "当前平台知识库暂无直接匹配案例，以下基于通用生物制造科研方法论生成训练框架。"
 
-        if self.llm.available:
-            try:
-                return self._llm_generate(topic, case_context, None, "independent",
-                                          kp_list, kw_list, matched_cases)
-            except Exception:
-                pass
+        if not self.llm.available:
+            raise RuntimeError("LLM service unavailable for research task generation")
 
-        return self._build_fallback_task(topic, None, "independent",
-                                         kp_list, kw_list, matched_cases,
-                                         case_context)
+        return self._llm_generate(
+            topic,
+            case_context,
+            None,
+            "independent",
+            kp_list,
+            kw_list,
+            matched_cases,
+        )
 
     def _llm_generate(self, topic: str, case_context: str, case_key: str | None, mode: str,
                       kp_list: list[str], kw_list: list[str],
@@ -168,6 +172,9 @@ class ResearchService:
             temperature=0.4,
         )
 
+        if not parsed:
+            raise RuntimeError("LLM returned empty research task payload")
+
         tasks = []
         for t in parsed.get("tasks", []):
             steps = [TaskStep(title=s.get("title", ""), description=s.get("description", ""), expected_duration=s.get("expected_duration", ""))
@@ -181,6 +188,15 @@ class ResearchService:
                 suggested_keywords=t.get("suggested_keywords", []),
                 example_outline=t.get("example_outline", ""),
             ))
+
+        if (
+            not parsed.get("research_question")
+            or not parsed.get("background")
+            or len(tasks) < 4
+            or not parsed.get("mentor_advice")
+            or not parsed.get("seminar_topic")
+        ):
+            raise RuntimeError("LLM returned incomplete research task payload")
 
         return ResearchTaskGenerateResponse(
             topic=topic,
@@ -276,7 +292,7 @@ class ResearchService:
             case_key=case_key,
             mode=mode,
             research_question=topic,
-            background=f"围绕「{topic}」这一主题，本训练框架整合生物制造领域核心研究方法论。{'已匹配到平台相关产业案例，可提供具体背景参考。' if has_match else '当前平台知识库暂无直接匹配案例，以下基于通用生物制造科研方法论生成训练框架。'}",
+            background=f"⚠️ LLM 不可用，以下为本地模板生成的科研训练框架，非 AI 个性化生成。\n\n围绕「{topic}」这一主题，本训练框架整合生物制造领域核心研究方法论。{'已匹配到平台相关产业案例，可提供具体背景参考。' if has_match else '当前平台知识库暂无直接匹配案例，以下基于通用生物制造科研方法论生成训练框架。'}",
             matched_cases=matched_cases,
             related_knowledge_points=default_kp,
             tasks=[
@@ -364,8 +380,8 @@ class ResearchService:
                 ),
             ],
             expected_outputs=["文献综述报告", "实验设计方案", "机制分析报告", "证据评估报告"],
-            mentor_advice="1. 从文献综述入手，建立扎实的理论基础\n2. 实验设计时注重对照组设置和样本量合理性\n3. 机制分析建议绘制可视化通路图辅助理解\n4. 定期与导师讨论研究进展，及时调整方向\n5. 注意区分相关性与因果性，避免过度推断",
+            mentor_advice="⚠️ LLM 不可用，以下为模板建议：\n1. 从文献综述入手，建立扎实的理论基础\n2. 实验设计时注重对照组设置和样本量合理性\n3. 机制分析建议绘制可视化通路图辅助理解\n4. 定期与导师讨论研究进展，及时调整方向\n5. 注意区分相关性与因果性，避免过度推断",
             seminar_topic=topic if "研讨" in topic else f"「{topic}」的研究进展与方法论探讨",
             source_scope="仅限平台案例库和知识库内容，未使用外部搜索或数据库",
-            disclaimer="当前使用本地模板生成。配置 LLM API Key 后可使用 AI 生成个性化科研任务。本训练框架仅供参考，具体研究设计请结合实际情况和导师指导。",
+            disclaimer="⚠️ 当前使用本地模板生成（LLM 不可用）。配置 LLM API Key 后可使用 AI 生成个性化科研任务。本训练框架仅供参考。",
         )

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+
 import httpx
 
 from app.services.literature_providers import BaseLiteratureProvider
@@ -17,6 +19,7 @@ class CrossrefProvider(BaseLiteratureProvider):
         params = {
             "query": query,
             "rows": clamped_limit,
+            "mailto": "biomentor-agent@localhost",
         }
 
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -27,7 +30,9 @@ class CrossrefProvider(BaseLiteratureProvider):
                 f"Crossref API returned status {response.status_code}"
             )
 
-        data = await response.json()
+        data = response.json()
+        if inspect.isawaitable(data):
+            data = await data
         items = data.get("message", {}).get("items", [])
         if not isinstance(items, list):
             items = []

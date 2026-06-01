@@ -7,11 +7,12 @@ import { useState } from "react";
 
 const navLinks = [
   { href: "/explore", label: "知识探索" },
-  { href: "/knowledge-map", label: "知识图谱" },
+  { href: "/paper-library", label: "文献库" },
   { href: "/research", label: "科研实战" },
-  { href: "/cases", label: "产业案例" },
-  { href: "/seminar", label: "学术研讨" },
   { href: "/tools", label: "生物工具箱" },
+  { href: "/cases", label: "产业案例" },
+  { href: "/knowledge-map", label: "知识图谱" },
+  { href: "/seminar", label: "学术研讨" },
 ];
 
 export function Navbar() {

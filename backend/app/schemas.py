@@ -219,6 +219,23 @@ class ResearchPaperCreate(BaseModel):
     related_concepts: list[str] = []
 
 
+class ResearchPaperUpdate(BaseModel):
+    title: str | None = None
+    title_zh: str | None = None
+    direction: str | None = None
+    venue: str | None = None
+    year: int | None = None
+    source_type: str | None = None
+    keywords: list[str] | None = None
+    abstract: str | None = None
+    core_problem: str | None = None
+    method_summary: str | None = None
+    key_finding: str | None = None
+    teaching_value: str | None = None
+    research_value: str | None = None
+    related_concepts: list[str] | None = None
+
+
 # ---------------------------------------------------------------------------
 # Industry Case
 # ---------------------------------------------------------------------------

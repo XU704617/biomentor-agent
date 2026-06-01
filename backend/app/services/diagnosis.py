@@ -139,6 +139,8 @@ class DiagnosisService:
 
         # Merge LLM results with rule-based
         llm_recs = llm_analysis.get("recommendations", [])
+        llm_weak_points = self._normalize_concept_items(llm_analysis.get("weak_points", []))
+        llm_strengths = self._normalize_concept_items(llm_analysis.get("strengths", []))
         rule_recs = []
         if weak: rule_recs.append(f"薄弱知识点：{', '.join(weak_names[:3])}，建议优先复习")
         if strong: rule_recs.append(f"优势领域：{', '.join(strong_names[:3])}，可尝试科研拓展")
@@ -155,11 +157,34 @@ class DiagnosisService:
                  "error_types": s.error_types or []}
                 for s in states
             ],
-            "weak_points": [w["concept"] for w in llm_analysis.get("weak_points", [])] or weak_names,
-            "strengths": [s["concept"] for s in llm_analysis.get("strengths", [])] or strong_names,
+            "weak_points": llm_weak_points or weak_names,
+            "strengths": llm_strengths or strong_names,
             "error_patterns": llm_analysis.get("error_patterns", []),
             "recommendations": llm_recs if llm_recs else rule_recs,
         }
+
+    def _normalize_concept_items(self, items: list[Any]) -> list[str]:
+        normalized: list[str] = []
+        if not isinstance(items, list):
+            return normalized
+
+        for item in items:
+            if isinstance(item, str):
+                value = item.strip()
+            elif isinstance(item, dict):
+                value = str(
+                    item.get("concept")
+                    or item.get("name")
+                    or item.get("title")
+                    or ""
+                ).strip()
+            else:
+                value = ""
+
+            if value:
+                normalized.append(value)
+
+        return normalized
 
     def get_error_events(self, user_id: int, kp_id: int | None = None, limit: int = 50) -> list[ErrorEvent]:
         q = self.db.query(ErrorEvent).filter(ErrorEvent.user_id == user_id)

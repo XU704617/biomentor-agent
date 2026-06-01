@@ -55,6 +55,15 @@ def create_paper(data: ResearchPaperCreate, db: Session = Depends(get_db)):
     return service.create_paper(data.model_dump())
 
 
+@router.get("/papers/{paper_id}/analysis")
+def get_paper_analysis(paper_id: int, db: Session = Depends(get_db)):
+    service = PaperService(db)
+    analysis = service.analyze_paper(paper_id)
+    if analysis.get("error") == "Paper not found":
+        raise HTTPException(404, "Paper not found")
+    return analysis
+
+
 @router.get("/papers/{paper_id}/learning-plan")
 def get_paper_learning_plan(paper_id: int, db: Session = Depends(get_db)):
     service = PaperService(db)

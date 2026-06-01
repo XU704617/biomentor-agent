@@ -9,6 +9,7 @@ from app.routers import (
     knowledge_graph,
     literature,
     materials,
+    paper_library,
     photo_learning,
     questions,
     quiz,

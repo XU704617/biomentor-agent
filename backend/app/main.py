@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.database import engine, Base
+from app.database import Base, engine, ensure_sqlite_schema_compatibility
 from app.routers import (
     agent,
     ai_generate,
@@ -15,6 +15,7 @@ from app.routers import (
     knowledge_graph,
     literature,
     materials,
+    paper_library,
     photo_learning,
     questions,
     quiz,
@@ -53,6 +54,7 @@ app.include_router(rag.router)
 app.include_router(ai_generate.router)
 app.include_router(industry_cases.router)
 app.include_router(research.router)
+app.include_router(paper_library.router)
 app.include_router(photo_learning.router)
 app.include_router(knowledge_graph.router)
 app.include_router(agent.router)
@@ -64,6 +66,7 @@ app.include_router(tutor.router)
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    ensure_sqlite_schema_compatibility(Base.metadata)
     if settings.SEED_DEMO_DATA:
         from app.seed import seed_demo_data
         db = next(get_db())
