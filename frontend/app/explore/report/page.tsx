@@ -78,21 +78,115 @@ export default function ReportPage() {
   }
 
   const wrongQuestions = quizResult.questions.filter((q) => !q.isCorrect);
-  
-  const weakPoints = [
-    { id: 1, title: "DNA复制模式", accuracy: 67, suggestion: "建议复习半保留复制的概念，理解每个新DNA分子的组成结构。" },
-    { id: 2, title: "DNA修复机制", accuracy: 50, suggestion: "区分NHEJ和HDR两种修复方式的特点和适用场景。" },
-    { id: 3, title: "复制叉结构", accuracy: 80, suggestion: "理解前导链和后随链的合成差异，以及冈崎片段的形成原因。" },
+
+  const BIOL_KEYWORDS = [
+    "微生物", "发酵", "酶", "HACCP", "食品安全", "食品添加剂", "淀粉", 
+    "乳酸菌", "酵母菌", "灭菌", "消毒", "食品工程", "蛋白质", "碳水化合物",
+    "DNA", "RNA", "基因", "细胞", "CRISPR", "代谢", "免疫", "细胞凋亡", 
+    "干细胞", "疫苗", "抗体", "抗原", "转录", "翻译", "复制", "修复",
+    "生态系统", "食物链", "食物网", "能量传递", "营养级", "生物富集",
+    "生态金字塔", "生物多样性", "种群", "群落", "生态位", "演替",
+    "上皮组织", "结缔组织", "肌肉组织", "神经组织", "细胞连接",
+    "细胞膜", "细胞核", "细胞器", "线粒体", "叶绿体", "核糖体"
   ];
 
-  const studySuggestions = [
-    "建议重点复习DNA复制的基本概念，特别是半保留复制模型。理解每个新DNA分子都包含一条原始母链和一条新合成子链的特点，这是遗传信息准确传递的关键机制。",
-    "深入理解DNA修复机制的两种主要方式：NHEJ（非同源末端连接）是快速但易错的修复方式，而HDR（同源定向修复）是精确的修复方式。建议对比学习这两种机制的适用场景和生物学意义。",
-    "通过绘制流程图梳理DNA复制的完整过程，包括解旋酶解开双链、DNA聚合酶合成新链、RNA引物的作用、冈崎片段的形成与连接等关键步骤，强化记忆和理解。",
-    "重点关注复制叉结构的详细描述，理解前导链和后随链的不对称合成机制，以及拓扑异构酶如何缓解复制过程中产生的DNA超螺旋应力。",
-    "建议结合实际案例理解DNA复制的生物学意义，例如为什么DNA复制的准确性对生物体至关重要，以及复制错误可能导致的遗传疾病。",
-    "针对薄弱知识点，可以通过查阅相关学术文献、观看教学视频等方式进行补充学习，多角度理解复杂概念。",
-  ];
+  const extractKeywordsFromQuestion = (text: string): string[] => {
+    const found: string[] = [];
+    const lowerText = text.toLowerCase();
+    BIOL_KEYWORDS.forEach(kw => {
+      if (lowerText.includes(kw.toLowerCase())) {
+        found.push(kw);
+      }
+    });
+    return found.length > 0 ? found.slice(0, 2) : ["综合知识"];
+  };
+
+  const getWeakPoints = () => {
+    const keywordAnalysis: Record<string, { correct: number; total: number; explanations: string[] }> = {};
+    
+    quizResult.questions.forEach((q) => {
+      const keywords = extractKeywordsFromQuestion(q.question + " " + q.explanation);
+      keywords.forEach(keyword => {
+        if (!keywordAnalysis[keyword]) {
+          keywordAnalysis[keyword] = { correct: 0, total: 0, explanations: [] };
+        }
+        keywordAnalysis[keyword].total++;
+        if (q.isCorrect) {
+          keywordAnalysis[keyword].correct++;
+        }
+        if (!q.isCorrect && q.explanation) {
+          keywordAnalysis[keyword].explanations.push(q.explanation);
+        }
+      });
+    });
+
+    return Object.entries(keywordAnalysis).map(([keyword, data], index) => {
+      const accuracy = Math.round((data.correct / data.total) * 100);
+      let suggestion = "";
+      if (accuracy === 100) {
+        suggestion = `"${keyword}"知识点掌握良好，建议继续巩固并拓展相关知识。`;
+      } else if (accuracy >= 60) {
+        suggestion = `建议加强"${keyword}"相关知识点的练习，参考解析理解易错点。`;
+      } else {
+        const sampleExplanation = data.explanations.length > 0 
+          ? data.explanations[0].substring(0, 60) + "..." 
+          : "";
+        suggestion = `需要重点复习"${keyword}"知识点。${sampleExplanation}`;
+      }
+      return {
+        id: index + 1,
+        title: keyword,
+        accuracy: accuracy,
+        suggestion: suggestion,
+      };
+    }).sort((a, b) => a.accuracy - b.accuracy);
+  };
+
+  const weakPoints = getWeakPoints();
+
+  const generateStudySuggestions = () => {
+    const suggestions: string[] = [];
+    
+    if (wrongQuestions.length === 0) {
+      suggestions.push("【错误知识点】无。【错误原因分析】本次测验全部正确，知识掌握良好。【针对性训练方法】建议进行更高级别的练习，尝试将所学知识应用到实际问题中，构建完整的知识体系。");
+    } else {
+      const weakTopics = weakPoints.filter(p => p.accuracy < 70);
+      
+      weakTopics.slice(0, 3).forEach((point) => {
+        const wrongQs = quizResult.questions.filter(q => 
+          !q.isCorrect && (q.question.includes(point.title) || q.explanation?.includes(point.title))
+        );
+        
+        let errorReason = "概念理解不清晰";
+        let trainingMethod = "反复阅读教材相关章节，制作概念卡片";
+        
+        if (point.title.includes("组织") || point.title.includes("细胞")) {
+          errorReason = "组织结构复杂，容易混淆不同组织类型的特征和功能";
+          trainingMethod = "绘制各类组织的结构示意图，对比分析不同组织的形态特征和功能差异，进行分类练习";
+        } else if (point.title.includes("生态") || point.title.includes("食物")) {
+          errorReason = "生态关系抽象，难以建立系统性理解";
+          trainingMethod = "构建生态系统模型，模拟物质循环和能量流动过程，通过案例分析加深理解";
+        } else if (point.title.includes("DNA") || point.title.includes("复制")) {
+          errorReason = "分子机制复杂，步骤较多容易混淆";
+          trainingMethod = "分步绘制DNA复制流程图，标注关键酶和步骤，通过动画视频辅助理解";
+        }
+        
+        suggestions.push(`【错误知识点】${point.title}（正确率${point.accuracy}%）。【错误原因分析】${errorReason}，可能对核心概念理解不透彻或与相似概念混淆。【针对性训练方法】${trainingMethod}，结合错题解析进行针对性练习。`);
+      });
+      
+      if (weakTopics.length === 0) {
+        const sampleWrong = wrongQuestions[0];
+        const keywords = extractKeywordsFromQuestion(sampleWrong.question);
+        suggestions.push(`【错误知识点】${keywords.join("、")}。【错误原因分析】对题目涉及的核心概念理解不准确，未能正确应用相关知识解决问题。【针对性训练方法】仔细阅读题目解析，理解正确答案的推导过程，寻找同类题目进行强化练习。`);
+      }
+      
+      suggestions.push("【错误知识点】知识综合应用。【错误原因分析】多个知识点关联时容易出现逻辑断层，知识体系不够完整。【针对性训练方法】制作思维导图将相关知识点串联起来，定期进行综合性练习，提升知识整合能力。");
+    }
+    
+    return suggestions;
+  };
+
+  const studySuggestions = generateStudySuggestions();
 
   return (
     <div className="min-h-screen pt-[var(--nav-height)] px-6 md:px-10 pb-20">
@@ -105,10 +199,6 @@ export default function ReportPage() {
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm font-body">返回</span>
           </Link>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/60 border border-black/5 text-sm font-body text-brand-ink hover:bg-white/80 transition-all cursor-pointer">
-            <Download className="w-4 h-4" />
-            导出报告
-          </button>
         </div>
 
         <div className="glass-card rounded-2xl p-8 mb-6">
@@ -303,3 +393,4 @@ export default function ReportPage() {
     </div>
   );
 }
+
