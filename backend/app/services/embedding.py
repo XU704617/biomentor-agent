@@ -102,6 +102,16 @@ class EmbeddingService:
             return len(results["ids"])
         return 0
 
+    def delete_by_where(self, collection_name: str, where: dict[str, Any]) -> int:
+        """Delete all chunks matching a metadata filter."""
+        coll = self.get_collection(collection_name)
+        results = coll.get(where=where)
+        ids = results.get("ids") or []
+        if ids:
+            coll.delete(ids=ids)
+            return len(ids)
+        return 0
+
     # ── Search ────────────────────────────────────────────────────
 
     def search(

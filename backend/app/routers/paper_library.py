@@ -21,7 +21,7 @@ async def import_paper_pdf(
     try:
         content = await file.read()
         imported = service.import_pdf(filename=filename, content=content)
-        return imported
+        return service.serialize_paper(imported)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except RuntimeError as exc:
@@ -41,7 +41,7 @@ def update_paper(
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="Paper not found")
-    return updated
+    return service.serialize_paper(updated)
 
 
 @router.delete("/{paper_id}")

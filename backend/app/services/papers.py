@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.models import ResearchPaper
 from app.config import get_settings
 from app.services.llm import get_llm
+from app.services.embedding import EmbeddingService
 from app.services.ingestion import IngestionService
 from app.services.prompts import PAPER_ANALYSIS_SYSTEM, PAPER_ANALYSIS_USER, PAPER_ANALYSIS_SCHEMA
 
@@ -70,6 +71,7 @@ class PaperService:
         self.db = db
         self.llm = get_llm()
         self.settings = get_settings()
+        self.vector = EmbeddingService()
 
     def list_papers(self, direction: str | None = None, difficulty: str | None = None,
                     page: int = 1, page_size: int = 20) -> tuple[list[ResearchPaper], int]:
@@ -83,12 +85,148 @@ class PaperService:
     def get_paper(self, paper_id: int) -> ResearchPaper | None:
         return self.db.query(ResearchPaper).filter(ResearchPaper.id == paper_id).first()
 
+    def get_papers_by_ids(self, paper_ids: list[int]) -> list[ResearchPaper]:
+        if not paper_ids:
+            return []
+        papers = (
+            self.db.query(ResearchPaper)
+            .filter(ResearchPaper.id.in_(paper_ids))
+            .all()
+        )
+        paper_map = {paper.id: paper for paper in papers}
+        return [paper_map[paper_id] for paper_id in paper_ids if paper_id in paper_map]
+
     def create_paper(self, data: dict) -> ResearchPaper:
         paper = ResearchPaper(**data)
         self.db.add(paper)
         self.db.commit()
         self.db.refresh(paper)
         return paper
+
+    def index_paper_to_knowledge_base(self, paper_id: int, full_text: str | None = None) -> int:
+        paper = self.get_paper(paper_id)
+        if not paper:
+            return 0
+
+        text = (full_text or "").strip()
+        if not text and paper.pdf_storage_path:
+            try:
+                text = IngestionService.extract_text_from_pdf(paper.pdf_storage_path).strip()
+            except Exception:
+                text = ""
+
+        chunks = self._build_index_chunks(paper, text)
+        if not chunks:
+            return 0
+
+        ids = [f"paper-{paper.id}-chunk-{i}" for i in range(len(chunks))]
+        metadatas = [
+            {
+                "paper_id": paper.id,
+                "chunk_index": i,
+                "title": paper.title_zh or paper.title,
+                "filename": paper.pdf_filename or paper.title,
+                "direction": paper.direction or "",
+                "source_type": "paper",
+            }
+            for i in range(len(chunks))
+        ]
+
+        self.vector.delete_by_where(self.settings.CHROMA_COLLECTION_PAPERS, {"paper_id": paper.id})
+        self.vector.index_chunks(
+            self.settings.CHROMA_COLLECTION_PAPERS,
+            chunks,
+            metadatas=metadatas,
+            ids=ids,
+            embeddings=None,
+        )
+        return len(chunks)
+
+    def _build_index_chunks(self, paper: ResearchPaper, full_text: str) -> list[str]:
+        title = paper.title_zh or paper.title
+        summary = "\n".join(
+            [
+                f"Title: {title}",
+                f"Direction: {paper.direction or ''}",
+                f"Venue: {paper.venue or ''}",
+                f"Year: {paper.year or ''}",
+                f"Keywords: {', '.join(paper.keywords or [])}",
+                f"Abstract: {paper.abstract or ''}",
+                f"Core problem: {paper.core_problem or ''}",
+                f"Method summary: {paper.method_summary or ''}",
+                f"Key finding: {paper.key_finding or ''}",
+                f"Teaching value: {paper.teaching_value or ''}",
+                f"Research value: {paper.research_value or ''}",
+            ]
+        ).strip()
+
+        if not full_text:
+            return [summary] if summary else []
+
+        chunker = IngestionService(self.db)
+        body_chunks = chunker._chunk_text(full_text)
+        if not body_chunks:
+            return [summary] if summary else []
+
+        chunks: list[str] = []
+        for i, chunk in enumerate(body_chunks):
+            if i == 0:
+                chunks.append(f"{summary}\n\nFull text excerpt:\n{chunk}".strip())
+            else:
+                chunks.append(f"Title: {title}\n\n{chunk}".strip())
+        return chunks
+
+    def serialize_paper(self, paper: ResearchPaper) -> dict[str, Any]:
+        def _enum_value(value: Any, default: str) -> str:
+            if value is None:
+                return default
+            return value.value if hasattr(value, "value") else str(value)
+
+        def _text(value: Any) -> str:
+            return "" if value is None else str(value)
+
+        def _int(value: Any, default: int = 0) -> int:
+            return default if value is None else int(value)
+
+        def _bool(value: Any, default: bool = False) -> bool:
+            return default if value is None else bool(value)
+
+        def _list(value: Any) -> list[Any]:
+            return [] if value is None else list(value)
+
+        return {
+            "id": paper.id,
+            "title": paper.title,
+            "title_zh": _text(paper.title_zh),
+            "direction": _text(paper.direction),
+            "venue": _text(paper.venue),
+            "year": _int(paper.year, 2024),
+            "source_type": _text(paper.source_type) or "学术文献",
+            "keywords": _list(paper.keywords),
+            "abstract": _text(paper.abstract),
+            "core_problem": _text(paper.core_problem),
+            "method_summary": _text(paper.method_summary),
+            "key_finding": _text(paper.key_finding),
+            "teaching_value": _text(paper.teaching_value),
+            "research_value": _text(paper.research_value),
+            "pdf_filename": _text(paper.pdf_filename),
+            "pdf_storage_path": _text(paper.pdf_storage_path),
+            "pdf_text_char_count": _int(paper.pdf_text_char_count),
+            "evidence_level": _enum_value(paper.evidence_level, "medium"),
+            "reading_difficulty": _enum_value(paper.reading_difficulty, "medium"),
+            "suggested_reading_order": _int(paper.suggested_reading_order),
+            "selectable": _bool(paper.selectable, True),
+            "can_support_demo": _bool(paper.can_support_demo, False),
+            "demo_scenarios": _list(paper.demo_scenarios),
+            "demo_questions": _list(paper.demo_questions),
+            "discussion_prompts": _list(paper.discussion_prompts),
+            "recommended_for": _list(paper.recommended_for),
+            "experiment_learning_value": _text(paper.experiment_learning_value),
+            "defense_value": _text(paper.defense_value),
+            "related_concepts": _list(paper.related_concepts),
+            "related_tools": _list(paper.related_tools),
+            "related_cases": _list(paper.related_cases),
+        }
 
     def import_pdf(self, filename: str, content: bytes) -> ResearchPaper:
         if not filename.lower().endswith(".pdf"):
@@ -274,9 +412,49 @@ class PaperService:
         ]
         return outline
 
+    def build_research_tasks(self, paper_ids: list[int]) -> list[dict[str, Any]]:
+        papers = self.get_papers_by_ids(paper_ids)
+        if not papers:
+            return []
+
+        tasks: list[dict[str, Any]] = []
+        for paper in papers[:5]:
+            title = paper.title_zh or paper.title
+            concepts = paper.related_concepts or []
+            tasks.append(
+                {
+                    "id": f"paper-task-{paper.id}",
+                    "title": f"{title[:40]} 文献研读与实验设计",
+                    "difficulty": self._map_difficulty_label(paper.reading_difficulty.value if hasattr(paper.reading_difficulty, 'value') else str(paper.reading_difficulty)),
+                    "scenario": paper.core_problem or f"围绕《{title}》提炼可验证的研究问题，并设计一个后续验证方案。",
+                    "input_knowledge": "、".join(concepts[:6]) if concepts else (paper.direction or "相关领域基础知识"),
+                    "expected_output": f"输出一份包含文献精读笔记、方法拆解、实验设计和讨论问题的综合报告，重点围绕：{paper.key_finding[:80] or title}",
+                    "steps": [
+                        "精读标题、摘要和引言，明确研究背景与核心问题",
+                        f"拆解方法路线：{(paper.method_summary or '梳理论文中的关键实验与分析流程')[:120]}",
+                        f"归纳关键发现：{(paper.key_finding or '提炼数据如何支撑结论')[:120]}",
+                        "基于论文局限性提出一个可执行的改进实验或扩展研究方向",
+                    ],
+                    "evaluation_rubric": [
+                        "是否准确理解论文要解决的科学问题",
+                        "是否能正确拆解核心方法并说明关键变量",
+                        "是否提出了有可行性的后续实验或优化思路",
+                    ],
+                }
+            )
+        return tasks
+
     def _normalize_text_list(self, value: Any) -> list[str]:
         if isinstance(value, list):
             return [str(item).strip() for item in value if str(item).strip()]
         if isinstance(value, str):
             return [item.strip() for item in re.split(r"[，,;；\n]", value) if item.strip()]
         return []
+
+    def _map_difficulty_label(self, value: str) -> str:
+        normalized = (value or "").strip().lower()
+        if normalized in {"easy", "入门"}:
+            return "入门"
+        if normalized in {"hard", "较难", "挑战"}:
+            return "挑战"
+        return "进阶"

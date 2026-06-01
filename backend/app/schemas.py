@@ -4,7 +4,7 @@ import enum
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +204,47 @@ class ResearchPaperOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    @field_validator(
+        "title_zh",
+        "direction",
+        "venue",
+        "source_type",
+        "abstract",
+        "core_problem",
+        "method_summary",
+        "key_finding",
+        "teaching_value",
+        "research_value",
+        "pdf_filename",
+        "pdf_storage_path",
+        "experiment_learning_value",
+        "defense_value",
+        mode="before",
+    )
+    @classmethod
+    def _normalize_nullable_paper_strings(cls, value: Any) -> str:
+        return "" if value is None else str(value)
+
+    @field_validator(
+        "keywords",
+        "demo_scenarios",
+        "demo_questions",
+        "discussion_prompts",
+        "recommended_for",
+        "related_concepts",
+        "related_tools",
+        "related_cases",
+        mode="before",
+    )
+    @classmethod
+    def _normalize_nullable_paper_lists(cls, value: Any) -> list[Any]:
+        return [] if value is None else value
+
+    @field_validator("pdf_text_char_count", "suggested_reading_order", mode="before")
+    @classmethod
+    def _normalize_nullable_paper_ints(cls, value: Any) -> int:
+        return 0 if value is None else int(value)
+
 
 class ResearchPaperCreate(BaseModel):
     title: str
@@ -284,6 +325,49 @@ class IndustryCaseOut(BaseModel):
     is_featured: bool = False
 
     model_config = {"from_attributes": True}
+
+    @field_validator(
+        "subtitle",
+        "industry_direction",
+        "company",
+        "category",
+        "real_product_or_technology",
+        "background",
+        "core_problem",
+        "problem_statement",
+        "research_foundation",
+        "application_value",
+        "data_description",
+        "analysis_text",
+        "linked_research_task",
+        "application_scenario",
+        "display_focus",
+        mode="before",
+    )
+    @classmethod
+    def _normalize_nullable_strings(cls, value: Any) -> str:
+        return "" if value is None else str(value)
+
+    @field_validator(
+        "knowledge_points",
+        "required_abilities",
+        "guide_questions",
+        "references",
+        "evaluation_dimensions",
+        "recommended_keywords",
+        "related_papers",
+        "related_concepts",
+        "source_urls",
+        mode="before",
+    )
+    @classmethod
+    def _normalize_nullable_lists(cls, value: Any) -> list[Any]:
+        return [] if value is None else value
+
+    @field_validator("migration_path", mode="before")
+    @classmethod
+    def _normalize_nullable_dict(cls, value: Any) -> dict[str, list[str]]:
+        return {} if value is None else value
 
 
 class IndustryCaseCreate(BaseModel):

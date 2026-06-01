@@ -63,6 +63,20 @@ class KnowledgeService:
         except Exception:
             pass
 
+        try:
+            paper_hits = self.vector.hybrid_search("papers", query, top_k)
+            for h in paper_hits:
+                paper_id = h["metadata"].get("paper_id")
+                context_parts.append(f"[论文片段 {paper_id}] {h['content'][:600]}")
+                sources.append({
+                    "type": "paper_chunk",
+                    "id": paper_id,
+                    "title": h["metadata"].get("title", ""),
+                    "content": h["content"][:200],
+                })
+        except Exception:
+            pass
+
         # Keyword search in papers
         papers = (
             self.db.query(ResearchPaper)

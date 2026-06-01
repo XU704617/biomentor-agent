@@ -21,7 +21,7 @@ def list_papers(
     service = PaperService(db)
     items, total = service.list_papers(direction, difficulty, page, page_size)
     return {
-        "items": [ResearchPaperOut.model_validate(p) for p in items],
+        "items": [service.serialize_paper(p) for p in items],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -31,13 +31,23 @@ def list_papers(
 @router.get("/papers/search")
 def search_papers(q: str = Query(..., min_length=1), limit: int = Query(10), db: Session = Depends(get_db)):
     service = PaperService(db)
-    return [ResearchPaperOut.model_validate(p) for p in service.search_papers(q, limit)]
+    return [service.serialize_paper(p) for p in service.search_papers(q, limit)]
+
+
+@router.get("/papers/by-ids", response_model=list[ResearchPaperOut])
+def get_papers_by_ids(
+    ids: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+):
+    paper_ids = [int(item) for item in ids.split(",") if item.strip().isdigit()]
+    service = PaperService(db)
+    return [service.serialize_paper(p) for p in service.get_papers_by_ids(paper_ids)]
 
 
 @router.get("/papers/demo")
 def demo_papers(db: Session = Depends(get_db)):
     service = PaperService(db)
-    return [ResearchPaperOut.model_validate(p) for p in service.get_demo_papers()]
+    return [service.serialize_paper(p) for p in service.get_demo_papers()]
 
 
 @router.get("/papers/{paper_id}", response_model=ResearchPaperOut)
@@ -46,13 +56,13 @@ def get_paper(paper_id: int, db: Session = Depends(get_db)):
     paper = service.get_paper(paper_id)
     if not paper:
         raise HTTPException(404, "Paper not found")
-    return paper
+    return service.serialize_paper(paper)
 
 
 @router.post("/papers", response_model=ResearchPaperOut, status_code=201)
 def create_paper(data: ResearchPaperCreate, db: Session = Depends(get_db)):
     service = PaperService(db)
-    return service.create_paper(data.model_dump())
+    return service.serialize_paper(service.create_paper(data.model_dump()))
 
 
 @router.get("/papers/{paper_id}/analysis")
@@ -77,6 +87,12 @@ def get_paper_learning_plan(paper_id: int, db: Session = Depends(get_db)):
 def build_defense_outline(paper_ids: list[int], db: Session = Depends(get_db)):
     service = PaperService(db)
     return {"outline": service.build_defense_outline(paper_ids)}
+
+
+@router.post("/papers/research-tasks")
+def build_research_tasks(paper_ids: list[int], db: Session = Depends(get_db)):
+    service = PaperService(db)
+    return {"tasks": service.build_research_tasks(paper_ids)}
 
 
 @router.get("/tasks")
