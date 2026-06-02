@@ -13,6 +13,7 @@ const navLinks = [
   { href: "/cases", label: "产业案例" },
   { href: "/knowledge-map", label: "知识图谱" },
   { href: "/seminar", label: "学术研讨" },
+  { href: "/settings", label: "系统设置" },
 ];
 
 export function Navbar() {

@@ -460,3 +460,14 @@ def get_llm() -> LLMService:
     if _llm_instance is None:
         _llm_instance = LLMService()
     return _llm_instance
+
+
+def reset_llm() -> None:
+    global _llm_instance
+    if _llm_instance is not None:
+        for client in _llm_instance._http_clients:
+            try:
+                client.close()
+            except Exception:
+                pass
+    _llm_instance = None

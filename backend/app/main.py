@@ -22,6 +22,7 @@ from app.routers import (
     rag,
     reports,
     research,
+    system_config,
     tutor,
 )
 
@@ -61,6 +62,7 @@ app.include_router(agent.router)
 app.include_router(literature.router)
 app.include_router(evidence.router)
 app.include_router(tutor.router)
+app.include_router(system_config.router)
 
 
 @app.on_event("startup")

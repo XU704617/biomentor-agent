@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { industryCases } from "@/data/industryCases";
+import { resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 interface MatchCase {
   id: string;
@@ -168,9 +169,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "query 超过最大长度限制 (2000)" }, { status: 400 });
     }
 
-    const apiKey = process.env.DEEPSEEK_API_KEY;
-    const baseUrl = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
-    const model = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
+    const { apiKey, baseUrl, model } = resolveDeepSeekConfig();
 
     if (!apiKey) {
       console.warn("[industry/answer] DEEPSEEK_API_KEY 未配置，使用本地 fallback");

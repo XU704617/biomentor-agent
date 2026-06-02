@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,8 +16,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "请提供教材内容" }, { status: 400 });
     }
 
-    const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-    if (!DEEPSEEK_API_KEY) {
+    const { apiKey, baseUrl, model } = resolveDeepSeekConfig();
+    if (!apiKey) {
       return NextResponse.json({ success: false, error: "AI 服务未配置" }, { status: 503 });
     }
 
@@ -53,14 +54,14 @@ export async function POST(request: NextRequest) {
 - 建议内容2
 - 建议内容3`;
 
-      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "deepseek-chat",
+          model,
           messages: [
             {
               role: "system",
@@ -147,14 +148,14 @@ export async function POST(request: NextRequest) {
 请直接分析PDF内容并按上述格式输出。`;
 
       console.log("[Analyze API] PDF处理 - 调用DeepSeek API");
-      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "deepseek-chat",
+          model,
           messages: [
             {
               role: "system",
@@ -233,14 +234,14 @@ ${content.length > 5000 ? content.substring(0, 5000) + "..." : content}
 7. 必须输出【核心知识点】【重点概念】【学习建议】三个部分，每个部分都不能为空`;
 
       console.log("[Analyze API] 文本处理 - 调用DeepSeek API");
-      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "deepseek-chat",
+          model,
           messages: [
             {
               role: "system",

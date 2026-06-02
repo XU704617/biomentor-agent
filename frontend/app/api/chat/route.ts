@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 export async function POST(request: NextRequest) {
   try {
     const { message, context } = await request.json();
 
-    const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-    if (!DEEPSEEK_API_KEY) {
+    const { apiKey, baseUrl, model } = resolveDeepSeekConfig();
+    if (!apiKey) {
       throw new Error("DEEPSEEK_API_KEY 环境变量未配置");
     }
 
@@ -25,14 +26,14 @@ ${contextText.length > 3000 ? contextText.substring(0, 3000) + "..." : contextTe
 
 请给出详细的回答。`;
 
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model,
         messages: [
           {
             role: "system",

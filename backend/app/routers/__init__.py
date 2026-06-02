@@ -16,5 +16,6 @@ from app.routers import (
     rag,
     reports,
     research,
+    system_config,
     tutor,
 )

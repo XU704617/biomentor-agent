@@ -231,8 +231,6 @@ class PaperService:
     def import_pdf(self, filename: str, content: bytes) -> ResearchPaper:
         if not filename.lower().endswith(".pdf"):
             raise ValueError("Only PDF files are supported")
-        if not self.llm.available:
-            raise RuntimeError("LLM service unavailable for paper PDF import")
 
         storage_dir = Path(self.settings.UPLOAD_DIR) / "research_papers"
         storage_dir.mkdir(parents=True, exist_ok=True)
@@ -247,53 +245,144 @@ class PaperService:
             storage_path.unlink(missing_ok=True)
             raise RuntimeError("Failed to extract readable text from PDF")
 
-        user_prompt = (
-            f"原始文件名：{filename}\n"
-            "请从以下 PDF 文本中抽取文献信息并输出 JSON。\n\n"
-            f"{extracted_text[:16000]}"
+        payload = self._build_import_payload(
+            filename=filename,
+            storage_path=storage_path,
+            extracted_text=extracted_text,
         )
-        parsed = self.llm.generate_json(
-            system_prompt=PAPER_IMPORT_SYSTEM,
-            user_prompt=user_prompt,
-            schema=PAPER_IMPORT_SCHEMA,
-            temperature=0.1,
+        return self.create_paper(payload)
+
+    def _build_import_payload(self, filename: str, storage_path: Path, extracted_text: str) -> dict[str, Any]:
+        parsed: dict[str, Any] = {}
+
+        if self.llm.available:
+            user_prompt = (
+                f"原始文件名：{filename}\n"
+                "请从以下 PDF 文本中抽取文献信息并输出 JSON。\n\n"
+                f"{extracted_text[:16000]}"
+            )
+            try:
+                parsed = self.llm.generate_json(
+                    system_prompt=PAPER_IMPORT_SYSTEM,
+                    user_prompt=user_prompt,
+                    schema=PAPER_IMPORT_SCHEMA,
+                    temperature=0.1,
+                )
+            except Exception:
+                parsed = {}
+
+        if self._is_complete_import_metadata(parsed):
+            year = parsed.get("year")
+            if not isinstance(year, int) or year < 1000 or year > 2100:
+                year = 0
+
+            return {
+                "title": str(parsed.get("title", "")).strip(),
+                "title_zh": str(parsed.get("title_zh", "")).strip(),
+                "direction": str(parsed.get("direction", "")).strip(),
+                "venue": str(parsed.get("venue", "")).strip(),
+                "year": year,
+                "source_type": str(parsed.get("source_type", "学术文献")).strip() or "学术文献",
+                "keywords": self._normalize_text_list(parsed.get("keywords")),
+                "abstract": str(parsed.get("abstract", "")).strip(),
+                "core_problem": str(parsed.get("core_problem", "")).strip(),
+                "method_summary": str(parsed.get("method_summary", "")).strip(),
+                "key_finding": str(parsed.get("key_finding", "")).strip(),
+                "teaching_value": str(parsed.get("teaching_value", "")).strip(),
+                "research_value": str(parsed.get("research_value", "")).strip(),
+                "related_concepts": self._normalize_text_list(parsed.get("related_concepts")),
+                "pdf_filename": filename,
+                "pdf_storage_path": str(storage_path.resolve()),
+                "pdf_text_char_count": len(extracted_text),
+            }
+
+        return self._build_fallback_import_payload(filename, storage_path, extracted_text)
+
+    def _is_complete_import_metadata(self, parsed: dict[str, Any]) -> bool:
+        return bool(
+            parsed.get("title")
+            and parsed.get("direction")
+            and parsed.get("abstract")
+            and parsed.get("core_problem")
+            and parsed.get("method_summary")
+            and parsed.get("key_finding")
         )
 
-        if (
-            not parsed.get("title")
-            or not parsed.get("direction")
-            or not parsed.get("abstract")
-            or not parsed.get("core_problem")
-            or not parsed.get("method_summary")
-            or not parsed.get("key_finding")
-        ):
-            storage_path.unlink(missing_ok=True)
-            raise RuntimeError("LLM returned incomplete paper metadata")
+    def _build_fallback_import_payload(
+        self,
+        filename: str,
+        storage_path: Path,
+        extracted_text: str,
+    ) -> dict[str, Any]:
+        lines = [line.strip() for line in extracted_text.splitlines() if line.strip()]
+        title = self._extract_fallback_title(filename, lines)
+        abstract = self._join_excerpt(lines, max_chars=1800)
+        keywords = self._extract_keywords(extracted_text)
+        year = self._extract_year(extracted_text)
 
-        year = parsed.get("year")
-        if not isinstance(year, int) or year < 1000 or year > 2100:
-            year = 0
-
-        payload = {
-            "title": str(parsed.get("title", "")).strip(),
-            "title_zh": str(parsed.get("title_zh", "")).strip(),
-            "direction": str(parsed.get("direction", "")).strip(),
-            "venue": str(parsed.get("venue", "")).strip(),
+        return {
+            "title": title,
+            "title_zh": "",
+            "direction": "待整理文献",
+            "venue": "",
             "year": year,
-            "source_type": str(parsed.get("source_type", "学术文献")).strip() or "学术文献",
-            "keywords": self._normalize_text_list(parsed.get("keywords")),
-            "abstract": str(parsed.get("abstract", "")).strip(),
-            "core_problem": str(parsed.get("core_problem", "")).strip(),
-            "method_summary": str(parsed.get("method_summary", "")).strip(),
-            "key_finding": str(parsed.get("key_finding", "")).strip(),
-            "teaching_value": str(parsed.get("teaching_value", "")).strip(),
-            "research_value": str(parsed.get("research_value", "")).strip(),
-            "related_concepts": self._normalize_text_list(parsed.get("related_concepts")),
+            "source_type": "学术文献",
+            "keywords": keywords,
+            "abstract": abstract,
+            "core_problem": abstract[:400] or f"{title} 的核心问题待补充整理。",
+            "method_summary": self._join_excerpt(lines[5:], max_chars=400) or "方法摘要待补充整理。",
+            "key_finding": self._join_excerpt(lines[10:], max_chars=400) or "关键发现待补充整理。",
+            "teaching_value": "已完成 PDF 文本提取，可继续人工补充教学价值。",
+            "research_value": "已完成 PDF 文本提取，可继续人工补充研究价值。",
+            "related_concepts": keywords[:8],
             "pdf_filename": filename,
             "pdf_storage_path": str(storage_path.resolve()),
             "pdf_text_char_count": len(extracted_text),
         }
-        return self.create_paper(payload)
+
+    def _extract_fallback_title(self, filename: str, lines: list[str]) -> str:
+        for line in lines[:8]:
+            compact = " ".join(line.split())
+            if 8 <= len(compact) <= 300:
+                return compact
+        return Path(filename).stem.replace("_", " ").strip() or "Imported Paper"
+
+    def _join_excerpt(self, lines: list[str], max_chars: int) -> str:
+        if not lines:
+            return ""
+        joined = " ".join(lines)
+        joined = re.sub(r"\s+", " ", joined).strip()
+        return joined[:max_chars]
+
+    def _extract_year(self, text: str) -> int:
+        years = re.findall(r"\b(19\d{2}|20\d{2}|2100)\b", text[:4000])
+        if not years:
+            return 0
+        return max(int(year) for year in years)
+
+    def _extract_keywords(self, text: str, limit: int = 8) -> list[str]:
+        candidates = re.findall(r"\b[A-Za-z][A-Za-z0-9\-]{3,}\b", text[:6000])
+        seen: list[str] = []
+        seen_lower: set[str] = set()
+        for item in candidates:
+            lowered = item.lower()
+            if lowered in {
+                "abstract",
+                "introduction",
+                "results",
+                "discussion",
+                "methods",
+                "figure",
+                "table",
+                "copyright",
+            }:
+                continue
+            if lowered not in seen_lower:
+                seen.append(item)
+                seen_lower.add(lowered)
+            if len(seen) >= limit:
+                break
+        return seen
 
     def update_paper(self, paper_id: int, data: dict) -> ResearchPaper | None:
         paper = self.get_paper(paper_id)
