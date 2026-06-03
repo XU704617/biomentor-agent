@@ -39,6 +39,7 @@ import {
   searchLiterature,
   type LiteratureSearchResponse,
 } from "@/lib/literatureApi";
+import { searchLocalLiteratureByKeywords, type LocalLiteratureItem } from "@/lib/knowledgeSearch";
 import EvidenceLinkPanel from "@/components/EvidenceLinkPanel";
 
 interface Message { role: "user" | "ai"; content: string; }
@@ -49,7 +50,7 @@ const phases = [
     title: "文献调研",
     icon: <BookOpen className="w-5 h-5" />,
     description:
-      "基于本地知识库和已接入资料，辅助整理关键词、研究问题和证据线索；当前版本优先使用本地知识库。",
+      "基于本地精选文献，辅助整理关键词、研究问题和证据线索。",
   },
   {
     num: 2,
@@ -194,6 +195,7 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
   const searchingRef = useRef(false);
+  const localResults = searchLocalLiteratureByKeywords([], query || defaultQuery, 5);
 
   useEffect(() => {
     setQuery(defaultQuery);
@@ -241,8 +243,8 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
           <BookOpen className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="font-display font-bold text-base text-brand-ink">AI 文献检索</h2>
-          <p className="text-xs text-brand-muted font-body">基于当前研究主题检索相关文献</p>
+          <h2 className="font-display font-bold text-base text-brand-ink">文献支撑</h2>
+          <p className="text-xs text-brand-muted font-body">先展示本地精选文献，也可补充检索公开文献。</p>
         </div>
       </div>
 
@@ -267,14 +269,49 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
           ) : (
             <Search className="w-4 h-4" />
           )}
-          {loading ? "检索中..." : "检索文献"}
+          {loading ? "检索中..." : "补充检索"}
         </button>
       </div>
+
+      {localResults.length > 0 && (
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-brand-ink">本地精选文献</p>
+            <span className="text-[11px] text-brand-muted">{localResults.length} 篇</span>
+          </div>
+          {localResults.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-xl bg-white/40 border border-black/5 p-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-brand-ink leading-snug">{item.title}</h4>
+                  <p className="text-xs text-brand-muted mt-1">
+                    {item.venue} · {item.year} · 本地精选
+                  </p>
+                </div>
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-accent-electric hover:underline shrink-0 mt-0.5"
+                >
+                  查看来源
+                </a>
+              </div>
+              <p className="text-xs text-brand-muted leading-relaxed mt-2 line-clamp-2">
+                {item.abstract}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {loading && (
         <div className="py-8 text-center">
           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-accent-electric" />
-          <p className="text-xs text-brand-muted font-body">正在检索文献...</p>
+          <p className="text-xs text-brand-muted font-body">正在补充检索公开文献...</p>
         </div>
       )}
 
@@ -292,10 +329,10 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
         <div className="rounded-xl bg-amber-50/40 border border-amber-100/50 p-4">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <p className="text-sm font-semibold text-brand-ink">文献检索未配置</p>
+            <p className="text-sm font-semibold text-brand-ink">暂未找到更多公开文献</p>
           </div>
           <p className="text-xs text-brand-muted leading-relaxed">
-            {result?.message || "真实文献检索 API 尚未配置，当前仅提供检索入口和关键词建议。"}
+            暂未找到更多公开文献，可先使用本地精选文献。
           </p>
         </div>
       )}
@@ -303,8 +340,7 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
       {!loading && !error && searched && isEmpty && (
         <div className="py-8 text-center">
           <BookOpen className="w-8 h-8 text-brand-faint/30 mx-auto mb-2" />
-          <p className="text-sm text-brand-muted font-body">未检索到文献结果</p>
-          <p className="text-xs text-brand-faint mt-1">尝试使用不同的关键词检索</p>
+          <p className="text-sm text-brand-muted font-body">暂未找到更多公开文献，请调整关键词后重试。</p>
         </div>
       )}
 
@@ -410,7 +446,6 @@ function DefaultResearchPage() {
     { role: "ai", content: "欢迎使用 AI 科研导师！输入研究主题生成训练任务后，你可以向我提问。" },
   ]);
   const [tasks, setTasks] = useState<{ id: string; title: string; difficulty: string; knowledge_point: string; steps: string[] }[]>([]);
-  const [papers, setPapers] = useState<{ id: number; title_zh: string; venue: string; year: number; reading_difficulty: string }[]>([]);
   const [kbLoading, setKbLoading] = useState(true);
   const [kbError, setKbError] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -422,13 +457,11 @@ function DefaultResearchPage() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    Promise.all([
-      fetch(`${PY}/api/research/tasks`, { signal: controller.signal }).then(r => { if (!r.ok) throw new Error("fail"); return r.json(); }),
-      fetch(`${PY}/api/research/papers?page_size=6`, { signal: controller.signal }).then(r => { if (!r.ok) throw new Error("fail"); return r.json(); }),
-    ]).then(([t, p]) => {
+    fetch(`${PY}/api/research/tasks`, { signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("fail"); return r.json(); })
+      .then((t) => {
       if (!cancelled) {
         setTasks(Array.isArray(t) ? t.slice(0, 8) : []);
-        setPapers((p.items || []).slice(0, 6));
       }
     }).catch(() => {
       if (!cancelled) setKbError(true);
@@ -475,8 +508,18 @@ function DefaultResearchPage() {
     setTopicInput(topic);
   };
 
+  const curatedPapers: LocalLiteratureItem[] = searchLocalLiteratureByKeywords(
+    ["mRNA", "CAR-T", "CRISPR", "PET", "Venetoclax", "PD-1"],
+    topicInput,
+    6,
+  );
+
   const sourceScopeLabel = (scope: string | undefined) => {
-    return scope?.trim() || "来源范围由后端返回";
+    if (!scope) return "基于当前研究主题生成";
+    if (scope.includes("案例库")) return "基于案例信息生成";
+    if (scope.includes("产业案例")) return "基于当前产业案例生成";
+    if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
+    return "基于当前研究主题生成";
   };
 
   return (
@@ -529,7 +572,7 @@ function DefaultResearchPage() {
               ) : (
                 <Send className="w-4 h-4" />
               )}
-              {loading ? "生成中..." : "生成科研任务"}
+              {loading ? "生成中..." : "生成训练任务"}
             </button>
           </div>
 
@@ -634,7 +677,7 @@ function DefaultResearchPage() {
                 )}
               </section>
 
-              {/* 科研训练任务卡片 */}
+              {/* 科研训练任务 */}
               <section className="glass-card rounded-2xl p-6 md:p-8">
                 <div className="flex items-center gap-2.5 mb-4">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-amber to-accent-electric flex items-center justify-center">
@@ -720,75 +763,54 @@ function DefaultResearchPage() {
           )}
         </div>
 
-        {/* ===== 第三块：训练流程说明 ===== */}
-        <section className="mb-10">
-          <h2 className="section-heading mb-2">科研训练流程</h2>
-          <p className="text-sm text-brand-muted font-body mb-5 max-w-xl">
-            以下描述当前版本各阶段的能力边界和后续规划。
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {phases.map((p) => (
-              <div key={p.num} className="glass-card rounded-2xl p-5 flex flex-col">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="w-9 h-9 rounded-xl bg-brand-ink/5 flex items-center justify-center text-base font-bold font-display text-brand-ink">
-                    {p.num}
-                  </span>
-                  <div className="w-8 h-8 rounded-xl bg-brand-ink/5 flex items-center justify-center">
-                    {p.icon}
-                  </div>
-                </div>
-                <h3 className="font-display text-base font-bold text-brand-ink mb-2">{p.title}</h3>
-                <p className="text-xs text-brand-muted leading-relaxed flex-1">{p.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ===== 第四块：辅助区 ===== */}
+        {/* ===== 辅助区 ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          {/* 已接入文献材料 + 科研任务卡 */}
+          {/* 本地精选文献 + 训练任务 */}
           <div className="lg:col-span-3 space-y-5">
             <div className="glass-card rounded-2xl p-5">
               <h2 className="font-display text-base font-bold text-brand-ink mb-4 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-accent-electric" />
-                已接入文献材料
-                <span className="text-xs text-brand-muted font-normal ml-1">({papers.length} 篇)</span>
+                本地精选文献
+                <span className="text-xs text-brand-muted font-normal ml-1">({curatedPapers.length} 篇)</span>
               </h2>
-              {kbLoading ? (
-                <div className="flex items-center gap-2 py-3">
-                  <Loader2 className="w-4 h-4 animate-spin text-brand-muted" />
-                  <span className="text-xs text-brand-muted">加载中...</span>
-                </div>
-              ) : kbError || papers.length === 0 ? (
+              {curatedPapers.length === 0 ? (
                 <div className="text-center py-6">
                   <BookOpen className="w-5 h-5 text-brand-faint/30 mx-auto mb-2" />
-                  <p className="text-xs text-brand-muted leading-relaxed max-w-xs mx-auto">当前暂无已接入文献材料。后续可在科研实战中发起文献检索，或上传论文/课程资料作为本地知识来源。</p>
+                  <p className="text-xs text-brand-muted leading-relaxed max-w-xs mx-auto">当前暂无匹配文献，可在文献支撑区域补充检索公开文献。</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {papers.map((p) => (
-                    <Link
+                  {curatedPapers.map((p) => (
+                    <div
                       key={p.id}
-                      href="/explore"
                       className="flex items-center justify-between p-3 rounded-xl bg-white/40 border border-black/5 hover:border-accent-electric/20 transition-all"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-brand-ink">{p.title_zh}</p>
+                        <p className="text-sm font-semibold text-brand-ink">{p.title}</p>
                         <p className="text-xs text-brand-muted">
-                          {p.venue} · {p.year} · {p.reading_difficulty}
+                          {p.venue} · {p.year} · 本地精选
                         </p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-brand-faint" />
-                    </Link>
+                      {p.url && (
+                        <a
+                          href={p.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-accent-electric hover:underline shrink-0 ml-3"
+                        >
+                          查看来源
+                        </a>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
 
               <div className="mt-4 p-3 rounded-xl bg-amber-50/50 border border-amber-100/50">
                 <p className="text-[11px] text-brand-muted font-body leading-relaxed">
-                  <span className="font-semibold text-brand-ink">AI 文献检索：已接入真实检索</span>
+                  <span className="font-semibold text-brand-ink">文献支撑</span>
                   <br />
-                  当前版本已接入后端真实文献检索接口，可直接返回 PubMed 检索结果；若未命中，可继续调整关键词重试。
+                  本地精选文献用于训练支撑；具体研究判断请结合文献原文和教师指导。
                 </p>
               </div>
             </div>
@@ -796,7 +818,7 @@ function DefaultResearchPage() {
             <div className="glass-card rounded-2xl p-5">
               <h2 className="font-display text-base font-bold text-brand-ink mb-4 flex items-center gap-2">
                 <Target className="w-4 h-4 text-accent-cyan" />
-                科研任务卡
+                训练任务
                 <span className="text-xs text-brand-muted font-normal ml-1">({tasks.length} 个)</span>
               </h2>
               {kbLoading ? (
@@ -807,8 +829,8 @@ function DefaultResearchPage() {
               ) : kbError || tasks.length === 0 ? (
                 <div className="text-center py-6">
                   <Target className="w-5 h-5 text-brand-faint/30 mx-auto mb-2" />
-                  <p className="text-xs text-brand-muted">暂无任务卡</p>
-                  <p className="text-[10px] text-brand-faint mt-0.5">生成科研任务后将在此显示</p>
+                  <p className="text-xs text-brand-muted">暂无训练任务</p>
+                  <p className="text-[10px] text-brand-faint mt-0.5">生成训练任务后将在此显示</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -962,7 +984,11 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
   }, [caseKey]);
 
   const sourceScopeLabel = (scope: string | undefined) => {
-    return scope?.trim() || "来源范围由后端返回";
+    if (!scope) return "基于当前研究主题生成";
+    if (scope.includes("案例库")) return "基于案例信息生成";
+    if (scope.includes("产业案例")) return "基于当前产业案例生成";
+    if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
+    return "基于当前研究主题生成";
   };
 
   return (
@@ -1006,7 +1032,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
                 <p className="text-sm font-semibold text-brand-ink">{caseData.sourceType}</p>
               </div>
               <div className="rounded-xl bg-blue-50/50 p-3">
-                <p className="text-[10px] font-bold text-brand-faint uppercase tracking-wider mb-0.5">科研任务</p>
+                <p className="text-[10px] font-bold text-brand-faint uppercase tracking-wider mb-0.5">训练任务</p>
                 <p className="text-sm font-semibold text-brand-ink">{caseData.linkedResearchTask}</p>
               </div>
             </div>

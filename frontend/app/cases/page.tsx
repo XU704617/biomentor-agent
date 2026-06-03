@@ -15,7 +15,7 @@ import {
 import { IndustryCaseCard } from "@/components/IndustryCaseCard";
 import { IndustryCaseDetailModal } from "@/components/IndustryCaseDetailModal";
 import { IndustryAskPanel } from "@/components/IndustryAskPanel";
-import { industryCases as mockCases } from "@/data/industryCases";
+import { industryCases as localCases } from "@/data/industryCases";
 import { getIndustryAnswer, convertApiCaseToFrontend } from "@/lib/industryApi";
 import type { IndustryCase } from "@/data/industryCases";
 import type { ApiIndustryCase } from "@/lib/industryApi";
@@ -27,36 +27,36 @@ export default function CasesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedCase, setSelectedCase] = useState<IndustryCase | null>(null);
-  const [displayLimit, setDisplayLimit] = useState(6);
+  const [displayLimit, setDisplayLimit] = useState(24);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch("/api/industry/cases");
+        const res = await fetch("/api/industry/cases?page_size=100");
         if (res.ok) {
           const data = await res.json();
           if (data?.items && data.items.length > 0) {
             const cases = (data.items as ApiIndustryCase[]).map(convertApiCaseToFrontend);
             if (!cancelled) {
               setAllCases(cases);
-              setDisplayLimit(6);
+              setDisplayLimit(24);
               setLoading(false);
               return;
             }
           }
         }
         if (!cancelled) {
-          setAllCases(mockCases);
+          setAllCases(localCases);
           setApiFailed(true);
-          setDisplayLimit(6);
+          setDisplayLimit(24);
           setLoading(false);
         }
       } catch {
         if (!cancelled) {
-          setAllCases(mockCases);
+          setAllCases(localCases);
           setApiFailed(true);
-          setDisplayLimit(6);
+          setDisplayLimit(24);
           setLoading(false);
         }
       }
@@ -230,12 +230,7 @@ export default function CasesPage() {
               {apiFailed && (
                 <div className="flex items-start gap-2 mb-4 px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200/60 text-xs text-amber-700 font-body">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p>当前展示可用案例（{allCases.length} 个），更多案例需连接在线服务后查看。</p>
-                    <p className="text-amber-600/80">
-                      如需查看完整案例库（共 23 个），请确认部署环境已正确配置数据服务连接。
-                    </p>
-                  </div>
+                  <p>当前展示本地精选案例库（{allCases.length} 个），搜索和筛选均可使用。</p>
                 </div>
               )}
 
@@ -247,9 +242,6 @@ export default function CasesPage() {
                 <p className="text-xs text-amber-800 font-body mb-1">
                   <span className="font-semibold">优先体验推荐</span>
                   <span className="text-amber-700/80 ml-1">带「优先体验」标签的案例为推荐演示案例，覆盖 mRNA 疫苗、CAR-T、CRISPR、细胞凋亡、PD-1 等核心技术，文献丰富度高，演示效果稳定。</span>
-                </p>
-                <p className="text-[11px] text-amber-700/70 font-body">
-                  完整测试路线：/cases → 点击案例 → /research?caseId=... → 查看 4 个科研训练任务 → 点击文献支撑 → 生成文献笔记
                 </p>
               </div>
 

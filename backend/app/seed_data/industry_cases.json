@@ -1765,5 +1765,682 @@
     "related_papers": [],
     "related_concepts": [],
     "analysis_text": ""
+  },
+  {
+    "case_key": "case-024",
+    "title": "ENHERTU HER2 抗体偶联药物",
+    "subtitle": "从靶向抗体到细胞毒载荷递送",
+    "category": "生物医药与药物研发",
+    "industry_direction": "抗体药物 / ADC / 肿瘤精准治疗",
+    "real_product_or_technology": "Fam-trastuzumab deruxtecan-nxki / ENHERTU，HER2-directed antibody-drug conjugate",
+    "knowledge_points": [
+      "抗体偶联药物",
+      "HER2",
+      "拓扑异构酶抑制剂",
+      "连接子稳定性",
+      "肿瘤靶向递送",
+      "旁观者效应"
+    ],
+    "core_problem": "如何把抗体的靶向识别能力与强效细胞毒载荷结合，使药物优先作用于 HER2 表达相关肿瘤细胞？",
+    "background": "ENHERTU 是 HER2 方向抗体偶联药物的代表案例。FDA 公开资料显示 fam-trastuzumab deruxtecan-nxki 是 HER2-directed antibody and topoisomerase inhibitor conjugate，并在多个 HER2 相关肿瘤治疗场景中获得批准或加速批准。",
+    "company": "",
+    "problem_statement": "如何把抗体的靶向识别能力与强效细胞毒载荷结合，使药物优先作用于 HER2 表达相关肿瘤细胞？",
+    "research_foundation": "抗体偶联药物由靶向抗体、化学连接子和细胞毒载荷组成。ENHERTU 以 trastuzumab 相关抗体部分识别 HER2，连接拓扑异构酶 I 抑制剂载荷；药物与 HER2 表达细胞结合后发生内吞，连接子在细胞内环境中裂解并释放载荷，从而干扰 DNA 复制相关过程。教学上可以用该案例解释为什么 ADC 不是简单把抗体和毒素相加，而需要同时优化靶点表达、连接子稳定性、载荷强度、药物抗体比和安全性窗口。对 HER2 低表达或异质表达肿瘤的讨论也适合引出旁观者效应和伴随诊断边界。",
+    "application_scenario": "用于肿瘤靶向治疗、抗体工程、药物递送、伴随诊断和 ADC 安全性讨论。",
+    "application_value": "该案例能把抗原识别、蛋白质工程、有机连接子化学和肿瘤治疗策略连成一条产业转化链条，适合作为 ADC 教学展示案例。",
+    "data_description": "",
+    "required_abilities": [
+      "抗体药物机制解释能力",
+      "靶向递送路径分析能力",
+      "伴随诊断理解能力",
+      "安全性证据判断能力"
+    ],
+    "guide_questions": [
+      "ADC 结构与作用流程图",
+      "HER2 表达与用药匹配讨论",
+      "ADC 与单抗/小分子药物比较。"
+    ],
+    "recommended_keywords": [
+      "Enhertu",
+      "trastuzumab deruxtecan",
+      "antibody-drug conjugate",
+      "HER2",
+      "topoisomerase inhibitor",
+      "bystander effect"
+    ],
+    "linked_research_task": "ADC 结构与 HER2 靶向递送机制分析",
+    "display_focus": "HER2 识别—ADC 内吞—连接子裂解—载荷释放—肿瘤细胞杀伤流程。",
+    "evidence_level": "high",
+    "source_type": "regulatory",
+    "source_urls": [
+      "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-disco-burst-edition-fda-approval-enhertu-fam-trastuzumab-deruxtecan-nxki-unresectable-or",
+      "https://www.cancer.gov/about-cancer/treatment/drugs/famtrastuzumabderuxtecan-nxki",
+      "https://pubmed.ncbi.nlm.nih.gov/31825192/"
+    ],
+    "difficulty": "medium",
+    "is_featured": false,
+    "references": [
+      {
+        "title": "FDA D.I.S.C.O. Burst Edition: ENHERTU approval for HER2-positive solid tumors",
+        "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-disco-burst-edition-fda-approval-enhertu-fam-trastuzumab-deruxtecan-nxki-unresectable-or",
+        "type": "regulatory"
+      },
+      {
+        "title": "NCI Drug Information: Fam-trastuzumab deruxtecan-nxki",
+        "url": "https://www.cancer.gov/about-cancer/treatment/drugs/famtrastuzumabderuxtecan-nxki",
+        "type": "regulatory"
+      },
+      {
+        "title": "Trastuzumab Deruxtecan in Previously Treated HER2-Positive Breast Cancer",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/31825192/",
+        "type": "academic"
+      }
+    ],
+    "migration_path": {
+      "textbookBase": [
+        "抗原抗体特异性识别",
+        "受体介导内吞",
+        "DNA 复制与拓扑异构酶"
+      ],
+      "researchFrontier": [
+        "ADC 连接子与载荷设计",
+        "HER2 低表达肿瘤用药边界",
+        "旁观者效应与毒性窗口"
+      ],
+      "industryApplication": [
+        "ENHERTU 多适应证开发",
+        "HER2 伴随诊断",
+        "新一代 ADC 药物平台"
+      ]
+    },
+    "evaluation_dimensions": [
+      "机制理解",
+      "应用分析",
+      "文献解读",
+      "风险判断",
+      "实验设计"
+    ],
+    "related_papers": [],
+    "related_concepts": [],
+    "analysis_text": ""
+  },
+  {
+    "case_key": "case-025",
+    "title": "ONPATTRO siRNA 脂质递送药物",
+    "subtitle": "从 RNA 干扰到肝脏靶向基因沉默",
+    "category": "生物医药与药物研发",
+    "industry_direction": "RNA 药物 / siRNA / 递送系统",
+    "real_product_or_technology": "Patisiran / ONPATTRO，siRNA lipid complex",
+    "knowledge_points": [
+      "RNA 干扰",
+      "siRNA",
+      "TTR mRNA",
+      "脂质纳米递送",
+      "肝细胞递送",
+      "基因沉默"
+    ],
+    "core_problem": "如何把易降解的 siRNA 分子递送到目标组织，并通过 RNA 干扰降低致病蛋白表达？",
+    "background": "FDA 对 RNA 药物的介绍中将 patisiran / ONPATTRO 作为 RNA-based medicine 的重要案例。DailyMed 说明书显示 ONPATTRO 含有 patisiran，是用于递送至肝细胞的 double-stranded siRNA lipid complex。",
+    "company": "",
+    "problem_statement": "如何把易降解的 siRNA 分子递送到目标组织，并通过 RNA 干扰降低致病蛋白表达？",
+    "research_foundation": "RNA 干扰利用双链 siRNA 引导 RISC 复合物识别互补 mRNA，并促使目标 mRNA 降解，从而降低对应蛋白表达。Patisiran 靶向 TTR mRNA，目标是减少突变型和野生型 transthyretin 的生成。由于 siRNA 分子本身带负电、容易被核酸酶降解，药物需要脂质复合物保护并帮助进入肝细胞。该案例适合和 mRNA 疫苗的 LNP 递送对比：两者都依赖核酸递送，但 mRNA 递送的目标是表达蛋白，siRNA 递送的目标是降低目标 mRNA 水平。",
+    "application_scenario": "用于 RNA 药物、罕见病治疗、核酸递送、肝脏靶向和基因沉默机制教学。",
+    "application_value": "该案例帮助学生理解核酸药物并不只有 mRNA 疫苗，还可以通过 RNAi 调节基因表达，是核酸治疗产业化的重要代表。",
+    "data_description": "",
+    "required_abilities": [
+      "RNAi 机制解释能力",
+      "递送系统比较能力",
+      "遗传病机制分析能力",
+      "文献证据解读能力"
+    ],
+    "guide_questions": [
+      "siRNA-RISC 作用流程图",
+      "mRNA 递送与 siRNA 递送比较",
+      "TTR 表达降低机制分析。"
+    ],
+    "recommended_keywords": [
+      "Onpattro",
+      "patisiran",
+      "siRNA",
+      "RNA interference",
+      "lipid complex",
+      "transthyretin amyloidosis",
+      "TTR"
+    ],
+    "linked_research_task": "siRNA 脂质递送与 TTR 基因沉默机制分析",
+    "display_focus": "siRNA 保护递送—肝细胞摄取—RISC 加载—TTR mRNA 降解—蛋白表达下降流程。",
+    "evidence_level": "high",
+    "source_type": "regulatory",
+    "source_urls": [
+      "https://www.fda.gov/drugs/spotlight-cder-science/new-class-drugs-fulfills-promise-rna-based-medicine",
+      "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=e87ec36f-b4b4-49d4-aea4-d4ffb09b0970",
+      "https://pubmed.ncbi.nlm.nih.gov/29972753/"
+    ],
+    "difficulty": "medium",
+    "is_featured": false,
+    "references": [
+      {
+        "title": "FDA: New Class of Drugs Fulfills Promise of RNA-based Medicine",
+        "url": "https://www.fda.gov/drugs/spotlight-cder-science/new-class-drugs-fulfills-promise-rna-based-medicine",
+        "type": "regulatory"
+      },
+      {
+        "title": "DailyMed: ONPATTRO patisiran injection, lipid complex",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=e87ec36f-b4b4-49d4-aea4-d4ffb09b0970",
+        "type": "regulatory"
+      },
+      {
+        "title": "Patisiran, an RNAi Therapeutic, for Hereditary Transthyretin Amyloidosis",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/29972753/",
+        "type": "academic"
+      }
+    ],
+    "migration_path": {
+      "textbookBase": [
+        "RNA 结构与降解",
+        "基因表达调控",
+        "肝脏蛋白分泌"
+      ],
+      "researchFrontier": [
+        "RNAi 药物设计",
+        "脂质递送免疫反应控制",
+        "肝外组织递送探索"
+      ],
+      "industryApplication": [
+        "ONPATTRO 罕见病治疗",
+        "RNAi 药物平台",
+        "核酸递送制剂开发"
+      ]
+    },
+    "evaluation_dimensions": [
+      "机制理解",
+      "应用分析",
+      "文献解读",
+      "风险判断",
+      "实验设计"
+    ],
+    "related_papers": [],
+    "related_concepts": [],
+    "analysis_text": ""
+  },
+  {
+    "case_key": "case-026",
+    "title": "Guardant360 CDx 液体活检",
+    "subtitle": "从 ctDNA 检测到肿瘤伴随诊断",
+    "category": "分子诊断与检测平台",
+    "industry_direction": "液体活检 / NGS / 肿瘤精准诊断",
+    "real_product_or_technology": "Guardant360 CDx，blood-based companion diagnostic",
+    "knowledge_points": [
+      "ctDNA",
+      "液体活检",
+      "NGS",
+      "伴随诊断",
+      "肿瘤突变",
+      "检测灵敏度"
+    ],
+    "core_problem": "如何利用血液中的循环肿瘤 DNA 信息，为晚期肿瘤患者提供更便捷的基因变异检测线索？",
+    "background": "FDA 近期批准设备页面显示 Guardant360 CDx 可帮助识别特定非小细胞肺癌患者是否可能从相关 FDA 批准治疗中获益。NCI 也将 FDA 批准的血液检测作为可帮助指导癌症治疗的案例进行介绍。",
+    "company": "",
+    "problem_statement": "如何利用血液中的循环肿瘤 DNA 信息，为晚期肿瘤患者提供更便捷的基因变异检测线索？",
+    "research_foundation": "肿瘤细胞死亡、凋亡或坏死过程中可释放 DNA 片段进入血液，形成循环肿瘤 DNA。液体活检通过采血、游离 DNA 提取、靶向测序和生物信息分析，识别 EGFR、KRAS、ERBB2 等与治疗相关的变异。与组织活检相比，血液检测创伤较小、可重复采样，但 ctDNA 含量受肿瘤负荷、转移部位、治疗状态和样本质量影响，阴性结果不能简单等同于没有突变。该案例适合训练学生理解检测灵敏度、特异性、伴随诊断适应证和报告解释边界。",
+    "application_scenario": "用于肿瘤基因检测、靶向药匹配、治疗过程中动态监测和精准医学教学。",
+    "application_value": "该案例把分子诊断从组织样本扩展到血液样本，适合展示 NGS、生物标志物和临床决策之间的连接。",
+    "data_description": "",
+    "required_abilities": [
+      "分子诊断理解能力",
+      "NGS 结果解读能力",
+      "检测局限判断能力",
+      "伴随诊断证据分析能力"
+    ],
+    "guide_questions": [
+      "ctDNA 检测流程排序",
+      "液体活检阴性结果边界分析",
+      "组织检测与血液检测比较。"
+    ],
+    "recommended_keywords": [
+      "Guardant360 CDx",
+      "liquid biopsy",
+      "ctDNA",
+      "companion diagnostic",
+      "NGS",
+      "sotorasib",
+      "KRAS G12C"
+    ],
+    "linked_research_task": "ctDNA 液体活检结果解释边界分析",
+    "display_focus": "血液样本—cfDNA/ctDNA 提取—NGS 检测—变异注释—治疗匹配流程。",
+    "evidence_level": "high",
+    "source_type": "regulatory",
+    "source_urls": [
+      "https://www.fda.gov/medical-devices/recently-approved-devices/guardant360-cdx-p200010s008",
+      "https://www.cancer.gov/news-events/cancer-currents-blog/2020/fda-guardant-360-foundation-one-cancer-liquid-biopsy",
+      "https://pubmed.ncbi.nlm.nih.gov/34838325/"
+    ],
+    "difficulty": "medium",
+    "is_featured": false,
+    "references": [
+      {
+        "title": "FDA: Guardant360 CDx P200010/S008",
+        "url": "https://www.fda.gov/medical-devices/recently-approved-devices/guardant360-cdx-p200010s008",
+        "type": "regulatory"
+      },
+      {
+        "title": "NCI: FDA Approves Blood Tests That Can Help Guide Cancer Treatment",
+        "url": "https://www.cancer.gov/news-events/cancer-currents-blog/2020/fda-guardant-360-foundation-one-cancer-liquid-biopsy",
+        "type": "regulatory"
+      },
+      {
+        "title": "Clinical validation of Guardant360 CDx as a blood-based companion diagnostic for sotorasib",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/34838325/",
+        "type": "academic"
+      }
+    ],
+    "migration_path": {
+      "textbookBase": [
+        "DNA 突变",
+        "PCR 与测序",
+        "肿瘤异质性"
+      ],
+      "researchFrontier": [
+        "ctDNA 低频变异检测",
+        "液体活检动态监测",
+        "伴随诊断验证"
+      ],
+      "industryApplication": [
+        "Guardant360 CDx",
+        "靶向药用药匹配",
+        "血液 NGS 检测报告"
+      ]
+    },
+    "evaluation_dimensions": [
+      "机制理解",
+      "应用分析",
+      "文献解读",
+      "风险判断",
+      "实验设计"
+    ],
+    "related_papers": [],
+    "related_concepts": [],
+    "analysis_text": ""
+  },
+  {
+    "case_key": "case-027",
+    "title": "BLINCYTO 双特异性 T 细胞连接器",
+    "subtitle": "从 CD19/CD3 双靶结合到免疫细胞重定向",
+    "category": "生物医药与药物研发",
+    "industry_direction": "双特异性抗体 / 肿瘤免疫治疗",
+    "real_product_or_technology": "Blinatumomab / BLINCYTO，CD19-directed CD3 T-cell engager",
+    "knowledge_points": [
+      "双特异性抗体",
+      "CD19",
+      "CD3",
+      "T 细胞活化",
+      "免疫突触",
+      "白血病"
+    ],
+    "core_problem": "如何用一个双特异性分子把 T 细胞和肿瘤 B 细胞拉近，从而重定向免疫杀伤？",
+    "background": "NCI 药物信息页面说明 blinatumomab 通过同时结合 T 细胞上的 CD3 和 B 细胞上的 CD19，使 T 细胞更有效地杀伤白血病细胞，并将其归类为 bispecific T-cell engager。",
+    "company": "",
+    "problem_statement": "如何用一个双特异性分子把 T 细胞和肿瘤 B 细胞拉近，从而重定向免疫杀伤？",
+    "research_foundation": "普通单抗通常识别一个主要靶点，而双特异性 T 细胞连接器同时拥有两个结合界面：一端识别肿瘤细胞表面抗原 CD19，另一端识别 T 细胞 CD3 复合体。这样的空间连接可以在不依赖传统抗原呈递的情况下形成类似免疫突触的接触，启动 T 细胞杀伤相关过程。该案例适合与 CAR-T 对比：两者都利用 T 细胞杀伤肿瘤，但 CAR-T 需要工程化细胞制备，blinatumomab 则是可给药的蛋白药物，治疗流程、半衰期、给药方式和安全性管理均不同。",
+    "application_scenario": "用于急性淋巴细胞白血病免疫治疗、双抗药物设计、T 细胞重定向和免疫治疗毒性管理教学。",
+    "application_value": "该案例可以展示抗体药物从单靶阻断走向免疫细胞重定向的设计思路，也能帮助学生比较 CAR-T、单抗和双抗的产业路径。",
+    "data_description": "",
+    "required_abilities": [
+      "免疫机制解释能力",
+      "抗体结构理解能力",
+      "治疗路线比较能力",
+      "风险管理判断能力"
+    ],
+    "guide_questions": [
+      "CD19/CD3 双结合机制图",
+      "BLINCYTO 与 CAR-T 比较",
+      "T 细胞重定向安全性讨论。"
+    ],
+    "recommended_keywords": [
+      "blinatumomab",
+      "Blincyto",
+      "bispecific T-cell engager",
+      "BiTE",
+      "CD19",
+      "CD3",
+      "acute lymphoblastic leukemia"
+    ],
+    "linked_research_task": "双特异性 T 细胞连接器作用机制比较",
+    "display_focus": "CD19 肿瘤细胞—BLINCYTO—CD3 T 细胞空间连接与杀伤流程。",
+    "evidence_level": "high",
+    "source_type": "regulatory",
+    "source_urls": [
+      "https://www.cancer.gov/about-cancer/treatment/drugs/blinatumomab",
+      "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/125557s020lbl.pdf"
+    ],
+    "difficulty": "medium",
+    "is_featured": false,
+    "references": [
+      {
+        "title": "NCI Drug Information: Blinatumomab",
+        "url": "https://www.cancer.gov/about-cancer/treatment/drugs/blinatumomab",
+        "type": "regulatory"
+      },
+      {
+        "title": "FDA Label: BLINCYTO blinatumomab",
+        "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/125557s020lbl.pdf",
+        "type": "regulatory"
+      }
+    ],
+    "migration_path": {
+      "textbookBase": [
+        "T 细胞活化",
+        "抗原抗体识别",
+        "免疫突触"
+      ],
+      "researchFrontier": [
+        "T 细胞连接器设计",
+        "双抗给药与半衰期优化",
+        "免疫毒性管理"
+      ],
+      "industryApplication": [
+        "BLINCYTO 白血病治疗",
+        "CD3 双抗平台",
+        "CAR-T 与双抗路线比较"
+      ]
+    },
+    "evaluation_dimensions": [
+      "机制理解",
+      "应用分析",
+      "文献解读",
+      "风险判断",
+      "实验设计"
+    ],
+    "related_papers": [],
+    "related_concepts": [],
+    "analysis_text": ""
+  },
+  {
+    "case_key": "case-028",
+    "title": "LANTIDRA 胰岛细胞治疗",
+    "subtitle": "从胰岛细胞移植到 1 型糖尿病再生医学",
+    "category": "生物医药与药物研发",
+    "industry_direction": "细胞治疗 / 再生医学 / 代谢疾病",
+    "real_product_or_technology": "Donislecel-jujn / LANTIDRA，allogeneic pancreatic islet cellular therapy",
+    "knowledge_points": [
+      "胰岛细胞",
+      "β 细胞",
+      "胰岛素分泌",
+      "异体细胞治疗",
+      "免疫抑制",
+      "1 型糖尿病"
+    ],
+    "core_problem": "如何通过供体胰岛细胞补充胰岛素分泌功能，同时管理移植相关免疫和安全风险？",
+    "background": "FDA 新闻稿说明 LANTIDRA 是由已故供体胰腺细胞制成的首个异体胰岛细胞治疗，用于特定 1 型糖尿病患者。FDA 产品页也列出其 proper name 为 donislecel-jujn。",
+    "company": "",
+    "problem_statement": "如何通过供体胰岛细胞补充胰岛素分泌功能，同时管理移植相关免疫和安全风险？",
+    "research_foundation": "1 型糖尿病与胰岛 β 细胞功能缺失密切相关，患者需要依赖外源胰岛素维持血糖。胰岛细胞治疗的思路是把具有胰岛素分泌能力的供体胰岛细胞制备成细胞治疗产品，经特定路径输入体内，使其感应葡萄糖并释放胰岛素。与小分子或蛋白药物不同，细胞治疗的关键变量包括细胞来源、活性、纯度、移植部位、免疫排斥、免疫抑制和长期随访。该案例适合讨论再生医学的机会与边界：补充活细胞功能可能带来新的治疗路径，但也伴随供体来源、免疫管理和适用人群筛选等限制。",
+    "application_scenario": "用于 1 型糖尿病、细胞治疗、再生医学、移植免疫和产品质量控制教学。",
+    "application_value": "该案例将细胞生物学、内分泌调控和再生医学监管连接起来，适合展示非肿瘤细胞治疗的产业化形态。",
+    "data_description": "",
+    "required_abilities": [
+      "细胞功能解释能力",
+      "移植免疫分析能力",
+      "再生医学边界判断能力",
+      "监管资料阅读能力"
+    ],
+    "guide_questions": [
+      "胰岛 β 细胞功能机制图",
+      "细胞治疗与胰岛素治疗比较",
+      "免疫抑制风险讨论。"
+    ],
+    "recommended_keywords": [
+      "Lantidra",
+      "donislecel",
+      "pancreatic islet",
+      "cellular therapy",
+      "type 1 diabetes",
+      "allogeneic"
+    ],
+    "linked_research_task": "胰岛细胞治疗机制与免疫风险分析",
+    "display_focus": "供体胰岛细胞制备—移植—葡萄糖感应—胰岛素分泌—免疫管理流程。",
+    "evidence_level": "high",
+    "source_type": "regulatory",
+    "source_urls": [
+      "https://www.fda.gov/news-events/press-announcements/fda-approves-first-cellular-therapy-treat-patients-type-1-diabetes",
+      "https://www.fda.gov/vaccines-blood-biologics/lantidra",
+      "https://www.fda.gov/media/169920/download"
+    ],
+    "difficulty": "medium",
+    "is_featured": false,
+    "references": [
+      {
+        "title": "FDA Approves First Cellular Therapy to Treat Patients with Type 1 Diabetes",
+        "url": "https://www.fda.gov/news-events/press-announcements/fda-approves-first-cellular-therapy-treat-patients-type-1-diabetes",
+        "type": "regulatory"
+      },
+      {
+        "title": "FDA Product Page: LANTIDRA",
+        "url": "https://www.fda.gov/vaccines-blood-biologics/lantidra",
+        "type": "regulatory"
+      },
+      {
+        "title": "FDA Package Insert: LANTIDRA",
+        "url": "https://www.fda.gov/media/169920/download",
+        "type": "regulatory"
+      }
+    ],
+    "migration_path": {
+      "textbookBase": [
+        "胰岛素分泌",
+        "细胞移植",
+        "免疫排斥"
+      ],
+      "researchFrontier": [
+        "胰岛细胞制备与质量控制",
+        "免疫保护策略",
+        "干细胞来源胰岛样细胞"
+      ],
+      "industryApplication": [
+        "LANTIDRA 胰岛细胞治疗",
+        "再生医学产品监管",
+        "糖尿病细胞治疗路线"
+      ]
+    },
+    "evaluation_dimensions": [
+      "机制理解",
+      "应用分析",
+      "文献解读",
+      "风险判断",
+      "实验设计"
+    ],
+    "related_papers": [],
+    "related_concepts": [],
+    "analysis_text": ""
+  },
+  {
+    "case_key": "case-029",
+    "title": "Impossible Foods 大豆血红蛋白精准发酵",
+    "subtitle": "从工程酵母到植物基食品风味分子",
+    "category": "食品发酵与营养健康",
+    "industry_direction": "精准发酵 / 替代蛋白 / 食品生物制造",
+    "real_product_or_technology": "Soy leghemoglobin preparation from Pichia pastoris，Impossible Foods GRN 737",
+    "knowledge_points": [
+      "精准发酵",
+      "Pichia pastoris",
+      "重组蛋白表达",
+      "血红素蛋白",
+      "食品安全",
+      "GRAS"
+    ],
+    "core_problem": "如何用工程化微生物生产植物基食品中的关键风味相关蛋白，并完成食品安全证据说明？",
+    "background": "FDA GRAS Notice GRN 737 页面显示该通知对象为 Impossible Foods 的 soy leghemoglobin preparation from a strain of Pichia pastoris，用于优化 ground beef analogue products 的风味。",
+    "company": "",
+    "problem_statement": "如何用工程化微生物生产植物基食品中的关键风味相关蛋白，并完成食品安全证据说明？",
+    "research_foundation": "大豆血红蛋白是一类含血红素的植物蛋白，可参与产生类似肉类烹调风味的感官特征。Impossible Foods 的案例使用 Pichia pastoris 作为表达宿主，通过发酵生产目标蛋白制备物，再用于植物基肉类替代品。该案例适合解释精准发酵不是简单“发酵食品”，而是把目标基因表达、发酵放大、蛋白纯化、杂质控制、过敏原和安全性评估组合成食品原料产业化流程。教学中应保守表述其用途与安全资料来源，避免把风味改善扩大为未经证实的健康效果。",
+    "application_scenario": "用于替代蛋白、植物基食品、精准发酵、食品安全评价和消费者接受度讨论。",
+    "application_value": "该案例能把微生物表达系统从药品和酶制剂拓展到食品原料，展示合成生物制造进入消费食品的路径。",
+    "data_description": "",
+    "required_abilities": [
+      "重组表达机制解释能力",
+      "发酵工艺分析能力",
+      "食品安全证据判断能力",
+      "产业边界表达能力"
+    ],
+    "guide_questions": [
+      "Pichia pastoris 表达流程图",
+      "精准发酵与传统发酵比较",
+      "GRAS 资料阅读与边界说明。"
+    ],
+    "recommended_keywords": [
+      "Impossible Foods",
+      "soy leghemoglobin",
+      "Pichia pastoris",
+      "precision fermentation",
+      "heme protein",
+      "GRAS Notice 737"
+    ],
+    "linked_research_task": "精准发酵食品蛋白安全性证据梳理",
+    "display_focus": "目标蛋白设计—工程酵母发酵—蛋白制备—食品应用—安全资料说明流程。",
+    "evidence_level": "high",
+    "source_type": "regulatory",
+    "source_urls": [
+      "https://www.hfpappexternal.fda.gov/scripts/fdcc/index.cfm?id=737&set=GrASNotices",
+      "https://www.fda.gov/media/116243/download",
+      "https://www.fda.gov/media/124351/download"
+    ],
+    "difficulty": "medium",
+    "is_featured": false,
+    "references": [
+      {
+        "title": "FDA GRAS Notice GRN No. 737: Soy leghemoglobin preparation from Pichia pastoris",
+        "url": "https://www.hfpappexternal.fda.gov/scripts/fdcc/index.cfm?id=737&set=GrASNotices",
+        "type": "regulatory"
+      },
+      {
+        "title": "FDA Letter: GRAS Notice No. GRN 000737",
+        "url": "https://www.fda.gov/media/116243/download",
+        "type": "regulatory"
+      },
+      {
+        "title": "FDA GRN 737 releasable information",
+        "url": "https://www.fda.gov/media/124351/download",
+        "type": "regulatory"
+      }
+    ],
+    "migration_path": {
+      "textbookBase": [
+        "重组蛋白表达",
+        "微生物发酵",
+        "蛋白纯化"
+      ],
+      "researchFrontier": [
+        "精准发酵食品原料",
+        "食品蛋白安全性评价",
+        "替代蛋白风味设计"
+      ],
+      "industryApplication": [
+        "Impossible Foods soy leghemoglobin",
+        "植物基肉类风味原料",
+        "GRAS 资料说明"
+      ]
+    },
+    "evaluation_dimensions": [
+      "机制理解",
+      "应用分析",
+      "文献解读",
+      "风险判断",
+      "实验设计"
+    ],
+    "related_papers": [],
+    "related_concepts": [],
+    "analysis_text": ""
+  },
+  {
+    "case_key": "case-030",
+    "title": "REBYOTA 微生物群活体治疗产品",
+    "subtitle": "从肠道菌群恢复到复发性 CDI 预防",
+    "category": "生物医药与药物研发",
+    "industry_direction": "微生物组治疗 / 活体生物制品",
+    "real_product_or_technology": "Fecal microbiota, live-jslm / REBYOTA",
+    "knowledge_points": [
+      "肠道菌群",
+      "Clostridioides difficile",
+      "微生态恢复",
+      "活体生物制品",
+      "供体筛查",
+      "抗生素后菌群失衡"
+    ],
+    "core_problem": "如何把健康供体来源的微生物群制备为标准化产品，用于降低复发性艰难梭菌感染风险？",
+    "background": "FDA REBYOTA 产品页显示 REBYOTA 的 proper name 为 fecal microbiota, live-jslm，适用于 18 岁及以上人群在抗生素治疗复发性 CDI 后预防复发。FDA fecal microbiota products 页面也将其列为 FDA 批准的粪菌微生物群产品。",
+    "company": "",
+    "problem_statement": "如何把健康供体来源的微生物群制备为标准化产品，用于降低复发性艰难梭菌感染风险？",
+    "research_foundation": "抗生素治疗可能破坏肠道菌群结构，使艰难梭菌获得扩增机会并导致复发。微生物群治疗产品的思路是通过经过筛查、制备和质控的供体来源微生物群，帮助恢复肠道微生态多样性和竞争性屏障。与传统小分子药物不同，活体微生物制品涉及供体筛查、病原体风险控制、批次一致性、储存运输和给药方式等特殊问题。教学中可以用该案例讨论“生态系统作为治疗对象”的新范式，同时明确 REBYOTA 的适用边界是预防复发而不是替代急性感染抗生素治疗。",
+    "application_scenario": "用于微生物组治疗、感染复发预防、活体生物制品监管、供体筛查和肠道生态教学。",
+    "application_value": "该案例帮助学生理解微生物组不只是研究热点，也已形成标准化生物制品和监管路径，适合展示微生态治疗的产业边界。",
+    "data_description": "",
+    "required_abilities": [
+      "微生态机制解释能力",
+      "感染复发路径分析能力",
+      "生物制品风险判断能力",
+      "监管资料阅读能力"
+    ],
+    "guide_questions": [
+      "抗生素后菌群失衡机制图",
+      "微生物群产品质控要点",
+      "治疗适用边界讨论。"
+    ],
+    "recommended_keywords": [
+      "Rebyota",
+      "fecal microbiota",
+      "live biotherapeutic",
+      "Clostridioides difficile",
+      "microbiome therapy",
+      "recurrent CDI"
+    ],
+    "linked_research_task": "微生物组治疗产品适用边界分析",
+    "display_focus": "供体筛查—微生物群制备—给药—肠道生态恢复—复发风险管理流程。",
+    "evidence_level": "high",
+    "source_type": "regulatory",
+    "source_urls": [
+      "https://www.fda.gov/vaccines-blood-biologics/vaccines/rebyota",
+      "https://www.fda.gov/vaccines-blood-biologics/fecal-microbiota-products"
+    ],
+    "difficulty": "medium",
+    "is_featured": false,
+    "references": [
+      {
+        "title": "FDA Product Page: REBYOTA",
+        "url": "https://www.fda.gov/vaccines-blood-biologics/vaccines/rebyota",
+        "type": "regulatory"
+      },
+      {
+        "title": "FDA: Fecal Microbiota Products",
+        "url": "https://www.fda.gov/vaccines-blood-biologics/fecal-microbiota-products",
+        "type": "regulatory"
+      }
+    ],
+    "migration_path": {
+      "textbookBase": [
+        "肠道菌群",
+        "微生物竞争",
+        "抗生素选择压力"
+      ],
+      "researchFrontier": [
+        "微生物组治疗",
+        "供体筛查与病原风险控制",
+        "活体生物制品质控"
+      ],
+      "industryApplication": [
+        "REBYOTA 复发性 CDI 预防",
+        "粪菌微生物群产品",
+        "微生态药物开发"
+      ]
+    },
+    "evaluation_dimensions": [
+      "机制理解",
+      "应用分析",
+      "文献解读",
+      "风险判断",
+      "实验设计"
+    ],
+    "related_papers": [],
+    "related_concepts": [],
+    "analysis_text": ""
   }
 ]
