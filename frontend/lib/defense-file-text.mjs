@@ -21,15 +21,6 @@ export async function extractUploadedFileTextFromBuffer(fileName, buffer) {
 
 async function extractPdfText(buffer) {
   const errors = [];
-  const legacyParser = await loadLegacyPdfParser();
-  if (legacyParser) {
-    try {
-      const result = await legacyParser(buffer);
-      return result.text || "";
-    } catch (error) {
-      errors.push(error);
-    }
-  }
 
   try {
     const pdfParse = await import("pdf-parse");
@@ -52,17 +43,6 @@ async function extractPdfText(buffer) {
   if (fallbackText) return fallbackText;
 
   throw errors[0] || new Error("Unsupported pdf-parse API");
-}
-
-async function loadLegacyPdfParser() {
-  try {
-    const mod = await import("pdf-parse/lib/pdf-parse.js");
-    if (typeof mod.default === "function") return mod.default;
-    if (typeof mod === "function") return mod;
-  } catch {
-    return null;
-  }
-  return null;
 }
 
 async function extractPptxText(buffer) {
