@@ -88,7 +88,7 @@ const taskTypeIcons: Record<string, React.ReactNode> = {
   evidence_judgement: <BarChart3 className="w-4 h-4" />,
 };
 
-const PY = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const PY = "/gateway";
 
 function TaskCard({ task, index, defaultExpanded, caseTitle }: { task: ResearchTaskItem; index: number; defaultExpanded: boolean; caseTitle?: string }) {
   const [expanded, setExpanded] = useState(defaultExpanded);

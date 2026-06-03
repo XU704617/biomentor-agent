@@ -11,7 +11,7 @@ const iconMap: Record<string, React.ReactNode> = {
   Microscope: <Microscope className="w-5 h-5" />, Presentation: <Presentation className="w-5 h-5" />,
 };
 
-const PY = "http://localhost:8099";
+const PY = "/gateway";
 
 export default function TimelinePage() {
   const [items, setItems] = useState<TimelineItem[]>([]);

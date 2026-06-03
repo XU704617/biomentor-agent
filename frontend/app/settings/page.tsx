@@ -39,7 +39,7 @@ export default function SettingsPage() {
       setLoadingConfig(true);
       setMessage("");
       try {
-        const res = await fetch("/api/system/llm/config", { cache: "no-store" });
+        const res = await fetch("/gateway/api/system/llm/config", { cache: "no-store" });
         if (!res.ok) {
           throw new Error("读取当前配置失败");
         }
@@ -63,7 +63,7 @@ export default function SettingsPage() {
     setMessage("");
     setTestResult(null);
     try {
-      const res = await fetch("/api/system/llm/test", {
+      const res = await fetch("/gateway/api/system/llm/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ api_key: apiKey, base_url: baseUrl, model }),
@@ -87,7 +87,7 @@ export default function SettingsPage() {
     setSaving(true);
     setMessage("");
     try {
-      const res = await fetch("/api/system/llm/config", {
+      const res = await fetch("/gateway/api/system/llm/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ api_key: apiKey, base_url: baseUrl, model }),

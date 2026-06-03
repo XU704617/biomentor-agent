@@ -12,7 +12,7 @@ import {
   Upload,
 } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = "/gateway";
 
 interface ResearchPaper {
   id: number;

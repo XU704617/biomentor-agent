@@ -1,5 +1,4 @@
-﻿export const PHOTO_PIPELINE_BACKEND =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "";
+export const PHOTO_PIPELINE_BACKEND = "/gateway";
 
 export interface BackendQuestionOption {
   label: string;

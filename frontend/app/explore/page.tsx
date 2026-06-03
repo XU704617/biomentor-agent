@@ -151,7 +151,7 @@ export default function ExplorePage() {
         ? `${backendResult.summary}\n\n原文摘录：\n${backendResult.raw_text.slice(0, 3000)}`
         : "暂无教材内容";
 
-      const response = await fetch("/api/tutor/chat", {
+      const response = await fetch("/gateway/api/tutor/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

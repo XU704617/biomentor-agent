@@ -18,7 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = "/gateway";
 const STORAGE_KEY = "biomentor:backend-paper-workbench";
 const LEGACY_STORAGE_KEY = "biomentor:selected-papers";
 
