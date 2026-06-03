@@ -13,9 +13,6 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-import chromadb
-from chromadb.config import Settings as ChromaSettings
-
 from app.config import get_settings
 
 settings = get_settings()
@@ -25,16 +22,24 @@ class EmbeddingService:
     """Manages ChromaDB collections for RAG vector search."""
 
     def __init__(self):
-        self._client: chromadb.ClientAPI | None = None
-        self._collections: dict[str, chromadb.Collection] = {}
+        self._client: Any | None = None
+        self._collections: dict[str, Any] = {}
+        self._import_error: Exception | None = None
 
     @property
-    def client(self) -> chromadb.ClientAPI:
+    def client(self) -> Any:
         if self._client is None:
-            self._client = chromadb.PersistentClient(
-                path=settings.CHROMA_PERSIST_DIR,
-                settings=ChromaSettings(anonymized_telemetry=False),
-            )
+            try:
+                import chromadb
+                from chromadb.config import Settings as ChromaSettings
+
+                self._client = chromadb.PersistentClient(
+                    path=settings.CHROMA_PERSIST_DIR,
+                    settings=ChromaSettings(anonymized_telemetry=False),
+                )
+            except Exception as exc:
+                self._import_error = exc
+                raise
         return self._client
 
     @property
@@ -47,7 +52,7 @@ class EmbeddingService:
 
     # ── Collection Management ─────────────────────────────────────
 
-    def get_collection(self, name: str) -> chromadb.Collection:
+    def get_collection(self, name: str) -> Any:
         if name not in self._collections:
             try:
                 self._collections[name] = self.client.get_collection(name)
@@ -77,6 +82,8 @@ class EmbeddingService:
         """
         if not chunks:
             return []
+        if not self.available:
+            return ids or []
 
         coll = self.get_collection(collection_name)
 
@@ -95,6 +102,8 @@ class EmbeddingService:
 
     def delete_by_material(self, collection_name: str, material_id: int) -> int:
         """Delete all chunks belonging to a material."""
+        if not self.available:
+            return 0
         coll = self.get_collection(collection_name)
         results = coll.get(where={"material_id": material_id})
         if results["ids"]:
@@ -104,6 +113,8 @@ class EmbeddingService:
 
     def delete_by_where(self, collection_name: str, where: dict[str, Any]) -> int:
         """Delete all chunks matching a metadata filter."""
+        if not self.available:
+            return 0
         coll = self.get_collection(collection_name)
         results = coll.get(where=where)
         ids = results.get("ids") or []
@@ -126,6 +137,8 @@ class EmbeddingService:
 
         Returns list of {id, content, metadata, score}.
         """
+        if not self.available:
+            return []
         coll = self.get_collection(collection_name)
 
         kwargs: dict[str, Any] = {
@@ -192,4 +205,6 @@ class EmbeddingService:
             return {"name": name, "count": 0, "error": "unavailable"}
 
     def list_collections(self) -> list[str]:
+        if not self.available:
+            return []
         return self.client.list_collections()
