@@ -6,13 +6,13 @@ import { Dna, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const navLinks = [
-  { href: "/explore", label: "知识探索" },
-  { href: "/paper-library", label: "文献库" },
   { href: "/knowledge-map", label: "知识图谱" },
+  { href: "/explore", label: "知识探索" },
   { href: "/research", label: "科研实战" },
   { href: "/cases", label: "产业案例" },
   { href: "/seminar", label: "学术研讨" },
   { href: "/tools", label: "生物工具箱" },
+  { href: "/paper-library", label: "文献存储" },
   { href: "/settings", label: "系统设置" },
 ];
 

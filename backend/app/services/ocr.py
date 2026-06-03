@@ -1,25 +1,24 @@
 """
-Real OCR Service — Extract text from uploaded files.
-- PDF: PyMuPDF (fitz) — local, no API needed
-- DOCX: python-docx — local, no API needed
-- Images: PIL + local OCR (DeepSeek does not support vision API)
+Real OCR service for uploaded files.
+
+- PDF: PyMuPDF local text extraction
+- DOCX: python-docx local text extraction
+- Images: EasyOCR local OCR
 """
 
 from __future__ import annotations
 
-import base64
 import io
 import os
 from typing import Any
 
-import fitz  # PyMuPDF
+import fitz
 from docx import Document
 
 
 class OcrService:
-    """Extract text from PDF, DOCX, and images using real tools."""
+    """Extract text from PDF, DOCX, images, and plain text."""
 
-    # MIME type → handler map
     MIME_MAP = {
         "application/pdf": "pdf",
         "image/png": "image",
@@ -36,27 +35,25 @@ class OcrService:
         self._vision_model: str = ""
 
     def extract(self, file_bytes: bytes, mime_type: str, filename: str = "") -> dict[str, Any]:
-        """Main entry: extract text from any supported file type."""
-        clean_name = filename.rsplit(".", 1)[0] if filename else "untitled"
+        """Main entry: extract text from a supported file."""
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
         handler_type = self.MIME_MAP.get(mime_type)
         if not handler_type:
-            # Try by extension
-            if ext in ("pdf",):
+            if ext in {"pdf"}:
                 handler_type = "pdf"
-            elif ext in ("png", "jpg", "jpeg", "webp", "bmp"):
+            elif ext in {"png", "jpg", "jpeg", "webp", "bmp"}:
                 handler_type = "image"
-            elif ext in ("docx",):
+            elif ext in {"docx"}:
                 handler_type = "docx"
-            elif ext in ("txt", "md"):
+            elif ext in {"txt", "md"}:
                 handler_type = "text"
 
         if handler_type == "pdf":
             text = self._extract_pdf(file_bytes)
             engine = "PyMuPDF"
         elif handler_type == "image":
-            text = self._extract_image(file_bytes, mime_type)
+            text = self._extract_image(file_bytes)
             engine = self._vision_model or "local"
         elif handler_type == "docx":
             text = self._extract_docx(file_bytes)
@@ -69,70 +66,81 @@ class OcrService:
                 text = file_bytes.decode("utf-8", errors="replace")
                 engine = "utf-8 fallback"
             except Exception:
-                return {"success": False, "error": f"不支持的文件类型: {mime_type}", "text": "", "engine": "none"}
+                return {
+                    "success": False,
+                    "error": f"Unsupported file type: {mime_type or 'unknown'}",
+                    "text": "",
+                    "engine": "none",
+                    "filename": filename,
+                    "char_count": 0,
+                }
 
-        # Truncate very long text
+        text = text.strip()
+
+        if handler_type == "image" and (
+            engine in {"unavailable", "error"}
+            or text.startswith("[OCR unavailable]")
+            or text.startswith("[OCR failed:")
+        ):
+            return {
+                "success": False,
+                "error": text or "Image OCR failed",
+                "text": "",
+                "engine": engine,
+                "filename": filename,
+                "char_count": 0,
+            }
+
         if len(text) > 10000:
-            text = text[:10000] + "\n\n…(内容过长，已截断前10000字符)"
+            text = text[:10000] + "\n\n[truncated to first 10000 chars]"
 
         return {
             "success": True,
-            "text": text.strip(),
+            "text": text,
             "engine": engine,
             "filename": filename,
             "char_count": len(text),
         }
 
     def _extract_pdf(self, data: bytes) -> str:
-        """Extract text from PDF using PyMuPDF."""
         doc = fitz.open(stream=data, filetype="pdf")
-        pages = []
-        for page in doc:
-            pages.append(page.get_text("text"))
-        doc.close()
-        return "\n\n".join(pages)
+        try:
+            pages = [page.get_text("text") for page in doc]
+            return "\n\n".join(pages)
+        finally:
+            doc.close()
 
     def _extract_docx(self, data: bytes) -> str:
-        """Extract text from DOCX using python-docx."""
         doc = Document(io.BytesIO(data))
         paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
         return "\n".join(paragraphs)
 
-    def _extract_image(self, data: bytes, mime_type: str) -> str:
-        """Extract text from image using EasyOCR (local, no API needed).
-
-        EasyOCR is a pure-Python OCR engine that supports Chinese + English.
-        First run downloads model weights (~100MB), cached for subsequent calls.
-        """
+    def _extract_image(self, data: bytes) -> str:
+        """Extract text from image using EasyOCR."""
         try:
             import easyocr
             import numpy as np
             from PIL import Image
 
-            # Lazy-init reader (singleton, cached after first init)
-            if not hasattr(self, '_easyocr_reader'):
-                lang_list = os.getenv("EASYOCR_LANG", "ch_sim,en").split(",")
-                self._easyocr_reader = easyocr.Reader(
-                    [l.strip() for l in lang_list],
-                    gpu=False,
-                )
+            if not hasattr(self, "_easyocr_reader"):
+                lang_list = [item.strip() for item in os.getenv("EASYOCR_LANG", "ch_sim,en").split(",") if item.strip()]
+                self._easyocr_reader = easyocr.Reader(lang_list or ["ch_sim", "en"], gpu=False)
                 self._vision_model = "EasyOCR (local)"
 
             img = Image.open(io.BytesIO(data))
-            if img.mode in ("RGBA", "P"):
+            if img.mode in {"RGBA", "P"}:
                 img = img.convert("RGB")
             arr = np.array(img)
 
             results = self._easyocr_reader.readtext(arr)
             if not results:
-                return "[OCR 未识别到文字] 图片中可能没有文字。"
+                return "[OCR no text detected]"
 
-            lines = [text for (_, text, _) in results if text.strip()]
-            return "\n".join(lines) if lines else "[OCR 未识别到文字]"
-
-        except ImportError as e:
+            lines = [text for (_, text, _) in results if str(text).strip()]
+            return "\n".join(lines) if lines else "[OCR no text detected]"
+        except ImportError:
             self._vision_model = "unavailable"
-            return f"[OCR 不可用] 缺少依赖。请运行: pip install easyocr Pillow numpy"
-        except Exception as e:
+            return "[OCR unavailable] Missing dependencies. Run: pip install easyocr Pillow numpy"
+        except Exception as exc:
             self._vision_model = "error"
-            return f"[OCR 识别失败: {e}]"
+            return f"[OCR failed: {exc}]"

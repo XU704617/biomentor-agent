@@ -249,13 +249,13 @@ export default function PhotoLearningPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-electric/8 text-accent-electric text-[11px] font-semibold font-body mb-5">
             <ScanLine className="w-3 h-3" />
-            PDF 直连 LLM，只有图片走 OCR
+            真实后端：PDF 优先走 LLM，只有图片走 OCR
           </div>
           <h1 className="font-display font-extrabold text-brand-ink leading-[1.1] tracking-[-0.03em] mb-3" style={{ fontSize: "clamp(28px, 4vw, 48px)" }}>
             拍照学练
           </h1>
           <p className="text-brand-muted text-base md:text-lg font-body max-w-2xl mx-auto">
-            PDF 直接走后端 PDF LLM 识别；只有图片先做 OCR，再进入后端 `photo_learning/analyze`，输出关键词、知识匹配、学习建议和题目。
+            教材图片、PDF、DOCX 和文本都走真实后端。PDF 优先走后端 LLM 分析，图片先做 OCR，再统一输出关键词、知识匹配、学习建议和测验题目。
           </p>
         </div>
 
@@ -290,7 +290,7 @@ export default function PhotoLearningPage() {
                 <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
                   <ImageIcon className="w-10 h-10 text-brand-faint/40 mx-auto mb-3" />
                   <p className="text-sm text-brand-muted font-body mb-1">点击上传图片、PDF 或 DOCX</p>
-                  <p className="text-xs text-brand-faint font-body">PDF 直连 LLM，只有图片走 OCR</p>
+                  <p className="text-xs text-brand-faint font-body">所有文件统一走真实后端处理</p>
                 </div>
               )}
               <input ref={fileInputRef} type="file" accept={ACCEPTED_TYPES} onChange={handleFileChange} className="hidden" />
@@ -455,8 +455,9 @@ export default function PhotoLearningPage() {
                           ))}
                         </div>
                       )}
-                      <div className="mt-3 text-sm text-brand-ink"><span className="font-semibold">答案：</span>{question.answer}</div>
-                      <div className="mt-2 text-sm text-brand-muted leading-relaxed"><span className="font-semibold text-brand-ink">解析：</span>{question.explanation}</div>
+                      <div className="mt-3 text-sm text-brand-muted leading-relaxed">
+                        答案与解析将在完成测验后显示。
+                      </div>
                     </div>
                   );
                 })}

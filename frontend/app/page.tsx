@@ -8,6 +8,7 @@ import {
   BrainCircuit,
   Building2,
   ChevronRight,
+  Database,
   FlaskConical,
   GitBranch,
   MessageCircle,
@@ -19,20 +20,20 @@ import { industryCases } from "@/data/industryCases";
 
 const modules = [
   {
-    href: "/explore",
-    title: "知识探索",
-    desc: "从一个知识点出发，获得结构化解释、关联概念和 AI 导师引导。",
-    tags: ["知识点", "AI 讲解", "关联学习"],
-    icon: BookOpen,
-    accent: "#60a5fa",
-  },
-  {
     href: "/knowledge-map",
     title: "知识图谱",
-    desc: "以可视化网络呈现概念、通路和知识之间的结构关系。",
-    tags: ["关系网络", "学习路径", "结构认知"],
+    desc: "以可视化网络作为学习引入，先看概念关系，再进入教材、文献与任务链路。",
+    tags: ["学习引入", "关系网络", "结构认知"],
     icon: Network,
     accent: "#a78bfa",
+  },
+  {
+    href: "/explore",
+    title: "知识探索",
+    desc: "上传教材与文献，由真实后端完成解析、问答与测验生成，形成学习闭环。",
+    tags: ["教材", "文献", "AI 讲解"],
+    icon: BookOpen,
+    accent: "#60a5fa",
   },
   {
     href: "/research",
@@ -65,6 +66,14 @@ const modules = [
     tags: ["蛋白结构", "质粒图谱", "序列分析"],
     icon: BrainCircuit,
     accent: "#34d399",
+  },
+  {
+    href: "/paper-library",
+    title: "文献存储",
+    desc: "沉淀已导入的论文 PDF 与结构化信息，支持后续复用、分析和教学组织。",
+    tags: ["PDF", "存储", "复用"],
+    icon: Database,
+    accent: "#0f766e",
   },
 ];
 
@@ -124,9 +133,9 @@ export default function HomePage() {
       <section id="modules" className="relative px-6 md:px-10 py-24 md:py-32 max-w-7xl mx-auto">
         <div className="text-center mb-14">
           <p className="section-title">核心功能</p>
-          <h2 className="section-heading">六个模块，组成完整学习入口</h2>
+          <h2 className="section-heading">七个模块，组成完整学习入口</h2>
           <p className="mt-4 text-brand-muted max-w-2xl mx-auto leading-relaxed">
-            保持清晰的六宫格结构：学习、研究、工具、案例、图谱和研讨各自独立，又能在学习路径中互相连接。
+            以知识图谱引入，以知识探索为主闭环，再衔接科研、案例、研讨，最后落到工具与文献存储。
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
