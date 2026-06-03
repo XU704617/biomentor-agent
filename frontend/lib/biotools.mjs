@@ -407,6 +407,21 @@ export function mapUniProtEntryToProteinCandidate(entry) {
   };
 }
 
+export function rankProteinCandidates(candidates = []) {
+  return [...candidates].sort((a, b) => proteinCandidateScore(b) - proteinCandidateScore(a));
+}
+
+function proteinCandidateScore(candidate) {
+  const organism = String(candidate?.organism || "").toLowerCase();
+  const sourceKind = String(candidate?.sourceKind || "").toLowerCase();
+  const reviewed = candidate?.reviewed === true ? 1 : 0;
+  const hasPdb = candidate?.pdbId ? 1 : 0;
+  const hasAccession = candidate?.accession ? 1 : 0;
+  const human = organism.includes("homo sapiens") || organism.includes("human") ? 1 : 0;
+
+  return human * 100 + hasPdb * 30 + (sourceKind === "experimental" ? 20 : 0) + reviewed * 10 + hasAccession;
+}
+
 export function buildReactomeQueryUrl(query) {
   const q = encodeURIComponent(String(query).trim());
   return `${STRUCTURE_BASES.reactomeContent}/search/query?query=${q}&species=Homo%20sapiens&pageSize=8`;
@@ -517,8 +532,8 @@ export function searchProteinCandidates(query) {
       sourceKind: record.pdbId ? "experimental" : "predicted",
       sourceLabel: record.pdbId ? "RCSB PDB 实验结构" : "AlphaFold 预测结构",
       structureUrl: buildRcsbPdbUrl(record.pdbId),
-      alphaFoldUrl: buildAlphaFoldPdbUrl(record.accession),
-      alphaFoldApiUrl: buildAlphaFoldApiUrl(record.accession),
+      alphaFoldUrl: record.accession ? buildAlphaFoldPdbUrl(record.accession) : "",
+      alphaFoldApiUrl: record.accession ? buildAlphaFoldApiUrl(record.accession) : "",
       matchType: "curated",
     }));
   }

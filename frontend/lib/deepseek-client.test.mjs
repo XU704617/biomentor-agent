@@ -17,6 +17,15 @@ test("resolveDeepSeekConfig accepts server-side key aliases without exposing the
   assert.equal(config.baseUrl, "https://api.deepseek.com");
 });
 
+test("resolveDeepSeekConfig normalizes base URLs that already include the v1 path", () => {
+  const config = resolveDeepSeekConfig({
+    DEEPSEEK_API_KEY: "server-key",
+    DEEPSEEK_BASE_URL: "https://api.deepseek.com/v1/",
+  });
+
+  assert.equal(config.baseUrl, "https://api.deepseek.com");
+});
+
 test("callDeepSeekJson sends messages to the chat completions API and parses JSON content", async () => {
   const calls = [];
   const result = await callDeepSeekJson({

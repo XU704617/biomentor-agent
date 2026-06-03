@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
+import { extractUploadedFileTextFromBuffer } from "@/lib/defense-file-text.mjs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,7 +106,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: "PDF文件过大，请上传小于10MB的文件" }, { status: 400 });
       }
 
+      const pdfText = (await extractUploadedFileTextFromBuffer(fileName || "uploaded.pdf", pdfBytes)).trim();
+      if (!pdfText) {
+        return NextResponse.json(
+          { success: false, error: "PDF 文本提取失败，请尝试上传可复制文字的 PDF，或改为粘贴正文。" },
+          { status: 422 },
+        );
+      }
+
       const prompt = `请分析以下PDF文件的内容，假设这是${subject}教材内容，文件名为：${fileName || "未知"}。
+
+PDF正文摘录：
+${pdfText.length > 6000 ? pdfText.substring(0, 6000) + "..." : pdfText}
 
 请按照以下严格的结构化格式输出：
 

@@ -136,7 +136,7 @@ export default function KnowledgeMapPage() {
         <div className="absolute right-[10%] top-[18%] h-72 w-72 rounded-full bg-cyan-200/22 blur-3xl" />
         <div className="absolute bottom-[8%] left-[54%] h-60 w-60 rounded-full bg-emerald-200/18 blur-3xl" />
 
-        <div className="pointer-events-none absolute inset-0 z-[1] mx-auto max-w-7xl">
+        <div className="pointer-events-none absolute inset-0 z-[1] mx-auto max-w-[1700px]">
           <GalaxyGraph
             activeId={activeDisciplineId}
             compact={Boolean(selectedDisciplineId)}
@@ -144,27 +144,21 @@ export default function KnowledgeMapPage() {
           />
         </div>
 
-        <div className="pointer-events-none relative z-10 mx-auto flex max-w-7xl flex-col gap-8 pt-10 md:pt-16">
+        <div className="pointer-events-none relative z-10 mx-auto flex max-w-[1700px] flex-col gap-8 pt-10 md:pt-16">
           <div className={`flex items-center ${selectedDisciplineId ? "min-h-[30vh]" : "min-h-[calc(100vh-var(--nav-height)-8rem)]"}`}>
-            <div className={`knowledge-reveal ${selectedDisciplineId ? "max-w-[320px]" : "max-w-[430px]"}`}>
+            <div className={`knowledge-reveal ${selectedDisciplineId ? "max-w-[280px]" : "max-w-[320px]"}`}>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/55 px-4 py-2 text-xs font-black tracking-[0.16em] text-[#2563eb] shadow-[inset_0_1px_0_rgba(255,255,255,.8)]">
                 <Network className="h-4 w-4" />
                 BioMentor 知识星图
               </div>
               <h1 className={`mt-5 max-w-3xl font-display font-black leading-[0.96] tracking-[-0.05em] text-[#0f172a] ${
-                selectedDisciplineId ? "text-[clamp(28px,3.4vw,44px)]" : "text-[clamp(34px,4.4vw,58px)]"
+                selectedDisciplineId ? "text-[clamp(26px,3vw,40px)]" : "text-[clamp(32px,3.8vw,52px)]"
               }`}>
                 生命科学
                 <span className="block bg-gradient-to-r from-[#2563eb] via-[#06b6d4] to-[#10b981] bg-clip-text text-transparent">
                   知识星图
                 </span>
               </h1>
-              {!selectedDisciplineId && (
-                <p className="mt-5 max-w-[420px] text-sm leading-7 text-slate-600 md:text-base">
-                  先从 12 个生物学科构成的全局网络进入，再平滑过渡到某个学科的六维知识工作台：
-                  生物大类、基础知识、科研前沿、产业应用、代表文献与学习任务。
-                </p>
-              )}
               <div className="mt-7 flex flex-wrap gap-3">
                 <button
                   onClick={() => openDiscipline(initialDisciplineId)}
@@ -202,7 +196,7 @@ export default function KnowledgeMapPage() {
           data-testid="knowledge-workspace"
           className="knowledge-workspace relative z-10 -mt-4 px-5 pb-16 md:px-10"
         >
-          <div className="mx-auto max-w-[1500px]">
+          <div className="mx-auto max-w-[1600px]">
             <div className="mb-5 flex flex-col gap-4 rounded-[30px] border border-white/80 bg-white/60 p-5 shadow-[0_22px_70px_rgba(67,106,160,.13)] backdrop-blur-2xl lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
@@ -240,7 +234,7 @@ export default function KnowledgeMapPage() {
               </div>
             </div>
 
-            <div className="grid gap-5 xl:grid-cols-[260px_minmax(600px,1fr)_390px]">
+            <div className="grid gap-5 xl:grid-cols-[240px_minmax(680px,1fr)_380px]">
               <aside className="knowledge-reveal h-fit rounded-[30px] border border-white/80 bg-white/58 p-4 shadow-[0_18px_58px_rgba(67,106,160,.11)] backdrop-blur-2xl xl:sticky xl:top-24">
                 <div className="mb-4 flex items-center gap-2 px-2">
                   <BookOpen className="h-4 w-4 text-[#2563eb]" />
@@ -386,7 +380,7 @@ function GalaxyGraph({
                 : related
                   ? "border-white/90 bg-white/72 text-slate-700 hover:bg-white"
                   : "border-white/70 bg-white/42 text-slate-500 hover:bg-white"
-            } ${compact ? "px-3 py-2" : "px-5 py-3"}`}
+            } ${compact ? "max-w-[124px] px-2.5 py-1.5" : "px-5 py-3"}`}
             style={{
               left: `${point.x}%`,
               top: `${point.y}%`,
@@ -401,7 +395,7 @@ function GalaxyGraph({
               style={{ background: discipline.color, boxShadow: `0 0 18px ${discipline.color}` }}
             />
             <span>
-              <span className={`${compact ? "text-[11px] md:text-xs" : "text-sm md:text-[15px]"} block font-black`}>
+              <span className={`${compact ? "block truncate text-[11px]" : "text-sm md:text-[15px]"} block font-black`}>
                 {discipline.label}
               </span>
             </span>
@@ -467,22 +461,22 @@ function KnowledgeGraph({
   const selectedPathIds = new Set(getKnowledgePath(discipline.id, selectedNodeId).map((item) => item.id));
 
   return (
-    <main className="knowledge-reveal relative min-h-[800px] overflow-hidden rounded-[34px] border border-white/85 bg-white/50 shadow-[0_24px_80px_rgba(67,106,160,.13)] backdrop-blur-2xl">
-      <div className="absolute inset-0 liquid-hero-bg opacity-70" />
-      <div className="bio-network opacity-45" />
-      <div className="absolute left-8 top-7 z-20 rounded-full border border-white/80 bg-white/70 px-4 py-2 text-xs font-black text-slate-500">
+    <main className="knowledge-reveal relative min-h-[780px] overflow-visible">
+      <div className="absolute inset-[-24px] liquid-hero-bg opacity-55" />
+      <div className="bio-network opacity-35" />
+      <div className="absolute left-5 top-5 z-20 rounded-full border border-white/80 bg-white/70 px-4 py-2 text-xs font-black text-slate-500 shadow-[0_12px_32px_rgba(67,106,160,.1)] backdrop-blur-xl">
         点击维度展开子节点 · 点击子节点让右侧 AI 自动讲解
       </div>
       <button
         onClick={() => {
           onSelectCenter();
         }}
-        className="absolute right-8 top-7 z-20 rounded-full bg-[#111827] px-4 py-2 text-xs font-black text-white shadow-[0_14px_30px_rgba(17,24,39,.18)]"
+        className="absolute right-5 top-5 z-20 rounded-full bg-[#111827] px-4 py-2 text-xs font-black text-white shadow-[0_14px_30px_rgba(17,24,39,.18)]"
       >
         回到学科中心
       </button>
 
-      <svg viewBox="0 0 900 760" className="relative z-10 h-full min-h-[800px] w-full">
+      <svg viewBox="0 0 1040 840" className="relative z-10 h-full min-h-[780px] w-full">
         <defs>
           <filter id="workspace-glow">
             <feDropShadow dx="0" dy="10" stdDeviation="12" floodOpacity="0.16" />
@@ -516,8 +510,10 @@ function KnowledgeGraph({
             item.kind === "dimension" &&
             item.id !== expandedDimensionId &&
             selectedNodeId !== item.id;
-          const width = item.kind === "center" ? 188 : item.kind === "dimension" ? 144 : 128;
-          const height = item.kind === "center" ? 66 : item.kind === "dimension" ? 50 : 42;
+          const width = item.kind === "center" ? 180 : item.kind === "dimension" ? 142 : 132;
+          const height = item.kind === "center" ? 66 : item.kind === "dimension" ? 54 : 48;
+          const labelLines = splitKnowledgeLabel(item.label, item.kind === "dimension" ? 7 : 8);
+          const fontSize = item.kind === "child" ? 10.5 : 12.5;
 
           return (
             <g
@@ -543,14 +539,18 @@ function KnowledgeGraph({
               />
               <text
                 x={item.x}
-                y={item.y + 4}
+                y={item.y - (labelLines.length - 1) * 7 + 4}
                 textAnchor="middle"
                 fill={selected ? "#ffffff" : "#111827"}
-                fontSize={item.kind === "child" ? 11 : 13}
+                fontSize={fontSize}
                 fontWeight="900"
                 fontFamily="system-ui, sans-serif"
               >
-                {item.label}
+                {labelLines.map((line, lineIndex) => (
+                  <tspan key={`${item.id}-${lineIndex}`} x={item.x} dy={lineIndex === 0 ? 0 : 14}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
               {item.kind === "dimension" && (
                 <circle
@@ -892,19 +892,23 @@ function layoutWorkspaceNodes(
   const center: PositionedNode = {
     id: discipline.id,
     label: discipline.label,
-    x: 450,
-    y: 350,
+    x: 520,
+    y: 400,
     kind: "center",
     accent: discipline.color,
     summary: discipline.summary,
   };
   const nodes: PositionedNode[] = [center];
-  const radius = 215;
+  const radiusX = 255;
+  const radiusY = 235;
 
   discipline.dimensions.forEach((dimension, index) => {
-    const angle = (-90 + (360 / discipline.dimensions.length) * index) * Math.PI / 180;
-    const x = center.x + Math.cos(angle) * radius;
-    const y = center.y + Math.sin(angle) * radius;
+    const angleDeg = -90 + (360 / discipline.dimensions.length) * index;
+    const angle = angleDeg * Math.PI / 180;
+    const directionX = Math.cos(angle);
+    const directionY = Math.sin(angle);
+    const x = center.x + directionX * radiusX;
+    const y = center.y + directionY * radiusY;
     nodes.push({
       id: dimension.id,
       label: dimension.label,
@@ -917,13 +921,15 @@ function layoutWorkspaceNodes(
     });
 
     if (expandedDimensionId === dimension.id) {
-      const spread = Math.min(170, 34 * dimension.children.length);
-      const childRadius = 168;
+      const tangentX = -directionY;
+      const tangentY = directionX;
+      const isTopOrBottom = Math.abs(directionY) > 0.72;
+      const childSpacing = isTopOrBottom ? 126 : 58;
+      const outerDistance = isTopOrBottom ? 142 : 174;
       dimension.children.forEach((child, childIndex) => {
-        const divisor = Math.max(1, dimension.children.length - 1);
-        const childAngle = (-90 + (360 / discipline.dimensions.length) * index - spread / 2 + (spread / divisor) * childIndex) * Math.PI / 180;
-        const childX = Math.min(820, Math.max(80, x + Math.cos(childAngle) * childRadius));
-        const childY = Math.min(690, Math.max(72, y + Math.sin(childAngle) * childRadius));
+        const offset = (childIndex - (dimension.children.length - 1) / 2) * childSpacing;
+        const childX = clamp(x + directionX * outerDistance + tangentX * offset, 82, 958);
+        const childY = clamp(y + directionY * outerDistance + tangentY * offset, 72, 768);
         nodes.push({
           id: child.id,
           label: child.label,
@@ -939,6 +945,29 @@ function layoutWorkspaceNodes(
   });
 
   return nodes;
+}
+
+function splitKnowledgeLabel(label: string, maxChars: number): string[] {
+  const text = String(label || "").trim();
+  if (text.length <= maxChars) return [text];
+
+  const chunks: string[] = [];
+  let current = "";
+  for (const char of text) {
+    const next = `${current}${char}`;
+    if (next.length > maxChars && current) {
+      chunks.push(current);
+      current = char;
+    } else {
+      current = next;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks.slice(0, 2);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function disciplineAsNode(discipline: KnowledgeDiscipline): KnowledgeChildNode {

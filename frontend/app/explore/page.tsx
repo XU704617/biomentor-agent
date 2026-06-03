@@ -104,8 +104,8 @@ export default function ExplorePage() {
 
     try {
       if (isPDF) {
-        setStatusText("正在将 PDF 直接发送给 DeepSeek API 分析…");
-        setMessages((prev) => [...prev, { role: "ai", content: `正在将 PDF 文件直接发送给 DeepSeek API 分析…` }]);
+        setStatusText("正在提取 PDF 文本并调用 DeepSeek 分析…");
+        setMessages((prev) => [...prev, { role: "ai", content: "正在提取 PDF 文本，并交给 DeepSeek 分析知识点…" }]);
 
         const base64Data = await new Promise<string>((resolve) => {
           const reader = new FileReader();
@@ -139,9 +139,9 @@ export default function ExplorePage() {
             knowledgePoints: data.knowledgePoints || [],
             keywords: data.keywords || data.keyword || [],
             studyTips: data.studyTips || data.learningSuggestions || [],
-            ocrEngine: "DeepSeek Direct" 
+            ocrEngine: "PDF 文本提取 + DeepSeek"
           });
-          setStatusText("PDF 分析完成（DeepSeek Direct）");
+          setStatusText("PDF 分析完成（文本提取 + DeepSeek）");
           setMessages((prev) => [...prev, {
             role: "ai",
             content: `PDF解析完成！已提取 ${data.knowledgePoints?.length || 0} 个核心知识点和 ${(data.keywords || data.keyword || []).length || 0} 个关键词。`,
@@ -305,11 +305,11 @@ export default function ExplorePage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-electric/8 text-accent-electric text-[11px] font-semibold font-body mb-4">
             <ScanLine className="w-3 h-3" />
-            智能解析：PDF 直连 DeepSeek + 其他文件后端 OCR
+            智能解析：PDF 文本提取 + DeepSeek，其他文件后端 OCR
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">知识探索中心</h1>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            上传教材文件，PDF 将直接调用 DeepSeek API 分析，图片/DOCX/文本将走后端真实 OCR + LLM 解析。
+            上传教材文件，PDF 会先提取可复制文本再调用 DeepSeek 分析，图片/DOCX/文本将走后端真实 OCR + LLM 解析。
           </p>
         </div>
 
@@ -345,7 +345,7 @@ export default function ExplorePage() {
                   <p className="text-sm text-gray-700 font-medium break-all">{uploadedFile?.name}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     {uploadedFile?.type === "application/pdf" 
-                      ? "PDF 将直接调用 DeepSeek API 分析" 
+                      ? "PDF 将提取文本后调用 DeepSeek 分析"
                       : "图片将先走后端 OCR，再走后端 LLM 解析"}
                   </p>
                 </div>
@@ -359,7 +359,7 @@ export default function ExplorePage() {
                 <div>
                   <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-sm text-gray-700 font-medium">点击或拖拽上传图片、PDF、DOCX 或文本</p>
-                  <p className="text-xs text-gray-500 mt-1">PDF 直连 DeepSeek，其他文件走后端 OCR</p>
+                  <p className="text-xs text-gray-500 mt-1">PDF 文本提取 + DeepSeek，其他文件走后端 OCR</p>
                 </div>
               )}
             </div>
@@ -368,7 +368,7 @@ export default function ExplorePage() {
               <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                 <h3 className="font-medium text-gray-800 mb-2">处理链路说明</h3>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li><strong>PDF</strong>：前端直接调用 DeepSeek API</li>
+                  <li><strong>PDF</strong>：提取可复制文本后调用 DeepSeek 分析</li>
                   <li><strong>图片</strong>：后端 EasyOCR 本地识别</li>
                   <li><strong>DOCX</strong>：后端 python-docx 提取文本</li>
                   <li><strong>文本</strong>：后端 LLM 管线统一解析</li>

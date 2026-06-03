@@ -24,11 +24,11 @@ export function resolveDeepSeekConfig(env = process.env) {
     clean(env.BIOMENTOR_DEEPSEEK_API_KEY) ||
     clean(fileEnv.DEEPSEEK_API_KEY) ||
     clean(fileEnv.BIOMENTOR_DEEPSEEK_API_KEY);
-  const baseUrl = (
+  const baseUrl = normalizeBaseUrl(
     clean(env.DEEPSEEK_BASE_URL) ||
     clean(fileEnv.DEEPSEEK_BASE_URL) ||
-    DEFAULT_BASE_URL
-  ).replace(/\/+$/, "");
+    DEFAULT_BASE_URL,
+  );
   const model =
     clean(env.DEEPSEEK_MODEL) ||
     clean(fileEnv.DEEPSEEK_MODEL) ||
@@ -112,6 +112,10 @@ export function parseJsonLike(raw) {
 
 function clean(value) {
   return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function normalizeBaseUrl(value) {
+  return clean(value).replace(/\/+$/, "").replace(/\/v1$/i, "");
 }
 
 function readFrontendEnvFile() {

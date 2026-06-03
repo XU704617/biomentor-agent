@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   buildDefenseBriefFromText,
-  extractPlainTextFromOfficeXml,
   normalizeDefenseBrief,
 } from "@/lib/defense-flow.mjs";
+import { extractUploadedFileTextFromBuffer } from "@/lib/defense-file-text.mjs";
 import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 export const runtime = "nodejs";
@@ -109,7 +109,9 @@ async function parseRequest(request: NextRequest) {
     sourceType = String(form.get("sourceType") || "file");
     sourceLabel = String(form.get("sourceLabel") || (file instanceof File ? file.name : "上传文件"));
     href = String(form.get("href") || "");
-    text = file instanceof File ? await extractUploadedFileText(file) : String(form.get("text") || "");
+    text = file instanceof File
+      ? await extractUploadedFileTextFromBuffer(file.name, Buffer.from(await file.arrayBuffer()))
+      : String(form.get("text") || "");
   } else {
     const body = await request.json().catch(() => ({}));
     sourceType = String(body.sourceType || "manual");
@@ -119,40 +121,4 @@ async function parseRequest(request: NextRequest) {
   }
 
   return { sourceType, sourceLabel, href, text };
-}
-
-async function extractUploadedFileText(file: File): Promise<string> {
-  const name = file.name.toLowerCase();
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  if (/\.(txt|md|csv)$/i.test(name)) return buffer.toString("utf8");
-  if (/\.pdf$/i.test(name)) {
-    const { PDFParse } = await import("pdf-parse");
-    const parser = new PDFParse({ data: buffer });
-    const result = await parser.getText();
-    return result.text || "";
-  }
-  if (/\.docx$/i.test(name)) {
-    const mammoth = await import("mammoth");
-    const result = await mammoth.extractRawText({ buffer });
-    return result.value || "";
-  }
-  if (/\.pptx$/i.test(name)) {
-    return extractPptxText(buffer);
-  }
-  if (/\.ppt$/i.test(name)) {
-    return buffer.toString("utf8").replace(/[^\x20-\x7E\u4e00-\u9fa5。，""！？；：、\n]/g, " ");
-  }
-
-  return buffer.toString("utf8");
-}
-
-async function extractPptxText(buffer: Buffer): Promise<string> {
-  const JSZip = (await import("jszip")).default;
-  const zip = await JSZip.loadAsync(buffer);
-  const parts = Object.keys(zip.files)
-    .filter((name) => /^ppt\/(slides|notesSlides)\/.*\.xml$/i.test(name))
-    .sort();
-  const texts = await Promise.all(parts.map(async (name) => extractPlainTextFromOfficeXml(await zip.files[name].async("string"))));
-  return texts.join("\n");
 }

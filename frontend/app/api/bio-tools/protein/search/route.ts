@@ -3,6 +3,7 @@ import {
   buildProteinSearchTerms,
   buildUniProtKeywordSearchUrl,
   mapUniProtEntryToProteinCandidate,
+  rankProteinCandidates,
   searchProteinCandidates,
 } from "@/lib/biotools.mjs";
 import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
           : [];
 
         if (candidates.length > 0) {
-          return NextResponse.json({ candidates });
+          return NextResponse.json({ candidates: rankProteinCandidates(candidates) });
         }
       }
     } catch {
@@ -103,7 +104,7 @@ export async function GET(request: NextRequest) {
             : [];
 
           if (candidates.length > 0) {
-            return NextResponse.json({ candidates });
+            return NextResponse.json({ candidates: rankProteinCandidates(candidates) });
           }
         }
       } catch {

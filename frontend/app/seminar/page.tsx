@@ -101,6 +101,33 @@ export default function SeminarPage() {
 
   const modeLabel = brief?.mode === "paper_defense" ? "论文答辩" : "开题答辩";
 
+  function resetSeminar() {
+    setStage("source");
+    setSourceText(seedText);
+    setSourceLabel("手动粘贴");
+    setBrief(null);
+    setCurrentQuestion(null);
+    setAnswer("");
+    setTranscript([]);
+    setReport(null);
+    setTurnIndex(0);
+    setStatusText("");
+  }
+
+  async function restartDefense() {
+    if (!brief) {
+      resetSeminar();
+      return;
+    }
+
+    setReport(null);
+    setTranscript([]);
+    setCurrentQuestion(null);
+    setAnswer("");
+    setTurnIndex(0);
+    await startDefense();
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const caseId = params.get("caseId");
@@ -585,6 +612,23 @@ export default function SeminarPage() {
                 <div className="mt-4 text-xs font-black text-slate-400">综合评分</div>
                 <div className="stat-number mt-2 text-6xl text-[#2563eb]">{safeNum(report.totalScore, 75)}</div>
                 <p className="mt-4 text-sm leading-7 text-slate-500">{safeStr(report.committeeFeedback, "答辩训练完成，请查看详细分析。")}</p>
+                <div className="mt-6 grid gap-3">
+                  <button
+                    onClick={resetSeminar}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111827] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[#1f2937]"
+                  >
+                    <Upload className="h-4 w-4" />
+                    重新导入材料
+                  </button>
+                  <button
+                    onClick={restartDefense}
+                    disabled={isLoading}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/85 bg-white/70 px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
+                    重新开始答辩
+                  </button>
+                </div>
               </aside>
               <main className="space-y-5">
                 <section className="rounded-[32px] border border-white/85 bg-white/62 p-5 shadow-[0_20px_60px_rgba(67,106,160,.11)] backdrop-blur-2xl">

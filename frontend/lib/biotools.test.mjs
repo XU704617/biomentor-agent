@@ -18,6 +18,7 @@ import {
   getPathwayLearningPath,
   matchLocalPathway,
   parseGenBankFeatures,
+  rankProteinCandidates,
   resolveProteinQuery,
   reverseComplement,
   sanitizeSequence,
@@ -136,6 +137,34 @@ test("builds UniProt keyword search URLs and maps remote entries to structure ca
   assert.equal(candidate.pdbId, "1PSO");
   assert.equal(candidate.sourceKind, "experimental");
   assert.equal(candidate.structureUrl, "https://files.rcsb.org/download/1PSO.pdb");
+});
+
+test("ranks remote protein search candidates by human organism and experimental structures", () => {
+  const ranked = rankProteinCandidates([
+    {
+      label: "Epidermal growth factor receptor",
+      organism: "Apis mellifera",
+      sourceKind: "predicted",
+      accession: "P0CY46",
+    },
+    {
+      label: "Epidermal growth factor receptor",
+      organism: "Homo sapiens",
+      sourceKind: "predicted",
+      accession: "P00533",
+    },
+    {
+      label: "Epidermal growth factor receptor",
+      organism: "Homo sapiens",
+      sourceKind: "experimental",
+      pdbId: "1M17",
+      accession: "P00533",
+    },
+  ]);
+
+  assert.equal(ranked[0].organism, "Homo sapiens");
+  assert.equal(ranked[0].sourceKind, "experimental");
+  assert.equal(ranked[0].pdbId, "1M17");
 });
 
 test("expands Chinese protein names to UniProt-searchable English terms", () => {

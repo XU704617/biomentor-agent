@@ -9,6 +9,7 @@ import {
   generateLocalDefenseReport,
   normalizeDefenseBrief,
 } from "./defense-flow.mjs";
+import { extractUploadedFileTextFromBuffer } from "./defense-file-text.mjs";
 
 const sourceText = `
 题目：基于 CRISPR-Cas9 的胃癌相关基因调控研究
@@ -58,6 +59,45 @@ test("extracts visible text from Office XML parts used by DOCX and PPTX", () => 
   `;
 
   assert.equal(extractPlainTextFromOfficeXml(xml), "研究背景 实验设计 答辩问题");
+});
+
+test("extracts visible text from uploaded PDF buffers", async () => {
+  const pdfBase64 =
+    "JVBERi0xLjMKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSCj4+CmVuZG9iagoyIDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nIC9OYW1lIC9GMSAvU3VidHlwZSAvVHlwZTEgL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjMgMCBvYmoKPDwKL0NvbnRlbnRzIDcgMCBSIC9NZWRpYUJveCBbIDAgMCA1OTUuMjc1NiA4NDEuODg5OCBdIC9QYXJlbnQgNiAwIFIgL1Jlc291cmNlcyA8PAovRm9udCAxIDAgUiAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXQo+PiAvUm90YXRlIDAgL1RyYW5zIDw8Cgo+PiAKICAvVHlwZSAvUGFnZQo+PgplbmRvYmoKNCAwIG9iago8PAovUGFnZU1vZGUgL1VzZU5vbmUgL1BhZ2VzIDYgMCBSIC9UeXBlIC9DYXRhbG9nCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9BdXRob3IgKGFub255bW91cykgL0NyZWF0aW9uRGF0ZSAoRDoyMDI2MDYwMzE5MDYxNiswOCcwMCcpIC9DcmVhdG9yIChhbm9ueW1vdXMpIC9LZXl3b3JkcyAoKSAvTW9kRGF0ZSAoRDoyMDI2MDYwMzE5MDYxNiswOCcwMCcpIC9Qcm9kdWNlciAoUmVwb3J0TGFiIFBERiBMaWJyYXJ5IC0gXChvcGVuc291cmNlXCkpIAogIC9TdWJqZWN0ICh1bnNwZWNpZmllZCkgL1RpdGxlICh1bnRpdGxlZCkgL1RyYXBwZWQgL0ZhbHNlCj4+CmVuZG9iago2IDAgb2JqCjw8Ci9Db3VudCAxIC9LaWRzIFsgMyAwIFIgXSAvVHlwZSAvUGFnZXMKPj4KZW5kb2JqCjcgMCBvYmoKPDwKL0xlbmd0aCA0NjEKPj4Kc3RyZWFtCjEgMCAwIDEgMCAwIGNtICBCVCAvRjEgMTIgVGYgMTQuNCBUTCBFVApCVCAvRjEgMTIgVGYgMTQuNCBUTCBFVApCVCAxIDAgMCAxIDcyIDc4MCBUbSAoVGl0bGU6IENSSVNQUiBQcmltZSBFZGl0aW5nIFNlbWluYXIpIFRqIFQqIEVUCkJUIDEgMCAwIDEgNzIgNzU4IFRtIChCYWNrZ3JvdW5kOiBQcmltZSBlZGl0aW5nIHVzZXMgQ2FzOSBuaWNrYXNlIGZ1c2VkIHRvIHJldmVyc2UgdHJhbnNjcmlwdGFzZS4pIFRqIFQqIEVUCkJUIDEgMCAwIDEgNzIgNzM2IFRtIChSZXNlYXJjaCBxdWVzdGlvbjogSG93IGRvZXMgcGVnUk5BIGRlc2lnbiBhZmZlY3QgZWRpdGluZyBlZmZpY2llbmN5IGFuZCBvZmYtdGFyZ2V0IHJpc2s/KSBUaiBUKiBFVApCVCAxIDAgMCAxIDcyIDcxNCBUbSAoTWV0aG9kOiBDb21wYXJlIFBCUyBhbmQgUlRUIGxlbmd0aHMsIHRoZW4gdmFsaWRhdGUgYnkgc2VxdWVuY2luZy4pIFRqIFQqIEVUCiAKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgOAowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwNjEgMDAwMDAgbiAKMDAwMDAwMDA5MiAwMDAwMCBuIAowMDAwMDAwMTk5IDAwMDAwIG4gCjAwMDAwMDA0MDIgMDAwMDAgbiAKMDAwMDAwMDQ3MCAwMDAwMCBuIAowMDAwMDAwNzMxIDAwMDAwIG4gCjAwMDAwMDA3OTAgMDAwMDAgbiAKdHJhaWxlcgo8PAovSUQgCls8ZGU4MDUzNjFjY2Q4MzQwNzE0MDRhOWE1OThjZGQ5OWE+PGRlODA1MzYxY2NkODM0MDcxNDA0YTlhNTk4Y2RkOTlhPl0KJSBSZXBvcnRMYWIgZ2VuZXJhdGVkIFBERiBkb2N1bWVudCAtLSBkaWdlc3QgKG9wZW5zb3VyY2UpCgovSW5mbyA1IDAgUgovUm9vdCA0IDAgUgovU2l6ZSA4Cj4+CnN0YXJ0eHJlZgoxMzAxCiUlRU9GCg==";
+  const text = await extractUploadedFileTextFromBuffer(
+    "seminar-upload-test.pdf",
+    Buffer.from(pdfBase64, "base64"),
+  );
+
+  assert.match(text, /CRISPR Prime Editing Seminar/);
+  assert.match(text, /pegRNA design/);
+});
+
+test("extracts readable PDF text when the parser rejects a malformed xref", async () => {
+  const minimalPdf = Buffer.from(
+    `%PDF-1.3
+1 0 obj
+<< /Length 132 >>
+stream
+BT
+/F1 12 Tf
+72 720 Td
+(Title: Parser Fallback Seminar) Tj
+T*
+(Background: Visible text can still be recovered.) Tj
+ET
+endstream
+endobj
+trailer
+<< /Root 1 0 R >>
+%%EOF`,
+    "latin1",
+  );
+
+  const text = await extractUploadedFileTextFromBuffer("malformed-upload.pdf", minimalPdf);
+
+  assert.match(text, /Parser Fallback Seminar/);
+  assert.match(text, /Visible text can still be recovered/);
 });
 
 test("defense prompts, local questions and reports follow the agreed first-version scope", () => {
