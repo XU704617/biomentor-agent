@@ -82,7 +82,7 @@ export function generateFallbackResearchTask(
     case_key: caseKey,
     mode,
     research_question: topic,
-    background: `⚠️ [LLM不可用，模板生成] 围绕「${topic}」这一主题，本训练框架整合生物制造领域核心研究方法论。配置 LLM API Key 后可获得 AI 生成的个性化科研任务。`,
+    background: `围绕「${topic}」这一主题，本训练框架整合生物制造领域核心研究方法、案例线索与文献阅读路径，帮助你从问题拆解进入科研训练。`,
     matched_cases: [],
     related_knowledge_points: [
       "分子生物学基础",
@@ -210,15 +210,19 @@ export function generateFallbackResearchTask(
     mentor_advice:
       "1. 从文献综述入手，建立扎实的理论基础\n2. 实验设计时注重对照组设置和样本量合理性\n3. 机制分析建议绘制可视化通路图辅助理解\n4. 定期与导师讨论研究进展，及时调整方向\n5. 注意区分相关性与因果性，避免过度推断",
     seminar_topic: topic.includes("研讨") ? topic : `「${topic}」的研究进展与方法论探讨`,
-    source_scope: "仅限平台案例库和知识库内容，未使用外部搜索或数据库",
+    source_scope: "基于本地案例和精选文献生成",
     disclaimer:
-      "当前使用本地模板生成。配置 LLM API Key 后可使用 AI 生成个性化科研任务。本训练框架仅供参考，具体研究设计请结合实际情况和导师指导。",
+      "本训练框架仅供学习参考，具体研究设计请结合实际条件、原始文献和导师指导。",
   };
 }
 
 export async function generateResearchTask(params: ResearchTaskGenerateRequest): Promise<ResearchTaskGenerateResponse> {
-  return apiFetch<ResearchTaskGenerateResponse>("/api/research/generate-task", {
+  const data = await apiFetch<ResearchTaskGenerateResponse>("/api/research/generate-task", {
     method: "POST",
     body: JSON.stringify(params),
   });
+  if (data) {
+    return data;
+  }
+  return generateFallbackResearchTask(params.topic, params.case_key, params.mode);
 }

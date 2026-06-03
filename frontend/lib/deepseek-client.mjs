@@ -17,8 +17,8 @@ const DEFAULT_MODEL = "deepseek-v4-flash";
  * }} CallDeepSeekJsonOptions
  */
 
-export function resolveDeepSeekConfig(env = process.env) {
-  const fileEnv = readFrontendEnvFile();
+export function resolveDeepSeekConfig(env = process.env, options = {}) {
+  const fileEnv = options.includeFileEnv === false ? {} : readFrontendEnvFile();
   const apiKey =
     clean(env.DEEPSEEK_API_KEY) ||
     clean(env.BIOMENTOR_DEEPSEEK_API_KEY) ||
@@ -40,7 +40,8 @@ export function resolveDeepSeekConfig(env = process.env) {
 /**
  * @param {CallDeepSeekJsonOptions} options
  */
-export async function callDeepSeekJson({
+export async function callDeepSeekJson(options = {}) {
+  const {
   env = process.env,
   fetchImpl = fetch,
   messages,
@@ -48,8 +49,8 @@ export async function callDeepSeekJson({
   maxTokens = 1200,
   responseFormat = true,
   signal,
-} = {}) {
-  const config = resolveDeepSeekConfig(env);
+  } = options;
+  const config = resolveDeepSeekConfig(env, { includeFileEnv: options.env == null });
   if (!config.apiKey) {
     throw new Error("DEEPSEEK_API_KEY is not configured");
   }

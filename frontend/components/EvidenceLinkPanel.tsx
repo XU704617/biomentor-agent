@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { BookOpen, Search, Loader2, AlertTriangle, CheckSquare, FileText } from "lucide-react";
 import {
+  getLocalEvidenceForTask,
   searchEvidenceForTask,
   createEvidenceNote,
   type EvidenceSearchItem,
@@ -28,9 +29,19 @@ interface EvidenceLinkPanelProps {
 const MAX_SELECT = 3;
 
 export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanelProps) {
-  const [panelState, setPanelState] = useState<PanelState>("idle");
+  const initialLocalResult = getLocalEvidenceForTask({
+    task_title: task.title,
+    task_goal: task.goal,
+    case_title: caseTitle,
+    suggested_keywords: task.suggested_keywords,
+  });
+  const [panelState, setPanelState] = useState<PanelState>(
+    initialLocalResult.results.length > 0 ? "results" : "idle"
+  );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [searchResult, setSearchResult] = useState<EvidenceSearchResponse | null>(null);
+  const [searchResult, setSearchResult] = useState<EvidenceSearchResponse | null>(
+    initialLocalResult.results.length > 0 ? initialLocalResult : null
+  );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [noteResult, setNoteResult] = useState<EvidenceNoteResponse | null>(null);
   const searchingRef = useRef(false);
@@ -39,6 +50,20 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
   const getPaperKey = useCallback((item: EvidenceSearchItem, idx: number) => {
     return item.id || item.doi || item.pmid || `paper-${idx}`;
   }, []);
+
+  useEffect(() => {
+    const localResult = getLocalEvidenceForTask({
+      task_title: task.title,
+      task_goal: task.goal,
+      case_title: caseTitle,
+      suggested_keywords: task.suggested_keywords,
+    });
+    setSearchResult(localResult.results.length > 0 ? localResult : null);
+    setPanelState(localResult.results.length > 0 ? "results" : "idle");
+    setSelectedIds(new Set());
+    setNoteResult(null);
+    setErrorMsg(null);
+  }, [task, caseTitle]);
 
   const handleSearch = useCallback(async () => {
     if (searchingRef.current) return;
@@ -91,8 +116,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
       selectedIds.has(getPaperKey(item, idx))
     );
     if (selected.length === 0) {
-      setErrorMsg("请先选择至少 1 篇参考文献。");
-      setPanelState("error");
+      setErrorMsg("请先选择参考文献。");
       return;
     }
 
@@ -111,7 +135,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
       setPanelState("note_ready");
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "文献笔记生成失败");
-      setPanelState("error");
+      setPanelState("results");
     } finally {
       noteGeneratingRef.current = false;
     }
@@ -121,13 +145,13 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
 
   const renderIdle = () => (
     <div>
-      <p className="text-[11px] text-brand-muted mb-2">根据当前任务关键词检索参考文献，帮助学生建立研究依据。</p>
+      <p className="text-[11px] text-brand-muted mb-2">当前任务暂未匹配到本地精选文献，可尝试补充检索公开文献。</p>
       <button
         onClick={handleSearch}
         className="h-9 px-4 rounded-lg bg-white/60 border border-black/10 text-xs font-semibold text-accent-electric hover:bg-white hover:border-accent-electric/20 transition-all cursor-pointer flex items-center gap-1.5"
       >
         <Search className="w-3.5 h-3.5" />
-        查找相关文献
+        补充检索公开文献
       </button>
     </div>
   );
@@ -135,7 +159,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
   const renderLoading = () => (
     <div className="flex items-center gap-2 py-2">
       <Loader2 className="w-4 h-4 animate-spin text-accent-electric" />
-      <span className="text-xs text-brand-muted">正在检索文献...</span>
+      <span className="text-xs text-brand-muted">正在补充检索公开文献...</span>
     </div>
   );
 
@@ -143,44 +167,48 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
     <div className="rounded-lg bg-red-50/40 border border-red-100/50 p-3">
       <div className="flex items-center gap-1.5 mb-1">
         <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-        <p className="text-xs font-semibold text-red-700">文献检索失败</p>
+        <p className="text-xs font-semibold text-red-700">暂未找到可展示的文献</p>
       </div>
-      <p className="text-[11px] text-red-600">{errorMsg}</p>
+      <p className="text-[11px] text-red-600">{errorMsg || "请稍后重试，或调整关键词。"}</p>
       <button
         onClick={handleSearch}
         className="mt-2 text-[11px] text-accent-electric hover:underline cursor-pointer"
       >
-        重新检索
+        重新补充检索
       </button>
     </div>
   );
-
-  const renderNotConfigured = () => null;
 
   const renderEmpty = () => (
     <div className="py-4 text-center">
       <BookOpen className="w-6 h-6 text-brand-faint/30 mx-auto mb-1.5" />
-      <p className="text-xs text-brand-muted">暂未检索到相关文献，请调整关键词后重试。</p>
+      <p className="text-xs text-brand-muted">暂未找到相关文献，请调整关键词后重试。</p>
       <button
         onClick={handleSearch}
         className="mt-2 text-[11px] text-accent-electric hover:underline cursor-pointer"
       >
-        重新检索
+        重新补充检索
       </button>
     </div>
   );
 
+  const sourceLabel = (item: EvidenceSearchItem) => {
+    if (item.source_label) return item.source_label;
+    if (item.source_provider === "local_curated") return "本地精选";
+    return "公开文献";
+  };
+
   const renderResults = () => {
     if (!searchResult) return null;
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-brand-muted">
-            已检索到 {searchResult.results.length} 篇文献，请选择 1-{MAX_SELECT} 篇
+            当前可参考文献 {searchResult.results.length} 篇，请选择 1-{MAX_SELECT} 篇
           </span>
         </div>
 
-        <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
+        <div className="space-y-2 max-h-72 overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
           {searchResult.results.map((item, idx) => {
             const key = getPaperKey(item, idx);
             const isSelected = selectedIds.has(key);
@@ -207,6 +235,11 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
                   <p className="text-xs font-semibold text-brand-ink leading-snug line-clamp-2">
                     {item.title || "未提供标题"}
                   </p>
+                  <div className="mt-1">
+                    <span className="inline-flex items-center rounded-full bg-white/70 border border-black/5 px-2 py-0.5 text-[10px] font-semibold text-accent-electric">
+                      {sourceLabel(item)}
+                    </span>
+                  </div>
                   <div className="text-[10px] text-brand-muted mt-0.5 space-y-0.5">
                     <p>
                       作者：{Array.isArray(item.authors) && item.authors.length > 0
@@ -242,19 +275,36 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
 
         <button
           onClick={handleGenerateNote}
-          disabled={selectedCount === 0}
+          disabled={selectedCount === 0 || panelState === "note_loading"}
           className="h-8 px-4 rounded-lg bg-gradient-to-r from-accent-electric to-accent-cyan text-xs font-semibold text-white hover:opacity-90 transition-all disabled:opacity-30 cursor-pointer flex items-center gap-1.5"
         >
-          <FileText className="w-3.5 h-3.5" />
-          生成文献支撑笔记 ({selectedCount})
+          {panelState === "note_loading" ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <FileText className="w-3.5 h-3.5" />
+          )}
+          {panelState === "note_loading" ? "生成中..." : `生成文献支撑笔记 (${selectedCount})`}
         </button>
+
+        {selectedCount === 0 && (
+          <p className="text-[11px] text-amber-700">请先选择参考文献。</p>
+        )}
+
+        {errorMsg && selectedCount > 0 && (
+          <div className="rounded-lg bg-red-50/50 border border-red-100/70 px-3 py-2">
+            <p className="text-[11px] text-red-600">{errorMsg}</p>
+          </div>
+        )}
 
         <button
           onClick={handleSearch}
           className="text-[11px] text-accent-electric hover:underline cursor-pointer ml-1"
         >
-          重新检索
+          补充检索公开文献
         </button>
+
+        {panelState === "note_loading" && renderNoteLoading()}
+        {noteResult && noteResult.selected_count > 0 && renderNoteReady()}
       </div>
     );
   };
@@ -272,7 +322,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
       <div className="space-y-2.5">
         <div className="rounded-lg bg-amber-50/50 border border-amber-100/50 p-2.5">
           <p className="text-[10px] text-brand-muted leading-relaxed">
-            当前文献支撑笔记仅基于文献元数据，不代表全文解析、证据强度判断或最终科研结论。
+            当前文献支撑笔记仅基于已选择文献信息，用于学习整理；不代表完整文献综述、论文全文解析或最终科研结论。
           </p>
         </div>
 
@@ -292,7 +342,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
           onClick={handleSearch}
           className="text-[11px] text-accent-electric hover:underline cursor-pointer"
         >
-          重新检索文献
+          补充检索公开文献
         </button>
       </div>
     );
@@ -311,9 +361,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
       {panelState === "loading" && renderLoading()}
       {panelState === "error" && renderError()}
       {panelState === "empty" && renderEmpty()}
-      {panelState === "results" && renderResults()}
-      {panelState === "note_loading" && renderNoteLoading()}
-      {panelState === "note_ready" && renderNoteReady()}
+      {(panelState === "results" || panelState === "note_loading" || panelState === "note_ready") && renderResults()}
     </div>
   );
 }
