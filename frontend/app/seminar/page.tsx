@@ -47,6 +47,57 @@ const seedText = `题目：基于 CRISPR-Cas9 的胃癌相关基因调控研究
 方法：设计 sgRNA，构建表达载体，进行细胞转染、测序验证和增殖实验。
 创新点：把基因编辑与通路图谱结合，形成可解释的机制链。`;
 
+const RESEARCH_SEMINAR_STORAGE_KEY = "biomentor:research-seminar";
+
+interface ResearchSeminarPayload {
+  source?: string;
+  caseId?: string;
+  caseTitle?: string;
+  researchQuestion?: string;
+  selectedTaskTitle?: string;
+  selectedTaskType?: string;
+  selectedLiterature?: Array<{
+    title?: string | null;
+    authors?: string[];
+    year?: number | null;
+    venue?: string | null;
+    doi?: string | null;
+    pmid?: string | null;
+  }>;
+  evidenceNote?: string;
+  keywords?: string[];
+}
+
+function buildResearchSeminarText(payload: ResearchSeminarPayload) {
+  const literature = Array.isArray(payload.selectedLiterature) ? payload.selectedLiterature : [];
+  const literatureLines = literature.length > 0
+    ? literature.map((paper, index) => {
+        const authors = Array.isArray(paper.authors) && paper.authors.length > 0 ? paper.authors.join("; ") : "未提供作者";
+        const ids = [paper.doi ? `DOI: ${paper.doi}` : "", paper.pmid ? `PMID: ${paper.pmid}` : ""].filter(Boolean).join("；");
+        return `文献${index + 1}：${paper.title || "未提供标题"}\n作者：${authors}\n年份：${paper.year ?? "未提供"}\n来源：${paper.venue || "未提供"}${ids ? `\n${ids}` : ""}`;
+      })
+    : ["文献：未提供"];
+
+  return [
+    `题目：${payload.caseTitle ? `${payload.caseTitle} 科研训练答辩` : "科研实战训练答辩"}`,
+    "来源：科研实战",
+    payload.caseId ? `案例编号：${payload.caseId}` : "",
+    payload.caseTitle ? `案例标题：${payload.caseTitle}` : "",
+    `科研训练任务：${payload.selectedTaskTitle || "未提供"}`,
+    `核心问题：${payload.researchQuestion || "未提供"}`,
+    `推荐关键词：${Array.isArray(payload.keywords) && payload.keywords.length > 0 ? payload.keywords.join("、") : "未提供"}`,
+    "",
+    "已选择文献：",
+    ...literatureLines,
+    "",
+    "文献支撑笔记：",
+    payload.evidenceNote || "未提供",
+    "",
+    "科学问题：这些文献如何支撑当前科研训练任务，并帮助说明机制、方法、证据边界与产业转化价值？",
+    "方法：围绕研究背景、核心问题、文献证据、实验路线、局限性和应用价值组织答辩。",
+  ].filter(Boolean).join("\n");
+}
+
 // Safe type helpers — handle any shape from AI API
 function safeStr(v: unknown, fb = ""): string { return typeof v === "string" ? v : fb; }
 function safeNum(v: unknown, fb = 0): number { return typeof v === "number" ? v : (typeof v === "string" ? (parseInt(v, 10) || fb) : fb); }
@@ -134,6 +185,37 @@ export default function SeminarPage() {
     const topic = params.get("topic");
     const source = params.get("source");
     const summary = params.get("summary");
+
+    if (source === "research") {
+      const raw = sessionStorage.getItem(RESEARCH_SEMINAR_STORAGE_KEY);
+      if (!raw) {
+        setSourceLabel("科研实战导入");
+        setSourceText(
+          [
+            "题目：科研实战训练答辩",
+            "来源：科研实战",
+            "背景：当前未接收到科研实战内容。你可以返回科研实战生成文献支撑笔记后再次带入，或在此直接粘贴训练材料。",
+            "科学问题：如何把当前科研训练内容组织为可答辩的研究主题？",
+            "方法：补充研究问题、参考文献、证据链和应用边界后生成答辩资料包。",
+          ].join("\n"),
+        );
+        setStatusText("当前未接收到科研实战内容，可继续粘贴材料生成答辩资料包。");
+        return;
+      }
+
+      try {
+        const payload = JSON.parse(raw) as ResearchSeminarPayload;
+        const label = "科研实战导入";
+        setSourceLabel(label);
+        setSourceText(buildResearchSeminarText(payload));
+        setStatusText("已导入科研实战内容，可生成答辩资料包。");
+      } catch {
+        setSourceLabel("科研实战导入");
+        setSourceText(seedText);
+        setStatusText("科研实战内容读取失败，可继续粘贴材料生成答辩资料包。");
+      }
+      return;
+    }
 
     if (caseId) {
       const caseData = industryCases.find((item) => item.id === caseId);

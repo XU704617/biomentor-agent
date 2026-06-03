@@ -21,6 +21,23 @@ const refTypeStyles: Record<string, string> = {
 
 export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetailModalProps) {
   const c = caseData;
+  const researchParams = new URLSearchParams({
+    caseId: c.id,
+    caseTitle: c.title,
+    category: c.category,
+    coreQuestion: c.coreProblem,
+    keywords: c.recommendedKeywords.slice(0, 6).join(","),
+  });
+  const discussionQuestions = [
+    c.coreProblem,
+    `这个案例需要哪些证据才能支撑「${c.linkedResearchTask || "科研训练"}」？`,
+    `从${c.industryDirection || "产业应用"}走向真实场景时，最需要警惕哪些风险边界？`,
+  ].filter(Boolean);
+  const readingDirections = [
+    c.recommendedKeywords.slice(0, 3).join(" / "),
+    c.relatedKnowledgePoints.slice(0, 3).join(" / "),
+    c.references[0]?.title || "",
+  ].filter(Boolean);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto pt-12 pb-12">
@@ -63,6 +80,15 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
               科研基础
             </h3>
             <p className="text-sm text-brand-muted font-body leading-relaxed">{c.researchFoundation}</p>
+          </section>
+
+          {/* 核心科学问题 */}
+          <section>
+            <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
+              <Target className="w-4 h-4 text-rose-500" />
+              核心科学问题
+            </h3>
+            <p className="text-sm text-brand-muted font-body leading-relaxed">{c.coreProblem}</p>
           </section>
 
           {/* 知识迁移路径 */}
@@ -154,7 +180,7 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
               </div>
             </div>
             <div>
-              <h3 className="font-display text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">训练能力</h3>
+              <h3 className="font-display text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">适合训练能力</h3>
               <div className="flex flex-wrap gap-1.5">
                 {c.requiredAbilities.map((ab, i) => (
                   <span key={i} className="badge badge-amber text-[11px]">{ab}</span>
@@ -173,6 +199,32 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
             </div>
           </section>
 
+          {/* 讨论与阅读 */}
+          <section className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl bg-white/60 border border-black/5 p-4">
+              <h3 className="font-display text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">可讨论问题</h3>
+              <ul className="space-y-1.5">
+                {discussionQuestions.map((question, i) => (
+                  <li key={i} className="text-xs text-brand-muted leading-relaxed flex gap-1.5">
+                    <span className="text-blue-500 shrink-0">{i + 1}.</span>
+                    <span>{question}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-xl bg-white/60 border border-black/5 p-4">
+              <h3 className="font-display text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">推荐阅读方向</h3>
+              <ul className="space-y-1.5">
+                {readingDirections.map((direction, i) => (
+                  <li key={i} className="text-xs text-brand-muted leading-relaxed flex gap-1.5">
+                    <span className="w-1 h-1 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                    <span>{direction}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
           {/* 可关联训练任务 */}
           <section className="border-t border-black/5 pt-5">
             <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
@@ -185,7 +237,7 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
                 <p className="text-[11px] text-brand-faint font-mono mt-0.5">caseId: {c.id}</p>
               </div>
               <Link
-                href={`/research?caseId=${c.id}`}
+                href={`/research?${researchParams.toString()}`}
                 className="flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors cursor-pointer shrink-0"
               >
                 <FlaskConical className="w-3.5 h-3.5" />

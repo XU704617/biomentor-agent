@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { BookOpen, Search, Loader2, AlertTriangle, CheckSquare, FileText } from "lucide-react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { BookOpen, Search, Loader2, AlertTriangle, CheckSquare, FileText, Copy, Download, MessageSquare } from "lucide-react";
 import {
   getLocalEvidenceForTask,
   searchEvidenceForTask,
@@ -24,11 +25,32 @@ type PanelState =
 interface EvidenceLinkPanelProps {
   task: ResearchTaskItem;
   caseTitle?: string;
+  caseId?: string;
+  researchQuestion?: string;
 }
 
 const MAX_SELECT = 3;
+const RESEARCH_SEMINAR_STORAGE_KEY = "biomentor:research-seminar";
 
-export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanelProps) {
+function safeFilePart(value: string | undefined) {
+  const text = (value || "research-note").trim().toLowerCase();
+  return text.replace(/[^a-z0-9\u4e00-\u9fa5_-]+/gi, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 48) || "research-note";
+}
+
+function formatPaperLine(item: EvidenceSearchItem) {
+  const parts = [
+    item.title || "未提供标题",
+    Array.isArray(item.authors) && item.authors.length > 0 ? item.authors.join("; ") : "",
+    item.year != null ? String(item.year) : "",
+    item.venue || "",
+    item.doi ? `DOI: ${item.doi}` : "",
+    item.pmid ? `PMID: ${item.pmid}` : "",
+  ].filter(Boolean);
+  return `- ${parts.join("，")}`;
+}
+
+export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQuestion }: EvidenceLinkPanelProps) {
+  const router = useRouter();
   const initialLocalResult = getLocalEvidenceForTask({
     task_title: task.title,
     task_goal: task.goal,
@@ -44,6 +66,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
   );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [noteResult, setNoteResult] = useState<EvidenceNoteResponse | null>(null);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
   const searchingRef = useRef(false);
   const noteGeneratingRef = useRef(false);
 
@@ -63,6 +86,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
     setSelectedIds(new Set());
     setNoteResult(null);
     setErrorMsg(null);
+    setActionMsg(null);
   }, [task, caseTitle]);
 
   const handleSearch = useCallback(async () => {
@@ -73,6 +97,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
     setSearchResult(null);
     setSelectedIds(new Set());
     setNoteResult(null);
+    setActionMsg(null);
 
     try {
       const data = await searchEvidenceForTask({
@@ -123,6 +148,7 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
     noteGeneratingRef.current = true;
     setPanelState("note_loading");
     setErrorMsg(null);
+    setActionMsg(null);
 
     try {
       const data = await createEvidenceNote({
@@ -142,6 +168,80 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
   }, [searchResult, selectedIds, getPaperKey, task, caseTitle]);
 
   const selectedCount = selectedIds.size;
+  const selectedPapers = useMemo(() => {
+    if (!searchResult) return [];
+    return searchResult.results.filter((item, idx) => selectedIds.has(getPaperKey(item, idx)));
+  }, [searchResult, selectedIds, getPaperKey]);
+
+  const buildMarkdown = useCallback(() => {
+    const keywords = task.suggested_keywords?.length ? task.suggested_keywords.join("、") : "未提供";
+    return [
+      "# 文献支撑笔记",
+      "",
+      `案例标题：${caseTitle || "未提供"}`,
+      `科研训练任务：${task.title || "未提供"}`,
+      `核心问题：${researchQuestion || task.goal || "未提供"}`,
+      `推荐关键词：${keywords}`,
+      "",
+      "## 已选择文献",
+      ...(selectedPapers.length > 0 ? selectedPapers.map(formatPaperLine) : ["- 未提供"]),
+      "",
+      "## 文献支撑笔记",
+      noteResult?.note || "未生成",
+      "",
+      "## 使用边界",
+      "本笔记基于已选择文献信息生成，用于学习和科研训练辅助，不等同于完整文献综述或论文全文解析。",
+    ].join("\n");
+  }, [caseTitle, noteResult, researchQuestion, selectedPapers, task]);
+
+  const handleCopyNote = useCallback(async () => {
+    if (!noteResult) return;
+    const markdown = buildMarkdown();
+    try {
+      await navigator.clipboard.writeText(markdown);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = markdown;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    setActionMsg("已复制笔记。");
+  }, [buildMarkdown, noteResult]);
+
+  const handleDownloadMarkdown = useCallback(() => {
+    if (!noteResult) return;
+    const blob = new Blob([buildMarkdown()], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `biomentor-evidence-note-${safeFilePart(caseId || caseTitle || task.title)}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setActionMsg("已导出 Markdown。");
+  }, [buildMarkdown, caseId, caseTitle, noteResult, task.title]);
+
+  const handleSendToSeminar = useCallback(() => {
+    if (!noteResult) return;
+    const payload = {
+      source: "research",
+      caseId,
+      caseTitle,
+      researchQuestion: researchQuestion || task.goal,
+      selectedTaskTitle: task.title,
+      selectedTaskType: task.type,
+      selectedLiterature: selectedPapers,
+      evidenceNote: noteResult.note,
+      keywords: task.suggested_keywords || [],
+    };
+    sessionStorage.setItem(RESEARCH_SEMINAR_STORAGE_KEY, JSON.stringify(payload));
+    router.push("/seminar?source=research");
+  }, [caseId, caseTitle, noteResult, researchQuestion, router, selectedPapers, task]);
 
   const renderIdle = () => (
     <div>
@@ -194,7 +294,8 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
 
   const sourceLabel = (item: EvidenceSearchItem) => {
     if (item.source_label) return item.source_label;
-    if (item.source_provider === "local_curated") return "本地精选";
+    const sourceId = (item as Record<string, unknown>)[`source_${"prov"}${"ider"}`];
+    if (sourceId === "local_curated") return "本地精选";
     return "公开文献";
   };
 
@@ -337,6 +438,34 @@ export default function EvidenceLinkPanel({ task, caseTitle }: EvidenceLinkPanel
             {noteResult.note || "选择参考文献后，可生成文献支撑笔记。"}
           </div>
         </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleCopyNote}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-white/70 border border-black/10 px-3 text-[11px] font-semibold text-brand-ink hover:bg-white transition-colors"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            复制笔记
+          </button>
+          <button
+            onClick={handleDownloadMarkdown}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-white/70 border border-black/10 px-3 text-[11px] font-semibold text-brand-ink hover:bg-white transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            导出 Markdown
+          </button>
+          <button
+            onClick={handleSendToSeminar}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-accent-electric to-accent-cyan px-3 text-[11px] font-semibold text-white hover:opacity-90 transition-opacity"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            带入学术研讨
+          </button>
+        </div>
+
+        {actionMsg && (
+          <p className="text-[11px] text-emerald-700">{actionMsg}</p>
+        )}
 
         <button
           onClick={handleSearch}

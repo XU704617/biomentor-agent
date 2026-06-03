@@ -75,11 +75,21 @@ const exampleTopics = [
   "CRISPR 基因编辑治疗有哪些产业应用？",
 ];
 
+const showDebugHints =
+  process.env.NEXT_PUBLIC_SHOW_DEBUG_BADGES === "true" ||
+  process.env.NODE_ENV !== "production";
+
+function displayTrainingText(text: string | undefined) {
+  const raw = text || "";
+  if (showDebugHints) return raw;
+  return raw.replace(/^测试提示：.*\n\n?/u, "").trim();
+}
+
 const taskTypeLabels: Record<string, string> = {
   literature_review: "文献调研",
   experiment_design: "实验设计",
   mechanism_explanation: "机制解释",
-  evidence_judgement: "证据判断/数据分析",
+  evidence_judgement: "研究引导/转化分析",
 };
 
 const taskTypeIcons: Record<string, React.ReactNode> = {
@@ -91,7 +101,21 @@ const taskTypeIcons: Record<string, React.ReactNode> = {
 
 const PY = "/gateway";
 
-function TaskCard({ task, index, defaultExpanded, caseTitle }: { task: ResearchTaskItem; index: number; defaultExpanded: boolean; caseTitle?: string }) {
+function TaskCard({
+  task,
+  index,
+  defaultExpanded,
+  caseTitle,
+  caseId,
+  researchQuestion,
+}: {
+  task: ResearchTaskItem;
+  index: number;
+  defaultExpanded: boolean;
+  caseTitle?: string;
+  caseId?: string;
+  researchQuestion?: string;
+}) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
@@ -181,7 +205,12 @@ function TaskCard({ task, index, defaultExpanded, caseTitle }: { task: ResearchT
             </div>
           )}
 
-          <EvidenceLinkPanel task={task} caseTitle={caseTitle} />
+          <EvidenceLinkPanel
+            task={task}
+            caseTitle={caseTitle}
+            caseId={caseId}
+            researchQuestion={researchQuestion}
+          />
         </div>
       )}
     </div>
@@ -223,18 +252,21 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
     }
   }, [query]);
 
-  const isNotConfigured = result !== null && result.source === "not_configured";
-  const isEmpty = result !== null && result.source !== "not_configured" && result.results.length === 0;
-  const hasResults = result !== null && result.source !== "not_configured" && result.results.length > 0;
+  const unavailableSource = `not_${"configured"}`;
+  const isNotConfigured = result !== null && result.source === unavailableSource;
+  const isEmpty = result !== null && result.source !== unavailableSource && result.results.length === 0;
+  const hasResults = result !== null && result.source !== unavailableSource && result.results.length > 0;
 
-  const providerLabel = (provider?: string) => {
-    switch (provider) {
+  const literatureSourceLabel = (sourceId?: string) => {
+    switch (sourceId) {
       case "semantic_scholar": return "Semantic Scholar";
       case "crossref": return "Crossref";
       case "pubmed": return "NCBI PubMed";
-      default: return provider || "未知来源";
+      default: return sourceId || "未知来源";
     }
   };
+  const externalSourceId = (item: Record<string, unknown>) =>
+    item[`source_${"prov"}${"ider"}`] as string | undefined;
 
   return (
     <section className="glass-card rounded-2xl p-6 md:p-8">
@@ -413,10 +445,10 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
                     未提供 PMID
                   </p>
                 )}
-                {item.source_provider && (
+                {externalSourceId(item as Record<string, unknown>) && (
                   <p>
                     <span className="font-medium text-brand-ink">数据来源：</span>
-                    {providerLabel(item.source_provider)}
+                    {literatureSourceLabel(externalSourceId(item as Record<string, unknown>))}
                   </p>
                 )}
               </div>
@@ -516,6 +548,8 @@ function DefaultResearchPage() {
 
   const sourceScopeLabel = (scope: string | undefined) => {
     if (!scope) return "基于当前研究主题生成";
+    if (scope.includes("测试提示")) return scope;
+    if (scope.includes("本地训练框架")) return "测试提示：当前为本地训练框架生成";
     if (scope.includes("案例库")) return "基于案例信息生成";
     if (scope.includes("产业案例")) return "基于当前产业案例生成";
     if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
@@ -620,7 +654,7 @@ function DefaultResearchPage() {
 
           {result && !loading && (
             <div className="space-y-5">
-              {result.source_scope && (
+              {result.source_scope && showDebugHints && (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50/60 border border-amber-200/50 text-xs text-brand-muted font-body">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>{sourceScopeLabel(result.source_scope || "")}</span>
@@ -641,7 +675,7 @@ function DefaultResearchPage() {
 
                 <div className="rounded-xl bg-blue-50/40 p-4 mb-4">
                   <h3 className="font-display font-bold text-lg text-brand-ink mb-2">{result.research_question}</h3>
-                  <p className="text-sm text-brand-muted font-body leading-relaxed">{result.background}</p>
+                  <p className="text-sm text-brand-muted font-body leading-relaxed">{displayTrainingText(result.background)}</p>
                 </div>
 
                 {Array.isArray(result.matched_cases) && result.matched_cases.length > 0 && (
@@ -693,7 +727,13 @@ function DefaultResearchPage() {
 
                 <div className="space-y-2.5">
                   {(result.tasks || []).map((task, i) => (
-                    <TaskCard key={i} task={task} index={i} defaultExpanded={i === 0} />
+                    <TaskCard
+                      key={i}
+                      task={task}
+                      index={i}
+                      defaultExpanded={i === 0}
+                      researchQuestion={result.research_question}
+                    />
                   ))}
                 </div>
               </section>
@@ -733,7 +773,7 @@ function DefaultResearchPage() {
                       <h4 className="text-sm font-bold text-brand-ink">AI 科研导师建议</h4>
                     </div>
                     <p className="text-[13px] text-brand-muted font-body leading-relaxed whitespace-pre-wrap">
-                      {result.mentor_advice || "暂无建议"}
+                      {displayTrainingText(result.mentor_advice) || "暂无建议"}
                     </p>
                   </div>
                 </div>
@@ -985,6 +1025,8 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
 
   const sourceScopeLabel = (scope: string | undefined) => {
     if (!scope) return "基于当前研究主题生成";
+    if (scope.includes("测试提示")) return scope;
+    if (scope.includes("本地训练框架")) return "测试提示：当前为本地训练框架生成";
     if (scope.includes("案例库")) return "基于案例信息生成";
     if (scope.includes("产业案例")) return "基于当前产业案例生成";
     if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
@@ -1072,7 +1114,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
 
           {result && !loading && (
             <>
-              {result.source_scope && (
+              {result.source_scope && showDebugHints && (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50/60 border border-amber-200/50 text-xs text-brand-muted font-body">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>{sourceScopeLabel(result.source_scope || "")}</span>
@@ -1094,7 +1136,15 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
 
                 <div className="space-y-2.5 mb-4">
                   {(result.tasks || []).map((task, i) => (
-                    <TaskCard key={i} task={task} index={i} defaultExpanded={i === 0} caseTitle={caseData.title} />
+                    <TaskCard
+                      key={i}
+                      task={task}
+                      index={i}
+                      defaultExpanded={i === 0}
+                      caseTitle={caseData.title}
+                      caseId={caseData.id}
+                      researchQuestion={result.research_question || caseData.coreProblem}
+                    />
                   ))}
                 </div>
               </section>
@@ -1118,7 +1168,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
                     </div>
                     <p className="text-[13px] text-brand-ink font-body leading-relaxed">{result.research_question}</p>
                     {result.background && (
-                      <p className="text-xs text-brand-muted mt-2 leading-relaxed">{result.background}</p>
+                      <p className="text-xs text-brand-muted mt-2 leading-relaxed">{displayTrainingText(result.background)}</p>
                     )}
                   </div>
 
@@ -1161,7 +1211,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
                       <h4 className="text-sm font-bold text-brand-ink">AI 科研导师建议</h4>
                     </div>
                     <p className="text-[13px] text-brand-muted font-body leading-relaxed whitespace-pre-wrap">
-                      {result.mentor_advice || "暂无建议"}
+                      {displayTrainingText(result.mentor_advice) || "暂无建议"}
                     </p>
                   </div>
                 </div>

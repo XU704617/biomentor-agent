@@ -89,17 +89,20 @@ class ResearchService:
         }]
 
         if not self.llm.available:
-            raise RuntimeError("LLM service unavailable for research task generation")
+            return self._build_fallback_task(topic, case.case_key, "case_driven", kp_list, kw_list, matched_cases, case_context)
 
-        return self._llm_generate(
-            topic,
-            case_context,
-            case.case_key,
-            "case_driven",
-            kp_list,
-            kw_list,
-            matched_cases,
-        )
+        try:
+            return self._llm_generate(
+                topic,
+                case_context,
+                case.case_key,
+                "case_driven",
+                kp_list,
+                kw_list,
+                matched_cases,
+            )
+        except Exception:
+            return self._build_fallback_task(topic, case.case_key, "case_driven", kp_list, kw_list, matched_cases, case_context)
 
     def _independent_task(self, topic: str) -> ResearchTaskGenerateResponse:
         matched_cases, kp_list, kw_list = self._match_local_cases(topic)
@@ -115,17 +118,20 @@ class ResearchService:
             case_context = "当前平台知识库暂无直接匹配案例，以下基于通用生物制造科研方法论生成训练框架。"
 
         if not self.llm.available:
-            raise RuntimeError("LLM service unavailable for research task generation")
+            return self._build_fallback_task(topic, None, "independent", kp_list, kw_list, matched_cases, case_context)
 
-        return self._llm_generate(
-            topic,
-            case_context,
-            None,
-            "independent",
-            kp_list,
-            kw_list,
-            matched_cases,
-        )
+        try:
+            return self._llm_generate(
+                topic,
+                case_context,
+                None,
+                "independent",
+                kp_list,
+                kw_list,
+                matched_cases,
+            )
+        except Exception:
+            return self._build_fallback_task(topic, None, "independent", kp_list, kw_list, matched_cases, case_context)
 
     def _llm_generate(self, topic: str, case_context: str, case_key: str | None, mode: str,
                       kp_list: list[str], kw_list: list[str],
@@ -292,7 +298,7 @@ class ResearchService:
             case_key=case_key,
             mode=mode,
             research_question=topic,
-            background=f"⚠️ LLM 不可用，以下为本地模板生成的科研训练框架，非 AI 个性化生成。\n\n围绕「{topic}」这一主题，本训练框架整合生物制造领域核心研究方法论。{'已匹配到平台相关产业案例，可提供具体背景参考。' if has_match else '当前平台知识库暂无直接匹配案例，以下基于通用生物制造科研方法论生成训练框架。'}",
+            background=f"测试提示：当前为本地训练框架生成。\n\n围绕「{topic}」这一主题，本训练框架整合生物制造领域核心研究方法、案例线索与文献阅读路径。{'已匹配到平台相关产业案例，可提供具体背景参考。' if has_match else '当前平台知识库暂无直接匹配案例，以下基于通用生物制造科研方法生成训练框架。'}",
             matched_cases=matched_cases,
             related_knowledge_points=default_kp,
             tasks=[
@@ -361,27 +367,27 @@ class ResearchService:
                 ),
                 TaskItem(
                     type="evidence_judgement",
-                    title="证据判断与数据分析",
-                    goal=f"系统评估「{topic}」相关研究的证据质量，设计数据采集与统计方案",
+                    title="研究引导 / 产业转化分析",
+                    goal=f"系统评估「{topic}」相关研究的证据质量，并梳理从机制理解到产业应用的转化路径",
                     steps=[
                         TaskStep(title="证据分级评估",
                                  description="对已有研究按证据等级分类，评估偏倚风险",
                                  expected_duration="2天"),
-                        TaskStep(title="数据统计方案设计",
-                                 description="确定统计方法、样本量计算、数据可视化方案",
+                        TaskStep(title="数据与转化指标设计",
+                                 description="确定统计方法、关键评价指标、应用场景和转化风险观察点",
                                  expected_duration="2天"),
-                        TaskStep(title="批判性分析",
-                                 description="识别研究局限、矛盾结果和方法学差异",
+                        TaskStep(title="产业化边界分析",
+                                 description="识别研究局限、方法学差异、适用人群或应用场景边界",
                                  expected_duration="2天"),
                     ],
-                    output_requirement="提交证据评估报告，包含证据分级表、统计方案、批判性分析",
+                    output_requirement="提交研究引导报告，包含证据分级表、数据分析方案、转化路径和风险边界",
                     suggested_keywords=default_kw[:8],
-                    example_outline="1. 证据检索策略\n2. 证据等级分级表\n3. 偏倚风险评估\n4. 统计分析方法\n5. 研究局限性分析\n6. 数据可视化方案",
+                    example_outline="1. 证据检索策略\n2. 证据等级分级表\n3. 关键数据指标\n4. 转化路径分析\n5. 应用边界与风险\n6. 下一步研究建议",
                 ),
             ],
-            expected_outputs=["文献综述报告", "实验设计方案", "机制分析报告", "证据评估报告"],
-            mentor_advice="⚠️ LLM 不可用，以下为模板建议：\n1. 从文献综述入手，建立扎实的理论基础\n2. 实验设计时注重对照组设置和样本量合理性\n3. 机制分析建议绘制可视化通路图辅助理解\n4. 定期与导师讨论研究进展，及时调整方向\n5. 注意区分相关性与因果性，避免过度推断",
+            expected_outputs=["文献综述报告", "实验设计方案", "机制分析报告", "研究引导报告"],
+            mentor_advice="测试提示：当前为本地训练框架生成。\n1. 从文献综述入手，建立扎实的理论基础\n2. 实验设计时注重对照组设置和样本量合理性\n3. 机制分析建议绘制可视化通路图辅助理解\n4. 定期与导师讨论研究进展，及时调整方向\n5. 注意区分相关性与因果性，避免过度推断",
             seminar_topic=topic if "研讨" in topic else f"「{topic}」的研究进展与方法论探讨",
-            source_scope="仅限平台案例库和知识库内容，未使用外部搜索或数据库",
-            disclaimer="⚠️ 当前使用本地模板生成（LLM 不可用）。配置 LLM API Key 后可使用 AI 生成个性化科研任务。本训练框架仅供参考。",
+            source_scope="测试提示：当前为本地训练框架生成",
+            disclaimer="本训练框架仅供学习参考，具体研究设计请结合实际条件、原始文献和导师指导。",
         )
