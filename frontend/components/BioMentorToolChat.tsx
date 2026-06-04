@@ -42,6 +42,7 @@ export default function BioMentorToolChat({
   const [isPending, startTransition] = useTransition();
   const initialCacheRef = useRef<Map<string, ToolChatMessage>>(new Map());
   const prevContextKeyRef = useRef<string>("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const assistantLabel = TOOL_ASSISTANT_LABELS[tool];
 
@@ -109,6 +110,10 @@ export default function BioMentorToolChat({
     fetchAiResponse("initial");
   }, [contextKey, autoGenerate, fetchAiResponse]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, isLoading, errorText]);
+
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
@@ -151,7 +156,7 @@ export default function BioMentorToolChat({
         <span className="text-xs text-brand-muted ml-auto">{assistantLabel}</span>
       </div>
 
-      <div className="space-y-3 min-h-[200px] max-h-[460px] overflow-y-auto mb-4">
+      <div data-testid="tool-chat-messages" className="space-y-3 min-h-[200px] max-h-[460px] overflow-y-auto mb-4 scroll-smooth">
         {messages.length === 0 && !isLoading && (
           <p className="text-sm text-brand-muted text-center py-8">{displayEmpty}</p>
         )}
@@ -211,6 +216,7 @@ export default function BioMentorToolChat({
         {errorText && (
           <p className="text-sm text-rose-500 text-center py-2">{errorText}</p>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="flex items-center gap-2">

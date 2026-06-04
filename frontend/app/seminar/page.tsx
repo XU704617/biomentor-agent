@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowLeft,
   Award,
   BookOpen,
   BrainCircuit,
@@ -12,6 +13,7 @@ import {
   Loader2,
   MessageSquare,
   PenLine,
+  RefreshCw,
   Send,
   Sparkles,
   Upload,
@@ -19,8 +21,7 @@ import {
 } from "lucide-react";
 
 import { industryCases } from "@/data/industryCases";
-import { getPaperById, knowledgePapers } from "@/data/knowledgeBase";
-import { getSelectedPapers } from "@/lib/selectedPapers";
+import { knowledgePapers } from "@/data/knowledgeBase";
 import type { DefenseBrief, DefenseTranscriptItem } from "@/lib/defense-flow";
 
 type Difficulty = "basic" | "standard" | "challenge";
@@ -106,6 +107,95 @@ function safeDim(v: unknown) { const o = v && typeof v === "object" ? v as Recor
 function safeMod(v: unknown) { const o = v && typeof v === "object" ? v as Record<string,unknown> : {}; return { label: safeStr(o.label, ""), href: safeStr(o.href, "#"), reason: safeStr(o.reason, "") }; }
 const defaultModules = [{ label: "知识图谱", href: "/knowledge-map", reason: "补齐前置概念" }, { label: "科研实战", href: "/research", reason: "完成科研任务训练" }, { label: "文献工作台", href: "/paper-workbench", reason: "管理答辩文献" }];
 
+function mapLocalKnowledgePaper(paper: (typeof knowledgePapers)[number]): SeminarKnowledgePaper {
+  return {
+    id: paper.id,
+    title: paper.title,
+    titleZh: paper.titleZh,
+    direction: paper.direction,
+    venue: paper.venue,
+    year: paper.year,
+    keywords: paper.keywords,
+    coreProblem: paper.coreProblem,
+    methodSummary: paper.methodSummary,
+    keyFinding: paper.keyFinding,
+    defenseValue: paper.defenseValue,
+    sourceLabel: "内置知识库",
+  };
+}
+
+function mapBackendResearchPaper(paper: BackendResearchPaper): SeminarKnowledgePaper {
+  return {
+    id: `backend-${paper.id}`,
+    title: safeStr(paper.title, paper.title_zh || `后端文献 ${paper.id}`),
+    titleZh: safeStr(paper.title_zh, paper.title || `后端文献 ${paper.id}`),
+    direction: safeStr(paper.direction, "未标注方向"),
+    venue: paper.venue,
+    year: paper.year,
+    keywords: Array.isArray(paper.keywords) ? paper.keywords.map(String).filter(Boolean) : [],
+    coreProblem: safeStr(paper.core_problem || paper.abstract, "该后端文献尚未补充核心问题，可在 Brief 中继续编辑。"),
+    methodSummary: safeStr(paper.method_summary, "该后端文献尚未补充方法摘要，可在 Brief 中继续编辑。"),
+    keyFinding: safeStr(paper.key_finding, "该后端文献尚未补充关键发现，可在 Brief 中继续编辑。"),
+    defenseValue: safeStr(paper.defense_value, "可作为答辩材料来源，建议结合文献摘要和方法路线继续凝练。"),
+    sourceLabel: "后端文献库",
+  };
+}
+
+function getDefaultKnowledgePaperOptions(): SeminarKnowledgePaper[] {
+  return knowledgePapers
+    .filter((paper) => paper.recommendedFor.includes("答辩材料"))
+    .slice(0, 6)
+    .map(mapLocalKnowledgePaper);
+}
+
+function readBackendWorkbenchIds(): number[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(BACKEND_WORKBENCH_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => Number(item))
+      .filter((item) => Number.isInteger(item) && item > 0);
+  } catch {
+    return [];
+  }
+}
+
+function buildKnowledgePapersSourceText(papers: SeminarKnowledgePaper[]) {
+  const directions = Array.from(new Set(papers.map((paper) => paper.direction).filter(Boolean)));
+  const topic =
+    papers.length === 1
+      ? `${papers[0].titleZh} 文献答辩`
+      : `${directions.slice(0, 2).join(" / ") || "多文献"} 综合文献答辩`;
+  const label = papers.some((paper) => paper.sourceLabel === "后端文献库")
+    ? "知识库导入：文献工作台已选文献"
+    : "知识库导入：已勾选内置文献";
+
+  const text = [
+    `题目：${topic}`,
+    `来源：${label}`,
+    `背景：本资料由 ${papers.length} 篇文献共同组成，用于把文献问题、方法、发现和答辩价值凝练为可编辑 Defense Brief。`,
+    ...papers.flatMap((paper, index) => [
+      `文献${index + 1}：${paper.titleZh}`,
+      `英文题名：${paper.title}`,
+      `来源库：${paper.sourceLabel}`,
+      `方向：${paper.direction}`,
+      paper.venue || paper.year ? `期刊/年份：${[paper.venue, paper.year].filter(Boolean).join(" · ")}` : "",
+      `核心问题：${paper.coreProblem}`,
+      `方法：${paper.methodSummary}`,
+      `关键发现：${paper.keyFinding}`,
+      `答辩价值：${paper.defenseValue}`,
+      paper.keywords.length ? `关键词：${paper.keywords.join("、")}` : "",
+    ].filter(Boolean)),
+    "科学问题：这些文献如何共同支撑一个清晰、可验证、可表达的研究主题？",
+    "方法：围绕研究背景、核心问题、方法路线、证据链、局限性和应用价值组织答辩。",
+  ].join("\n");
+
+  return { label, text };
+}
+
 function normalizeDefenseReport(value: Partial<DefenseReport> | null | undefined): DefenseReport {
   const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const dimensions = safeArr(source.dimensions, []).length > 0
@@ -131,6 +221,40 @@ function normalizeDefenseReport(value: Partial<DefenseReport> | null | undefined
   };
 }
 
+interface SeminarKnowledgePaper {
+  id: string;
+  title: string;
+  titleZh: string;
+  direction: string;
+  venue?: string;
+  year?: number | string;
+  keywords: string[];
+  coreProblem: string;
+  methodSummary: string;
+  keyFinding: string;
+  defenseValue: string;
+  sourceLabel: string;
+}
+
+interface BackendResearchPaper {
+  id: number;
+  title?: string;
+  title_zh?: string;
+  direction?: string;
+  venue?: string;
+  year?: number;
+  keywords?: string[];
+  abstract?: string;
+  core_problem?: string;
+  method_summary?: string;
+  key_finding?: string;
+  defense_value?: string;
+  recommended_for?: string[];
+}
+
+const API_BASE = "/gateway";
+const BACKEND_WORKBENCH_STORAGE_KEY = "biomentor:backend-paper-workbench";
+
 export default function SeminarPage() {
   const [stage, setStage] = useState<Stage>("source");
   const [sourceText, setSourceText] = useState(seedText);
@@ -145,6 +269,9 @@ export default function SeminarPage() {
   const [report, setReport] = useState<DefenseReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState("");
+  const [knowledgePaperOptions, setKnowledgePaperOptions] = useState<SeminarKnowledgePaper[]>(() => getDefaultKnowledgePaperOptions());
+  const [selectedKnowledgePaperIds, setSelectedKnowledgePaperIds] = useState<string[]>([]);
+  const [knowledgeImportLoading, setKnowledgeImportLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canStartDefense = Boolean(brief?.title && brief?.researchQuestion && brief?.methods.length);
@@ -177,6 +304,49 @@ export default function SeminarPage() {
     setAnswer("");
     setTurnIndex(0);
     await startDefense();
+  }
+
+  useEffect(() => {
+    void refreshKnowledgePaperOptions();
+  }, []);
+
+  async function refreshKnowledgePaperOptions() {
+    setKnowledgeImportLoading(true);
+    const fallback = getDefaultKnowledgePaperOptions();
+    try {
+      const selectedBackendIds = readBackendWorkbenchIds();
+      const response = await fetch(`${API_BASE}/api/research/papers?page_size=100`);
+      if (!response.ok) throw new Error("后端文献库加载失败");
+      const data = (await response.json()) as { items?: BackendResearchPaper[] };
+      const backendPapers = Array.isArray(data.items) ? data.items : [];
+      const selectedSet = new Set(selectedBackendIds);
+      const mapped = backendPapers.map(mapBackendResearchPaper);
+      const visible = selectedBackendIds.length > 0
+        ? mapped.filter((paper) => selectedSet.has(Number(paper.id.replace("backend-", ""))))
+        : mapped
+            .filter((paper, index) => {
+              const raw = backendPapers[index];
+              return Array.isArray(raw?.recommended_for) && raw.recommended_for.includes("答辩材料");
+            })
+            .slice(0, 6);
+      const nextOptions = visible.length > 0 ? visible : fallback;
+      setKnowledgePaperOptions(nextOptions);
+      if (selectedBackendIds.length > 0 && visible.length > 0) {
+        setSelectedKnowledgePaperIds(visible.map((paper) => paper.id));
+      }
+    } catch {
+      setKnowledgePaperOptions(fallback);
+    } finally {
+      setKnowledgeImportLoading(false);
+    }
+  }
+
+  function toggleKnowledgePaper(paperId: string) {
+    setSelectedKnowledgePaperIds((current) =>
+      current.includes(paperId)
+        ? current.filter((item) => item !== paperId)
+        : [...current, paperId],
+    );
   }
 
   useEffect(() => {
@@ -278,6 +448,7 @@ export default function SeminarPage() {
       setSourceText(text);
       setBrief(result.data);
       setStage("brief");
+      setStatusText(`已生成 Defense Brief：${label}`);
     } catch {
       setStatusText("资料包生成失败，请补充文本后重试。");
     } finally {
@@ -286,36 +457,14 @@ export default function SeminarPage() {
   }
 
   async function importKnowledgeBasePapers() {
-    const selectedIds = getSelectedPapers().map((item) => item.paperId);
-    const papers = (selectedIds.length > 0
-      ? selectedIds.map((id) => getPaperById(id)).filter(Boolean)
-      : knowledgePapers.filter((paper) => paper.recommendedFor.includes("答辩材料")).slice(0, 3)
-    ) as typeof knowledgePapers;
+    const papers = knowledgePaperOptions.filter((paper) => selectedKnowledgePaperIds.includes(paper.id));
 
     if (papers.length === 0) {
-      setStatusText("当前知识库没有可导入的文献。你可以先到文献工作台选择文献，或直接上传 PDF/DOCX/PPTX。");
+      setStatusText("请先在下方勾选要导入的知识库文献，或到文献工作台管理后端文献。");
       return;
     }
 
-    const label = selectedIds.length > 0 ? "知识库导入：已选文献" : "知识库导入：推荐文献";
-    const text = [
-      `题目：${papers[0].direction} 方向文献答辩`,
-      `来源：${label}`,
-      `背景：本资料来自 BioMentor Agent 内置知识库，用于把文献元数据、研究问题、方法摘要和教学价值凝练为答辩材料。`,
-      ...papers.flatMap((paper, index) => [
-        `文献${index + 1}：${paper.titleZh}`,
-        `英文题名：${paper.title}`,
-        `方向：${paper.direction}`,
-        `核心问题：${paper.coreProblem}`,
-        `方法：${paper.methodSummary}`,
-        `关键发现：${paper.keyFinding}`,
-        `答辩价值：${paper.defenseValue}`,
-        `关键词：${paper.keywords.join("、")}`,
-      ]),
-      "科学问题：这些文献如何共同支撑一个清晰、可验证、可表达的研究主题？",
-      "方法：围绕研究背景、核心问题、方法路线、证据链、局限性和应用价值组织答辩。",
-    ].join("\n");
-
+    const { label, text } = buildKnowledgePapersSourceText(papers);
     await createBriefFromSource(text, label, "knowledge_base");
   }
 
@@ -331,12 +480,15 @@ export default function SeminarPage() {
       form.append("sourceLabel", file.name);
       const res = await fetch("/api/ai/defense/brief", { method: "POST", body: form });
       const result = await res.json();
-      if (!result?.data) throw new Error("empty brief");
+      if (!result?.data) throw new Error(result?.message || "empty brief");
       setSourceLabel(file.name);
+      setSourceText(`上传文件：${file.name}\n\n已根据文件内容生成 Defense Brief。若文件是扫描件或图片型 PDF，请补充粘贴正文以提高分析质量。`);
       setBrief(result.data);
       setStage("brief");
-    } catch {
-      setStatusText("文件解析失败。建议先导出为 PDF、DOCX、PPTX 或粘贴正文。");
+      setStatusText(`已根据 ${file.name} 生成 Defense Brief`);
+    } catch (error) {
+      const message = error instanceof Error && error.message !== "empty brief" ? error.message : "文件解析失败";
+      setStatusText(`${message}。建议先导出为可复制文字的 PDF、DOCX、PPTX，或粘贴正文后生成。`);
     } finally {
       setIsLoading(false);
       event.target.value = "";
@@ -373,6 +525,7 @@ export default function SeminarPage() {
           content: result.data.question,
         },
       ]);
+      setStatusText("已生成评委追问");
     } catch {
       setStatusText("下一问生成失败，请稍后重试。");
     } finally {
@@ -410,6 +563,7 @@ export default function SeminarPage() {
       if (!result?.data) throw new Error("empty report");
       setReport(normalizeDefenseReport(result.data));
       setStage("report");
+      setStatusText("已生成闭环答辩报告");
     } catch {
       setStatusText("报告生成失败，请稍后重试。");
     } finally {
@@ -522,16 +676,62 @@ export default function SeminarPage() {
                     className="inline-flex items-center gap-2 rounded-2xl border border-white/85 bg-white/70 px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-white disabled:opacity-45"
                   >
                     <Library className="h-4 w-4" />
-                    从知识库导入
+                    导入已勾选文献
                   </button>
                   <Link
                     href="/paper-workbench"
                     className="inline-flex items-center gap-2 rounded-2xl border border-white/85 bg-white/50 px-5 py-3 text-sm font-black text-slate-600 transition hover:bg-white"
                   >
                     <BookOpen className="h-4 w-4" />
-                    选择知识库文件
+                    管理文献工作台
                   </Link>
                 </div>
+                <section className="mt-5 rounded-[26px] border border-white/80 bg-white/48 p-4">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="font-display text-base font-black text-[#111827]">选择要导入的文献</h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        优先读取文献工作台中已选的后端真实文献；没有工作台选择时，显示内置知识库推荐文献供你手动勾选。
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => void refreshKnowledgePaperOptions()}
+                      disabled={knowledgeImportLoading}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/85 bg-white/70 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-white disabled:opacity-45"
+                    >
+                      {knowledgeImportLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      刷新文献
+                    </button>
+                  </div>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {knowledgePaperOptions.map((paper) => {
+                      const checked = selectedKnowledgePaperIds.includes(paper.id);
+                      return (
+                        <button
+                          key={paper.id}
+                          onClick={() => toggleKnowledgePaper(paper.id)}
+                          className={`rounded-2xl border p-3 text-left transition ${
+                            checked
+                              ? "border-[#2563eb]/30 bg-blue-50/80 text-[#111827]"
+                              : "border-white/75 bg-white/48 text-slate-600 hover:bg-white/78"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className={`mt-1 h-4 w-4 shrink-0 rounded-full border ${checked ? "border-[#2563eb] bg-[#2563eb]" : "border-slate-300 bg-white/80"}`}>
+                              {checked && <CheckCircle2 className="h-4 w-4 text-white" />}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-sm font-black leading-5">{paper.titleZh}</span>
+                              <span className="mt-1 block text-[11px] leading-5 text-slate-400">
+                                {paper.sourceLabel} · {paper.direction} {paper.venue ? `· ${paper.venue}` : ""}
+                              </span>
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
               </main>
               <aside className="space-y-4">
                 {[
@@ -561,14 +761,24 @@ export default function SeminarPage() {
                       className="block min-h-[92px] w-full resize-none bg-transparent font-display text-3xl font-black leading-tight tracking-[-0.04em] text-[#111827] outline-none md:text-4xl"
                     />
                   </div>
-                  <button
-                    onClick={startDefense}
-                    disabled={!canStartDefense || isLoading}
-                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#111827] px-5 py-3 text-sm font-black text-white shadow-[0_16px_36px_rgba(17,24,39,.16)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    确认并开始答辩
-                  </button>
+                  <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
+                    <button
+                      onClick={() => setStage("source")}
+                      disabled={isLoading}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/85 bg-white/70 px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      返回导入材料
+                    </button>
+                    <button
+                      onClick={startDefense}
+                      disabled={!canStartDefense || isLoading}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111827] px-5 py-3 text-sm font-black text-white shadow-[0_16px_36px_rgba(17,24,39,.16)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      确认并开始答辩
+                    </button>
+                  </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   {briefSections.map((section) => (
@@ -637,13 +847,26 @@ export default function SeminarPage() {
                     <div className="text-xs font-black text-slate-400">第 {Math.min(turnIndex + 1, turnLimit)} / {turnLimit} 轮</div>
                     <h2 className="font-display text-xl font-black">答辩室</h2>
                   </div>
-                  <button
-                    onClick={() => finishReport()}
-                    disabled={isLoading}
-                    className="rounded-2xl border border-white/80 bg-white/70 px-4 py-2 text-xs font-black text-slate-600 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    {isLoading ? "等待追问生成" : "提前生成报告"}
-                  </button>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button
+                      onClick={() => {
+                        setStage("brief");
+                        setCurrentQuestion(null);
+                        setAnswer("");
+                      }}
+                      disabled={isLoading}
+                      className="rounded-2xl border border-white/80 bg-white/70 px-4 py-2 text-xs font-black text-slate-600 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      返回 Brief
+                    </button>
+                    <button
+                      onClick={() => finishReport()}
+                      disabled={isLoading}
+                      className="rounded-2xl border border-white/80 bg-white/70 px-4 py-2 text-xs font-black text-slate-600 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      {isLoading ? "等待追问生成" : "提前生成报告"}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex-1 space-y-4 overflow-y-auto pr-1">
                   {transcript.map((item, index) => (

@@ -67,6 +67,7 @@ export default function KnowledgeMapPage() {
   const [selectedNodeId, setSelectedNodeId] = useState(initialDisciplineId);
   const [query, setQuery] = useState("");
   const workspaceRef = useRef<HTMLElement>(null);
+  const shouldScrollWorkspaceRef = useRef(false);
 
   const activeDiscipline = useMemo(
     () => getDisciplineById(activeDisciplineId),
@@ -87,13 +88,15 @@ export default function KnowledgeMapPage() {
   }, [activeDiscipline, activeDisciplineId, selectedNodeId]);
 
   useEffect(() => {
-    if (!selectedDisciplineId) return;
+    if (!selectedDisciplineId || !shouldScrollWorkspaceRef.current) return;
+    shouldScrollWorkspaceRef.current = false;
     window.setTimeout(() => {
       workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
-  }, [selectedDisciplineId, activeDisciplineId]);
+  }, [selectedDisciplineId]);
 
   const openDiscipline = (disciplineId: string) => {
+    shouldScrollWorkspaceRef.current = !selectedDisciplineId;
     setSelectedDisciplineId(disciplineId);
     setActiveDisciplineId(disciplineId);
     setExpandedDimensionId(null);
@@ -146,13 +149,13 @@ export default function KnowledgeMapPage() {
 
         <div className="pointer-events-none relative z-10 mx-auto flex max-w-[1700px] flex-col gap-8 pt-10 md:pt-16">
           <div className={`flex items-center ${selectedDisciplineId ? "min-h-[30vh]" : "min-h-[calc(100vh-var(--nav-height)-8rem)]"}`}>
-            <div className={`knowledge-reveal ${selectedDisciplineId ? "max-w-[280px]" : "max-w-[320px]"}`}>
+            <div className={`knowledge-reveal ${selectedDisciplineId ? "max-w-[260px]" : "max-w-[280px]"}`}>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/55 px-4 py-2 text-xs font-black tracking-[0.16em] text-[#2563eb] shadow-[inset_0_1px_0_rgba(255,255,255,.8)]">
                 <Network className="h-4 w-4" />
                 BioMentor 知识星图
               </div>
               <h1 className={`mt-5 max-w-3xl font-display font-black leading-[0.96] tracking-[-0.05em] text-[#0f172a] ${
-                selectedDisciplineId ? "text-[clamp(26px,3vw,40px)]" : "text-[clamp(32px,3.8vw,52px)]"
+                selectedDisciplineId ? "text-[clamp(24px,2.8vw,38px)]" : "text-[clamp(30px,3.4vw,46px)]"
               }`}>
                 生命科学
                 <span className="block bg-gradient-to-r from-[#2563eb] via-[#06b6d4] to-[#10b981] bg-clip-text text-transparent">
@@ -314,7 +317,7 @@ function GalaxyGraph({
       className={`knowledge-reveal pointer-events-none absolute z-[1] ${
         compact
           ? "left-[38%] right-[1%] top-0 h-[430px] min-h-[430px] max-lg:left-[32%] max-md:left-0 max-md:top-[30%] max-md:h-[54vh]"
-          : "inset-0 min-h-screen w-full"
+          : "bottom-0 left-[18%] right-0 top-0 min-h-screen max-lg:left-0"
       }`}
     >
       <div className="absolute left-1/2 top-1/2 h-[78vh] w-[72vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/22 blur-3xl" />

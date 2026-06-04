@@ -300,6 +300,7 @@ export default function PathwayPage() {
           </h1>
           <p className="mt-4 max-w-3xl text-brand-muted leading-relaxed">
             搜索通路名称（如 MAPK、凋亡、糖酵解），选择精选教学图谱或公共通路候选，点击节点或边查看调控关系，并可跳转到思维导图整理学习结构。
+            当前优先支持常见通路和公共通路数据库候选；不是所有通路、别名或特定物种版本都能返回教学图谱，查不到时可尝试英文缩写或 Reactome 常用名称。
           </p>
           <Link
             href="/seminar?source=通路图谱工具&topic=信号通路机制与证据链答辩&summary=围绕通路节点、上下游调控、激活/抑制关系、实验验证和应用风险展开答辩。"
@@ -394,6 +395,10 @@ export default function PathwayPage() {
                   暂未找到候选。可以尝试英文全称或常用缩写，例如 PI3K、Wnt、Notch、TCA、JAK-STAT、TGF-beta、NF-kB。
                 </div>
               )}
+
+              <p className="mt-4 rounded-2xl border border-blue-100/80 bg-blue-50/70 px-4 py-3 text-xs leading-6 text-blue-900">
+                常见通路会展示精选教学图谱；公共通路数据库只返回候选信息，部分冷门通路、中文别名或未标准化名称可能查不到。
+              </p>
             </div>
 
             {isLocalActive ? (

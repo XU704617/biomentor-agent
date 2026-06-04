@@ -18,7 +18,7 @@ function readFrontend(...parts) {
 function extractIndustryCases() {
   const source = readFrontend("data/industryCases.ts");
   const match = source.match(
-    /export const industryCases: IndustryCase\[\] = (\[[\s\S]*?\]);\n\nexport const industryDirections/,
+    /export const industryCases: IndustryCase\[\] = (\[[\s\S]*?\]);\r?\n\r?\nexport const industryDirections/,
   );
   assert.ok(match, "industryCases array should be present and parseable");
   return JSON.parse(match[1]);

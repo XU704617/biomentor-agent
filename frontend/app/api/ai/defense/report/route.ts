@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  applyDefenseQualityGate,
   buildDefensePromptMessages,
   generateLocalDefenseReport,
   normalizeDefenseAiJson,
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
       }),
       maxTokens: 1800,
       fallback,
+      transcript: body.transcript || [],
     });
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -35,7 +37,17 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function callDefenseAi({ messages, maxTokens, fallback }: { messages: AiMessage[]; maxTokens: number; fallback: unknown }) {
+async function callDefenseAi({
+  messages,
+  maxTokens,
+  fallback,
+  transcript,
+}: {
+  messages: AiMessage[];
+  maxTokens: number;
+  fallback: unknown;
+  transcript: unknown[];
+}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
   try {
@@ -47,7 +59,11 @@ async function callDefenseAi({ messages, maxTokens, fallback }: { messages: AiMe
     });
     clearTimeout(timeout);
     const aiParsed = normalizeDefenseAiJson(result.raw, fallback);
-    return normalizeDefenseReport(aiParsed, fallback as Record<string,unknown>);
+    const normalized = normalizeDefenseReport(aiParsed, fallback as Record<string,unknown>);
+    return (applyDefenseQualityGate as unknown as (report: unknown, transcript: unknown[]) => unknown)(
+      normalized,
+      transcript,
+    );
   } catch {
     clearTimeout(timeout);
     return fallback;

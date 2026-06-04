@@ -9,12 +9,12 @@ import { findMindMapNode, findMindMapPath, mindMapRoot, type MindMapNode, type M
 import { knowledgePapers, knowledgeResearchTasks, getConceptById } from "@/data/knowledgeBase";
 import { getResearchTasksByConcept } from "@/lib/knowledgeSearch";
 
-const statusStyles: Record<MindMapStatus, { label: string; color: string; bg: string }> = {
-  mastered: { label: "已掌握", color: "#2563eb", bg: "rgba(37,99,235,.1)" },
-  review: { label: "需复习", color: "#d97706", bg: "rgba(245,158,11,.12)" },
-  weak: { label: "薄弱", color: "#e11d48", bg: "rgba(244,63,94,.12)" },
-  recommended: { label: "推荐下一步", color: "#059669", bg: "rgba(5,150,105,.12)" },
-  new: { label: "未学习", color: "#64748b", bg: "rgba(100,116,139,.1)" },
+const nodeVisualStyles: Record<MindMapStatus, { color: string; bg: string }> = {
+  mastered: { color: "#2563eb", bg: "rgba(37,99,235,.1)" },
+  review: { color: "#d97706", bg: "rgba(245,158,11,.12)" },
+  weak: { color: "#e11d48", bg: "rgba(244,63,94,.12)" },
+  recommended: { color: "#059669", bg: "rgba(5,150,105,.12)" },
+  new: { color: "#64748b", bg: "rgba(100,116,139,.1)" },
 };
 
 interface PositionedNode {
@@ -123,7 +123,7 @@ export default function MindMapPage() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[240px_1fr_360px] gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[220px_minmax(760px,1fr)_340px] gap-6">
           <aside className="liquid-card p-4 h-fit xl:sticky xl:top-24">
             <div className="flex items-center gap-2 mb-4"><Compass className="w-4 h-4 text-accent-electric" /><span className="font-display font-bold text-[#111827]">主题目录</span></div>
             <div className="space-y-2">
@@ -139,30 +139,49 @@ export default function MindMapPage() {
             </div>
           </aside>
 
-          <main className="liquid-card relative min-h-[660px] overflow-hidden">
+          <main className="liquid-card relative min-h-[740px] overflow-hidden">
             <div className="absolute inset-0 liquid-hero-bg opacity-70" />
             <div className="bio-network" />
-            <svg viewBox="0 0 760 660" className="relative z-10 w-full h-full min-h-[660px]">
+            <svg viewBox="0 0 980 760" className="relative z-10 w-full h-full min-h-[740px]">
               <defs>
-                <filter id="mind-node-glow"><feDropShadow dx="0" dy="0" stdDeviation="5" floodOpacity="0.28" /></filter>
+                <filter id="mind-node-glow"><feDropShadow dx="0" dy="8" stdDeviation="10" floodOpacity="0.18" /></filter>
               </defs>
               {edges.map((edge) => {
                 const parent = positioned.find((item) => item.node.id === edge.parentId);
                 if (!parent) return null;
                 const active = focusedPath.includes(edge.node.id) && focusedPath.includes(parent.node.id);
-                return <line key={`${edge.parentId}-${edge.node.id}`} x1={parent.x} y1={parent.y} x2={edge.x} y2={edge.y} stroke={active ? "#2563eb" : "rgba(100,116,139,.25)"} strokeWidth={active ? 2.5 : 1.3} strokeDasharray={active ? "none" : "5 7"} />;
+                const midX = (parent.x + edge.x) / 2 + (parent.y - edge.y) * 0.06;
+                const midY = (parent.y + edge.y) / 2 + (edge.x - parent.x) * 0.04;
+                return (
+                  <path
+                    key={`${edge.parentId}-${edge.node.id}`}
+                    d={`M ${parent.x} ${parent.y} Q ${midX} ${midY} ${edge.x} ${edge.y}`}
+                    stroke={active ? "#2563eb" : "rgba(100,116,139,.22)"}
+                    strokeWidth={active ? 2.6 : 1.2}
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity={active ? 0.9 : 0.42}
+                  />
+                );
               })}
               {positioned.map((item) => {
                 const active = item.node.id === selectedId;
                 const inPath = focusedPath.includes(item.node.id);
-                const status = statusStyles[item.node.status];
+                const status = nodeVisualStyles[item.node.status];
                 const dimmed = focusedPath.length > 1 && !inPath && item.level > 0;
-                const width = item.level === 0 ? 150 : item.level === 1 ? 136 : 108;
-                const height = item.level === 0 ? 54 : item.level === 1 ? 46 : 38;
+                const width = item.level === 0 ? 168 : item.level === 1 ? 154 : 126;
+                const height = item.level === 0 ? 58 : item.level === 1 ? 50 : 42;
+                const labelLines = splitMindLabel(item.node.label, item.level === 2 ? 7 : 8);
                 return (
                   <g key={item.node.id} onClick={() => toggleNode(item.node)} className="cursor-pointer" opacity={dimmed ? 0.32 : 1}>
                     <rect x={item.x - width / 2} y={item.y - height / 2} width={width} height={height} rx={height / 2} fill={active ? "#111827" : "rgba(255,255,255,.78)"} stroke={active || inPath ? status.color : "rgba(255,255,255,.95)"} strokeWidth={active ? 3 : 1.5} filter="url(#mind-node-glow)" />
-                    <text x={item.x} y={item.y + 4} textAnchor="middle" fill={active ? "#ffffff" : "#111827"} fontSize={item.level === 2 ? 11 : 12} fontWeight="800" fontFamily="system-ui, sans-serif">{item.node.label}</text>
+                    <text x={item.x} y={item.y - (labelLines.length - 1) * 6 + 4} textAnchor="middle" fill={active ? "#ffffff" : "#111827"} fontSize={item.level === 2 ? 10.5 : 12} fontWeight="800" fontFamily="system-ui, sans-serif">
+                      {labelLines.map((line, lineIndex) => (
+                        <tspan key={`${item.node.id}-${lineIndex}`} x={item.x} dy={lineIndex === 0 ? 0 : 13}>
+                          {line}
+                        </tspan>
+                      ))}
+                    </text>
                     {item.node.children?.length ? <circle cx={item.x + width / 2 - 14} cy={item.y - height / 2 + 12} r="5" fill={expanded.has(item.node.id) ? status.color : "#cbd5e1"} /> : null}
                   </g>
                 );
@@ -172,10 +191,9 @@ export default function MindMapPage() {
 
           <aside className="liquid-card p-5 h-fit xl:sticky xl:top-24">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ color: statusStyles[selectedNode.status].color, background: statusStyles[selectedNode.status].bg }}><Sparkles className="w-4 h-4" /></div>
+              <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ color: nodeVisualStyles[selectedNode.status].color, background: nodeVisualStyles[selectedNode.status].bg }}><Sparkles className="w-4 h-4" /></div>
               <div><div className="text-[11px] font-bold text-brand-faint">节点详情</div><div className="font-display font-bold text-[#111827]">{selectedNode.label}</div></div>
             </div>
-            <span className="inline-flex rounded-full px-3 py-1 text-xs font-bold mb-4" style={{ color: statusStyles[selectedNode.status].color, background: statusStyles[selectedNode.status].bg }}>{statusStyles[selectedNode.status].label}</span>
             <p className="text-sm text-brand-muted leading-relaxed mb-5">{selectedNode.summary}</p>
             <div className="space-y-4">
               <Panel title="需要掌握">
@@ -196,7 +214,7 @@ export default function MindMapPage() {
                     {recommendations.papers.map((paper) => (
                       <Link
                         key={paper.id}
-                        href={`/explore`}
+                        href={`/seminar?source=${encodeURIComponent("思维导图文献")}&topic=${encodeURIComponent(`${paper.titleZh} 文献答辩`)}&summary=${encodeURIComponent(`${paper.venue} ${paper.year}。${paper.title}`)}`}
                         className="block p-2.5 rounded-xl bg-white/60 border border-white/70 hover:border-accent-electric/20 transition-all"
                       >
                         <div className="flex items-start gap-2">
@@ -204,6 +222,7 @@ export default function MindMapPage() {
                           <div>
                             <p className="text-xs font-semibold text-[#111827] leading-snug">{paper.titleZh}</p>
                             <p className="text-[10px] text-brand-faint">{paper.venue} · {paper.year}</p>
+                            <p className="mt-1 text-[10px] font-bold text-accent-electric">导入答辩</p>
                           </div>
                         </div>
                       </Link>
@@ -247,22 +266,57 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function layoutNodes(expanded: Set<string>): PositionedNode[] {
-  const items: PositionedNode[] = [{ node: mindMapRoot, x: 380, y: 330, level: 0 }];
+  const items: PositionedNode[] = [{ node: mindMapRoot, x: 490, y: 380, level: 0 }];
   const primary = mindMapRoot.children || [];
   primary.forEach((node, index) => {
-    const angle = (-90 + (360 / primary.length) * index) * Math.PI / 180;
-    const x = 380 + Math.cos(angle) * 210;
-    const y = 330 + Math.sin(angle) * 210;
+    const angleDeg = -90 + (360 / primary.length) * index;
+    const angle = angleDeg * Math.PI / 180;
+    const directionX = Math.cos(angle);
+    const directionY = Math.sin(angle);
+    const x = 490 + Math.cos(angle) * 270;
+    const y = 380 + Math.sin(angle) * 250;
     items.push({ node, x, y, level: 1, parentId: mindMapRoot.id });
     if (expanded.has(node.id) && node.children?.length) {
-      const spread = Math.min(90, 18 * node.children.length);
+      const tangentX = -directionY;
+      const tangentY = directionX;
+      const isTopOrBottom = Math.abs(directionY) > 0.72;
+      const childSpacing = isTopOrBottom ? 148 : 92;
+      const outerDistance = isTopOrBottom ? 130 : 154;
       node.children.forEach((child, childIndex) => {
-        const childAngle = (-90 + (360 / primary.length) * index - spread / 2 + (spread / Math.max(1, node.children!.length - 1)) * childIndex) * Math.PI / 180;
-        items.push({ node: child, x: x + Math.cos(childAngle) * 104, y: y + Math.sin(childAngle) * 104, level: 2, parentId: node.id });
+        const offset = (childIndex - (node.children!.length - 1) / 2) * childSpacing;
+        items.push({
+          node: child,
+          x: clampMindPoint(x + directionX * outerDistance + tangentX * offset, 78, 902),
+          y: clampMindPoint(y + directionY * outerDistance + tangentY * offset, 70, 690),
+          level: 2,
+          parentId: node.id,
+        });
       });
     }
   });
   return items;
+}
+
+function clampMindPoint(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function splitMindLabel(label: string, maxChars: number): string[] {
+  const text = String(label || "").trim();
+  if (text.length <= maxChars) return [text];
+  const chunks: string[] = [];
+  let current = "";
+  for (const char of text) {
+    const next = `${current}${char}`;
+    if (next.length > maxChars && current) {
+      chunks.push(current);
+      current = char;
+    } else {
+      current = next;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks.slice(0, 2);
 }
 
 function topicToNode(topic: string | null) {

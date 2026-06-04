@@ -163,13 +163,40 @@ export function generateLocalDefenseReport({ brief, transcript = [] } = {}) {
     .filter((item) => item.role === "student")
     .map((item) => item.content)
     .join(" ");
+  const quality = assessDefenseAnswerQuality(transcript);
+
+  if (quality.level === "empty" || quality.level === "invalid") {
+    return applyDefenseQualityGate(
+      {
+        totalScore: quality.maxScore,
+        _warning: "⚠️ LLM不可用，以下评分为基于有效作答质量的规则评估，仅供参考",
+        dimensions: [
+          scoreItem("科学问题", quality.maxScore - 6, "未形成可评价的科学问题表达"),
+          scoreItem("背景理解", quality.maxScore - 4, "缺少对研究背景的有效回答"),
+          scoreItem("方法设计", quality.maxScore - 8, "没有说明实验路线、对照或读出指标"),
+          scoreItem("证据链", quality.maxScore - 8, "没有提供可判断的证据表达"),
+          scoreItem("局限意识", quality.maxScore - 6, "未体现局限性或替代解释意识"),
+          scoreItem("表达组织", quality.maxScore - 10, "回答为空或主要由无意义字符组成"),
+        ],
+        committeeFeedback:
+          quality.level === "empty"
+            ? `本轮没有学生作答，无法对"${brief?.title || "当前主题"}"进行有效评分。请至少回答一个问题后再生成报告。`
+            : "本轮学生回答缺少有效文字内容，无法进行可靠评分。建议重新作答，并说明研究问题、方法和证据。寥寥几个标点不能算作答辩内容。",
+        weakPoints: ["缺少有效作答内容", "无法判断科学问题、方法设计和证据链"],
+        moduleRecommendations: MODULE_RECOMMENDATIONS.slice(0, 3),
+        nextDefenseTopics: ["先用 3-5 句话完整回答一个评委问题", "补充研究问题、方法路线和关键证据后再次答辩"],
+      },
+      transcript,
+    );
+  }
+
   const hasEvidence = /证据|数据|对照|测序|验证|实验|结果/i.test(studentText);
   const hasLimits = /局限|风险|不足|替代|边界|混杂/i.test(studentText);
   // Rule-based scoring — clearly marked as approximate
   const base = 60 + (hasEvidence ? 8 : 0) + (hasLimits ? 6 : 0);
   const totalScore = Math.min(82, base);
 
-  return {
+  return applyDefenseQualityGate({
     totalScore,
     _warning: "⚠️ LLM不可用，以下评分为基于关键词匹配的规则评估，仅供参考",
     dimensions: [
@@ -190,6 +217,87 @@ export function generateLocalDefenseReport({ brief, transcript = [] } = {}) {
       "专门练习方法设计与对照设置",
       "围绕证据边界进行挑战难度追问",
     ],
+  }, transcript);
+}
+
+export function assessDefenseAnswerQuality(transcript = []) {
+  const answers = Array.isArray(transcript)
+    ? transcript
+        .filter((item) => item?.role === "student")
+        .map((item) => String(item?.content || "").trim())
+    : [];
+  const joined = answers.join("\n");
+  const meaningfulText = joined.replace(/[^\p{L}\p{N}]/gu, "");
+  const answerCount = answers.filter(Boolean).length;
+  const meaningfulLength = meaningfulText.length;
+
+  if (answerCount === 0 || meaningfulLength === 0) {
+    return {
+      level: answerCount === 0 ? "empty" : "invalid",
+      answerCount,
+      meaningfulLength,
+      maxScore: answerCount === 0 ? 24 : 36,
+      message: answerCount === 0 ? "未作答，无法评分。" : "有效回答内容不足，无法可靠评分。",
+    };
+  }
+
+  if (meaningfulLength < 12) {
+    return {
+      level: "invalid",
+      answerCount,
+      meaningfulLength,
+      maxScore: 42,
+      message: "有效回答内容过短，评分应限制在较低区间。",
+    };
+  }
+
+  if (meaningfulLength < 36) {
+    return {
+      level: "short",
+      answerCount,
+      meaningfulLength,
+      maxScore: 64,
+      message: "回答较短，只能给出阶段性低置信评分。",
+    };
+  }
+
+  return {
+    level: "sufficient",
+    answerCount,
+    meaningfulLength,
+    maxScore: null,
+    message: "",
+  };
+}
+
+export function applyDefenseQualityGate(report = {}, transcript = []) {
+  const quality = assessDefenseAnswerQuality(transcript);
+  if (!quality.maxScore) return report;
+
+  const capScore = (score, fallback = quality.maxScore) =>
+    Math.max(0, Math.min(quality.maxScore, Math.round(Number(score) || fallback)));
+  const dimensions = Array.isArray(report.dimensions)
+    ? report.dimensions.map((item) => ({
+        ...item,
+        score: capScore(item?.score),
+        comment: `${item?.comment || "有效作答不足，评分已按回答质量下调。"}（${quality.message}）`,
+      }))
+    : [
+        scoreItem("有效作答", quality.maxScore, quality.message),
+        scoreItem("表达完整性", quality.maxScore - 4, "需要补充完整句子、论点和证据"),
+      ];
+
+  return {
+    ...report,
+    totalScore: capScore(report.totalScore),
+    dimensions,
+    committeeFeedback: `${quality.message}${report.committeeFeedback ? ` ${report.committeeFeedback}` : ""}`.trim(),
+    weakPoints: Array.from(
+      new Set([
+        ...(Array.isArray(report.weakPoints) ? report.weakPoints : []),
+        quality.level === "empty" ? "本轮没有作答" : "有效回答内容不足",
+      ]),
+    ),
   };
 }
 
@@ -266,7 +374,7 @@ export function normalizeDefenseReport(parsed, fallback) {
 }
 
 function scoreItem(label, score, comment) {
-  return { label, score: Math.max(50, Math.min(96, Math.round(score))), comment };
+  return { label, score: Math.max(0, Math.min(96, Math.round(score))), comment };
 }
 
 function pickTitle(text, lines = []) {

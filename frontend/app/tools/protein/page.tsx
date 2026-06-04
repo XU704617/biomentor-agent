@@ -183,6 +183,7 @@ export default function ProteinPage() {
             <h1 className="font-display text-3xl md:text-5xl font-black tracking-[-0.05em] text-[#111827]">蛋白结构查看器</h1>
             <p className="mt-4 max-w-3xl text-brand-muted leading-relaxed">
               输入蛋白名、基因名、PDB ID 或 UniProt ID，先选择候选结果，再查看三维结构和学习解释。
+              目前会优先检索常见结构和公共数据库条目；不是所有蛋白都有可直接显示的实验结构或预测模型，查不到时可尝试英文名、基因名或标准编号。
             </p>
             <Link
               href="/seminar?source=蛋白结构工具&topic=蛋白结构与功能机制答辩&summary=围绕蛋白名称、PDB/UniProt、结构来源、活性位点和实验验证展开答辩。"
@@ -227,6 +228,9 @@ export default function ProteinPage() {
                   </button>
                 ))}
               </div>
+              <p className="mt-3 rounded-2xl border border-blue-100/80 bg-blue-50/70 px-4 py-3 text-xs leading-6 text-blue-900">
+                结构搜索覆盖常见教学蛋白、PDB 实验结构、UniProt/AlphaFold 候选。部分新蛋白、别名、未解析结构或数据库暂未收录的蛋白可能搜不到。
+              </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">

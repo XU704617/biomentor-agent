@@ -7,6 +7,7 @@ import {
   extractPlainTextFromOfficeXml,
   generateLocalDefenseQuestion,
   generateLocalDefenseReport,
+  applyDefenseQualityGate,
   normalizeDefenseBrief,
 } from "./defense-flow.mjs";
 import { extractUploadedFileTextFromBuffer } from "./defense-file-text.mjs";
@@ -131,4 +132,42 @@ test("defense prompts, local questions and reports follow the agreed first-versi
   assert.ok(report.totalScore >= 60);
   assert.equal(report.dimensions.length, 6);
   assert.ok(report.moduleRecommendations.length >= 2);
+});
+
+test("defense scoring penalizes empty or punctuation-only answers", () => {
+  const brief = buildDefenseBriefFromText({
+    sourceType: "manual",
+    sourceLabel: "手动粘贴",
+    text: sourceText,
+  });
+
+  const emptyReport = generateLocalDefenseReport({
+    brief,
+    transcript: [{ role: "committee", content: "请说明你的研究问题。" }],
+  });
+  assert.ok(emptyReport.totalScore <= 30);
+  assert.match(emptyReport.committeeFeedback, /未作答|无法评分/);
+
+  const punctuationReport = generateLocalDefenseReport({
+    brief,
+    transcript: [
+      { role: "committee", content: "请说明你的研究问题。" },
+      { role: "student", content: "，，，" },
+    ],
+  });
+  assert.ok(punctuationReport.totalScore <= 45);
+  assert.match(punctuationReport.committeeFeedback, /有效回答|无法评分|重新作答/);
+
+  const gated = applyDefenseQualityGate(
+    {
+      totalScore: 88,
+      dimensions: [{ label: "科学问题", score: 90, comment: "AI 给出了偏高评分" }],
+      committeeFeedback: "AI 原始评价",
+      weakPoints: [],
+      moduleRecommendations: [],
+      nextDefenseTopics: [],
+    },
+    [{ role: "student", content: "..." }],
+  );
+  assert.ok(gated.totalScore <= 45);
 });
