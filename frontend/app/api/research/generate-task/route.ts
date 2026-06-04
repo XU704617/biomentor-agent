@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { generateLocalResearchTask } from "@/lib/researchApi";
 
 const FASTAPI_BACKEND =
   process.env.FASTAPI_BACKEND_URL ||
@@ -16,6 +17,8 @@ export async function POST(request: NextRequest) {
     if (!topic) {
       return NextResponse.json({ error: "topic 不能为空" }, { status: 400 });
     }
+    const mode = body.mode === "case_driven" ? "case_driven" : "independent";
+    const caseKey = typeof body.case_key === "string" && body.case_key.trim() ? body.case_key.trim() : null;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
@@ -26,8 +29,8 @@ export async function POST(request: NextRequest) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic,
-          case_key: body.case_key || null,
-          mode: body.mode || "independent",
+          case_key: caseKey,
+          mode,
         }),
         signal: controller.signal,
       });
@@ -35,11 +38,7 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => "unknown");
-        return NextResponse.json(
-          { error: `后端返回错误 ${response.status}: ${errorText.slice(0, 200)}` },
-          { status: response.status }
-        );
+        return NextResponse.json(generateLocalResearchTask(topic, caseKey, mode));
       }
 
       const data = await response.json();
@@ -47,10 +46,7 @@ export async function POST(request: NextRequest) {
     } catch (fetchError) {
       clearTimeout(timeout);
       console.error("[research/generate-task] 转发失败:", fetchError instanceof Error ? fetchError.message : fetchError);
-      return NextResponse.json(
-        { error: "后端服务不可用，请稍后重试" },
-        { status: 503 }
-      );
+      return NextResponse.json(generateLocalResearchTask(topic, caseKey, mode));
     }
   } catch (err) {
     console.error("[research/generate-task] 未预期错误:", err instanceof Error ? err.message : err);

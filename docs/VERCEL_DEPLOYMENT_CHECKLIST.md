@@ -8,8 +8,9 @@
 
 | 变量名 | 值 | 说明 |
 |---|---|---|
-| `FASTAPI_BACKEND_URL` | `https://你的后端公网地址` | 后端 API 代理使用的地址 |
-| `NEXT_PUBLIC_API_BASE_URL` | `https://你的后端公网地址` | 某些前端直连后端使用的地址 |
+| `FASTAPI_BACKEND_URL` | `https://你的后端公网地址` | 前端服务端路由访问 FastAPI 的地址 |
+| `NEXT_PUBLIC_API_BASE_URL` | `https://你的后端公网地址` | 浏览器侧增强能力使用的后端地址 |
+| `NEXT_PUBLIC_SHOW_DEBUG_BADGES` | `false` 或不配置 | 正式展示时隐藏轻量测试提示；本地调试可设为 `true` |
 
 > **重要**：上述两个变量必须配置为后端公网地址（如 `https://api.yourdomain.com` 或 `https://your-server:9090`），**不能**使用以下地址：
 >
@@ -45,7 +46,7 @@ https://你的域名/api/deploy-health
   "backendReachable": true,
   "backendBaseUrlHost": "your-backend.example.com",
   "backendBaseUrlLooksLocal": false,
-  "casesCount": 23,
+  "casesCount": 30,
   "warnings": []
 }
 ```
@@ -55,7 +56,7 @@ https://你的域名/api/deploy-health
 - `backendReachable: true` — 后端连通正常
 - `backendReachable: false` — 检查后端公网地址和环境变量配置
 - `backendBaseUrlLooksLocal: true` — 环境变量配置了 `localhost` 或 `127.0.0.1`，不适合 Vercel 部署
-- `casesCount` 接近 23 — 数据完整；远小于 23 — 后端可能未 seed 数据
+- `casesCount` 接近 30 — 数据完整；远小于 30 — 后端可能未 seed 数据，前端页面仍会展示本地精选案例库
 
 ### 2. 产业案例接口
 
@@ -65,8 +66,8 @@ https://你的域名/api/industry/cases?page_size=100
 
 **判断标准**：
 
-- 返回约 **23 个**案例 → 后端连接正常，数据完整
-- 只返回约 **5 个**案例 → 大概率走了前端 fallback 数据，后端未连通或环境变量未配置
+- 返回约 **30 个**案例 → 后端连接正常，数据完整
+- 页面仍显示约 **30 个**案例但接口不可达 → 前端正在使用本地精选案例库，适合演示但需要继续检查后端地址
 
 ### 3. 文献检索接口
 
@@ -79,13 +80,35 @@ https://你的域名/api/literature/search?q=mRNA&limit=3
 - 返回文献列表 → 文献检索 provider 已配置并连通
 - 返回空或错误 → 检查后端文献检索 provider 配置
 
+### 4. 科研训练任务接口
+
+```
+https://你的域名/api/research/generate-task
+```
+
+使用 POST 请求发送：
+
+```json
+{
+  "topic": "mRNA 疫苗为什么需要 LNP？",
+  "case_key": null,
+  "mode": "independent"
+}
+```
+
+**判断标准**：
+
+- DeepSeek 可用时：返回模型生成的科研训练任务。
+- DeepSeek 无 key、余额不足、超时或后端短暂不可用时：仍应返回 4 个本地训练框架任务，不应返回 500。
+
 ## 三、部署责任边界
 
 > 以下说明用于明确部署责任，避免混淆。
 
 - **前端部署到 Vercel 不等于后端也部署了**。Vercel 只负责前端 Next.js 应用的托管和 Serverless 运行。
-- **文献检索** (`/api/literature/search`)、**科研任务** (`/research`)、**Evidence/文献支撑** (`/api/evidence/search`、`/api/evidence/note`) 等功能需要 FastAPI 后端可访问。
-- **如果没有公网后端**，只能展示前端静态能力或降级（fallback）数据，上述功能无法正常使用。
+- **文献检索增强** (`/api/literature/search`)、**公开文献补充检索** (`/api/evidence/search`) 需要 FastAPI 后端和文献检索配置可访问。
+- **产业案例页面**、**科研训练任务本地框架**、**本地精选文献**、**文献支撑笔记本地生成** 在后端不可用时仍可演示。
+- **DeepSeek / LLM 相关能力** 主要影响个性化生成质量；余额不足或不可用时，科研训练任务会回到本地训练框架。
 - 后端部署需要独立完成：启动 FastAPI 服务并确保其公网可达（通过云服务器、反向代理、内网穿透等方式）。
 
 ## 四、常见问题

@@ -24,6 +24,13 @@ const abilityColors = [
 
 export function IndustryCaseCard({ caseData, onViewDetail, isRecommended }: IndustryCaseCardProps) {
   const c = caseData;
+  const researchParams = new URLSearchParams({
+    caseId: c.id,
+    caseTitle: c.title,
+    category: c.category,
+    coreQuestion: c.coreProblem,
+    keywords: c.recommendedKeywords.slice(0, 6).join(","),
+  });
 
   const migrationSummary = [
     c.migrationPath.textbookBase[0],
@@ -90,7 +97,7 @@ export function IndustryCaseCard({ caseData, onViewDetail, isRecommended }: Indu
           查看详情
         </button>
         <Link
-          href={`/research?caseId=${c.id}`}
+          href={`/research?${researchParams.toString()}`}
           className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors py-1.5 px-3 rounded-lg hover:bg-blue-50/60 ml-auto"
         >
           <FlaskConical className="w-3.5 h-3.5" />

@@ -132,6 +132,12 @@ test("evidence note generation is guarded and visible in the task panel", () => 
   assert.match(panel, /文献支撑笔记 · 基于 \{noteResult\.selected_count\} 篇参考文献/);
   assert.match(panel, /本地精选/);
   assert.match(panel, /公开文献/);
+  assert.match(panel, /复制笔记/);
+  assert.match(panel, /导出 Markdown/);
+  assert.match(panel, /带入学术研讨/);
+  assert.match(panel, /biomentor:research-seminar/);
+  assert.match(panel, /# 文献支撑笔记/);
+  assert.match(panel, /使用边界/);
 });
 
 test("research page avoids blank literature navigation and task-card wording", () => {
@@ -141,4 +147,34 @@ test("research page avoids blank literature navigation and task-card wording", (
   assert.doesNotMatch(researchPage, /已接入文献|已接入文献材料|科研任务卡|任务卡/);
   assert.match(researchPage, /本地精选文献/);
   assert.match(researchPage, /训练任务/);
+  assert.match(researchPage, /NEXT_PUBLIC_SHOW_DEBUG_BADGES/);
+});
+
+test("research task generation falls back to a compatible four-task structure", () => {
+  const researchApi = readFrontend("lib/researchApi.ts");
+  const researchRoute = readFrontend("app/api/research/generate-task/route.ts");
+
+  assert.match(researchApi, /generateLocalResearchTask/);
+  assert.match(researchApi, /catch \{/);
+  assert.match(researchApi, /研究引导 \/ 产业转化分析/);
+  assert.match(researchApi, /测试提示：当前为本地训练框架生成/);
+  assert.match(researchRoute, /generateLocalResearchTask\(topic, caseKey, mode\)/);
+});
+
+test("research-to-seminar and case-detail learning loop is wired", () => {
+  const seminar = readFrontend("app/seminar/page.tsx");
+  const caseDetail = readFrontend("components/IndustryCaseDetailModal.tsx");
+  const caseCard = readFrontend("components/IndustryCaseCard.tsx");
+
+  assert.match(seminar, /source === "research"/);
+  assert.match(seminar, /科研实战导入/);
+  assert.match(seminar, /buildResearchSeminarText/);
+  assert.match(seminar, /文献支撑笔记/);
+
+  assert.match(caseDetail, /适合训练能力/);
+  assert.match(caseDetail, /可讨论问题/);
+  assert.match(caseDetail, /推荐阅读方向/);
+  assert.match(caseDetail, /coreQuestion/);
+  assert.match(caseCard, /coreQuestion/);
+  assert.match(caseCard, /keywords/);
 });
