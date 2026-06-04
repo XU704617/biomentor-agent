@@ -41,7 +41,7 @@ export default function ExplorePage() {
   const [error, setError] = useState<string | null>(null);
   
   const [messages, setMessages] = useState<Message[]>([
-    { role: "ai", content: "你好，我是 BioMentor AI 导师。上传教材文件，系统会智能分析知识点。" },
+    { role: "ai", content: "你好，我是 BioMentor AI 导师。上传学习资料，系统会智能分析知识点，系统会智能分析知识点。" },
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -220,7 +220,7 @@ export default function ExplorePage() {
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">知识探索中心</h1>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            上传教材或文献，统一由真实后端完成提取、解析、知识匹配、学习建议和测验生成。
+            上传学习资料，统一由真实后端完成提取、解析、知识匹配、学习建议和测验生成。
           </p>
         </div>
 
@@ -229,7 +229,7 @@ export default function ExplorePage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-blue-500" />
-              <h2 className="font-semibold text-gray-800">上传教材与文献</h2>
+              <h2 className="font-semibold text-gray-800">上传学习资料</h2>
               <span className="text-sm text-gray-500">支持图片、PDF、DOCX、文本</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -269,7 +269,7 @@ export default function ExplorePage() {
               ) : (
                 <div>
                   <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-sm text-gray-700 font-medium">点击或拖拽上传图片、PDF、DOCX 或文本</p>
+                  <p className="text-sm text-gray-700 font-medium">点击或拖拽上传PDF、DOCX 或文本</p>
                   <p className="text-xs text-gray-500 mt-1">所有文件都走真实后端处理</p>
                 </div>
               )}
@@ -464,7 +464,7 @@ export default function ExplorePage() {
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <BookOpen className="w-16 h-16 text-gray-300 mb-4" />
                 <p className="text-gray-500 max-w-md">
-                  上传教材文件后，系统将自动分析知识点并生成学习建议。
+                  上传学习资料后，系统将自动分析知识点并生成学习建议。
                   您也可以直接向 AI 导师提问学习问题。
                 </p>
               </div>
