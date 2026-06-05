@@ -32,6 +32,7 @@ import type { IndustryCase } from "@/data/industryCases";
 import { getIndustryCaseById } from "@/lib/industryApi";
 import {
   generateResearchTask,
+  askResearchTutor,
   type ResearchTaskGenerateResponse,
   type ResearchTaskItem,
 } from "@/lib/researchApi";
@@ -104,24 +105,35 @@ const PY = "/gateway";
 function TaskCard({
   task,
   index,
-  defaultExpanded,
+  selected,
+  onSelect,
   caseTitle,
   caseId,
   researchQuestion,
 }: {
   task: ResearchTaskItem;
   index: number;
-  defaultExpanded: boolean;
+  selected: boolean;
+  onSelect: () => void;
   caseTitle?: string;
   caseId?: string;
   researchQuestion?: string;
 }) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expanded, setExpanded] = useState(selected);
+
+  useEffect(() => {
+    if (selected) setExpanded(true);
+  }, [selected]);
 
   return (
-    <div className="rounded-xl bg-white/60 border border-black/5 overflow-hidden">
+    <div className={`rounded-xl overflow-hidden transition-all ${
+      selected ? "bg-white/80 border border-accent-electric/30 shadow-sm" : "bg-white/60 border border-black/5"
+    }`}>
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          onSelect();
+          setExpanded(!expanded || !selected);
+        }}
         className="w-full p-4 flex items-start gap-3 text-left hover:bg-white/30 transition-colors"
       >
         <div className="w-9 h-9 rounded-lg bg-accent-electric/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -133,6 +145,11 @@ function TaskCard({
               {taskTypeLabels[task.type] || task.type}
             </span>
             <span className="text-[10px] text-brand-muted">任务 {index + 1}</span>
+            {selected && (
+              <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-semibold">
+                当前选中
+              </span>
+            )}
           </div>
           <h3 className="font-display font-bold text-sm text-brand-ink">{task.title}</h3>
           <p className="text-xs text-brand-muted mt-1 line-clamp-2">{task.goal}</p>
@@ -144,10 +161,28 @@ function TaskCard({
 
       {expanded && (
         <div className="px-4 pb-4 border-t border-black/5 pt-4 space-y-3">
+          <button
+            onClick={onSelect}
+            className={`h-8 px-3 rounded-lg text-xs font-semibold transition-all ${
+              selected
+                ? "bg-accent-electric text-white"
+                : "bg-white/70 border border-black/10 text-accent-electric hover:bg-white"
+            }`}
+          >
+            {selected ? "已选择此任务" : "选择此任务进行文献支撑"}
+          </button>
+
           <div>
             <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">任务目标</h4>
             <p className="text-sm text-brand-muted leading-relaxed">{task.goal}</p>
           </div>
+
+          {task.why_this_task && (
+            <div>
+              <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">为什么做这个任务</h4>
+              <p className="text-sm text-brand-muted leading-relaxed">{task.why_this_task}</p>
+            </div>
+          )}
 
           {Array.isArray(task.steps) && task.steps.length > 0 && (
             <div>
@@ -180,8 +215,17 @@ function TaskCard({
 
           <div>
             <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">输出要求</h4>
-            <p className="text-sm text-brand-muted leading-relaxed">{task.output_requirement}</p>
+            <p className="text-sm text-brand-muted leading-relaxed">{task.expected_output || task.output_requirement}</p>
           </div>
+
+          {task.difficulty && (
+            <div>
+              <h4 className="text-[11px] font-bold text-brand-ink mb-1.5 uppercase tracking-wider">难度</h4>
+              <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+                {task.difficulty}
+              </span>
+            </div>
+          )}
 
           {Array.isArray(task.suggested_keywords) && task.suggested_keywords.length > 0 && (
             <div>
@@ -205,14 +249,130 @@ function TaskCard({
             </div>
           )}
 
-          <EvidenceLinkPanel
-            task={task}
-            caseTitle={caseTitle}
-            caseId={caseId}
-            researchQuestion={researchQuestion}
-          />
+          {selected ? (
+            <EvidenceLinkPanel
+              task={task}
+              caseTitle={caseTitle}
+              caseId={caseId}
+              researchQuestion={researchQuestion}
+            />
+          ) : (
+            <div className="rounded-lg bg-amber-50/50 border border-amber-100/60 p-3">
+              <p className="text-[11px] text-amber-800">选择此任务后，文献支撑区域会根据当前任务更新。</p>
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ResearchTutorPanel({
+  selectedTask,
+  caseId,
+  caseTitle,
+}: {
+  selectedTask: ResearchTaskItem | null;
+  caseId?: string;
+  caseTitle?: string;
+}) {
+  const [chatInput, setChatInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([
+    { role: "ai", content: "请先选择一个科研训练任务，我会围绕当前任务和证据回答。" },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
+
+  const handleSendChat = useCallback(async () => {
+    const question = chatInput.trim();
+    if (!question || !selectedTask || loading) return;
+    setMessages((prev) => [...prev, { role: "user", content: question }]);
+    setChatInput("");
+    setLoading(true);
+    try {
+      const data = await askResearchTutor({
+        case_id: caseId,
+        case_title: caseTitle,
+        selected_task: selectedTask,
+        selected_literature: [],
+        question,
+      });
+      const label = showDebugHints
+        ? data.source_mode === "ai_grounded" ? "AI 增强回答" : "本地训练框架"
+        : "";
+      setMessages((prev) => [...prev, {
+        role: "ai",
+        content: [
+          label,
+          data.answer,
+          data.evidence_used?.length ? `依据来源：${data.evidence_used.join("、")}` : "",
+          data.boundary ? `边界：${data.boundary}` : "",
+        ].filter(Boolean).join("\n\n"),
+      }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "ai", content: "当前暂无法获得增强回答，可先从研究目标、证据来源、方法设计和局限性四部分拆解。" }]);
+    } finally {
+      setLoading(false);
+    }
+  }, [caseId, caseTitle, chatInput, loading, selectedTask]);
+
+  return (
+    <div className="glass-card rounded-2xl p-5 flex flex-col sticky top-[calc(var(--nav-height)+1.5rem)]">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-amber to-accent-electric flex items-center justify-center">
+          <Sparkles className="w-4 h-4 text-white" />
+        </div>
+        <div>
+          <h3 className="font-display font-bold text-sm text-brand-ink">AI 科研导师</h3>
+          <p className="text-[10px] text-brand-muted">{selectedTask ? `围绕：${selectedTask.title}` : "请先选择一个科研训练任务"}</p>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-3 mb-3 pr-1 max-h-[320px]" style={{ scrollbarWidth: "thin" }}>
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${msg.role === "ai" ? "bg-gradient-to-br from-accent-amber to-accent-electric" : "bg-brand-ink"}`}>
+              {msg.role === "ai" ? <Bot className="w-3.5 h-3.5 text-white" /> : <User className="w-3.5 h-3.5 text-white" />}
+            </div>
+            <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "ai" ? "bg-white/60 border border-black/5 rounded-tl-md text-brand-ink" : "bg-brand-ink text-white rounded-tr-md"}`}>
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex gap-2 items-center text-xs text-brand-muted">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            正在基于当前任务和证据回答...
+          </div>
+        )}
+        <div ref={chatEndRef} />
+      </div>
+
+      {!selectedTask && (
+        <div className="rounded-xl bg-amber-50/50 border border-amber-100/60 px-3 py-2 mb-2">
+          <p className="text-[11px] text-amber-800">请先选择一个科研训练任务。</p>
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={chatInput}
+          onChange={(e) => setChatInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
+          placeholder={selectedTask ? "围绕当前任务提问..." : "请先选择一个科研训练任务"}
+          disabled={!selectedTask || loading}
+          className="flex-1 h-10 px-3.5 rounded-xl bg-white/40 border border-black/5 text-sm outline-none focus:border-accent-electric/20 transition-colors disabled:opacity-50"
+        />
+        <button
+          onClick={handleSendChat}
+          disabled={!selectedTask || !chatInput.trim() || loading}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-brand-ink text-white disabled:opacity-30 transition-opacity cursor-pointer"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -472,6 +632,7 @@ function DefaultResearchPage() {
   const [topicInput, setTopicInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ResearchTaskGenerateResponse | null>(null);
+  const [selectedTaskIndex, setSelectedTaskIndex] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
@@ -528,6 +689,7 @@ function DefaultResearchPage() {
         mode: "independent",
       });
       setResult(data);
+      setSelectedTaskIndex(0);
     } catch (error) {
       setGenerationError(error instanceof Error ? error.message : "科研任务生成失败");
     } finally {
@@ -545,6 +707,7 @@ function DefaultResearchPage() {
     topicInput,
     6,
   );
+  const selectedGeneratedTask = result?.tasks?.[selectedTaskIndex] || null;
 
   const sourceScopeLabel = (scope: string | undefined) => {
     if (!scope) return "基于当前研究主题生成";
@@ -731,7 +894,8 @@ function DefaultResearchPage() {
                       key={i}
                       task={task}
                       index={i}
-                      defaultExpanded={i === 0}
+                      selected={selectedTaskIndex === i}
+                      onSelect={() => setSelectedTaskIndex(i)}
                       researchQuestion={result.research_question}
                     />
                   ))}
@@ -903,76 +1067,7 @@ function DefaultResearchPage() {
 
           {/* AI 科研导师 */}
           <div className="lg:col-span-2">
-            <div className="glass-card rounded-2xl p-5 flex flex-col sticky top-[calc(var(--nav-height)+1.5rem)]">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-amber to-accent-electric flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-sm text-brand-ink">AI 科研导师</h3>
-                  <p className="text-[10px] text-brand-muted">实时指导与答疑</p>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto space-y-3 mb-3 pr-1 max-h-[320px]" style={{ scrollbarWidth: "thin" }}>
-                {messages.length === 1 && messages[0].role === "ai" ? (
-                  <div className="flex gap-3">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent-amber to-accent-electric flex items-center justify-center shrink-0">
-                      <Bot className="w-3.5 h-3.5 text-white" />
-                    </div>
-                    <div className="max-w-[85%] px-4 py-2.5 rounded-2xl bg-white/60 border border-black/5 rounded-tl-md text-sm text-brand-muted leading-relaxed">
-                      {messages[0].content}
-                    </div>
-                  </div>
-                ) : (
-                  messages.map((msg, i) => (
-                    <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                      <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                          msg.role === "ai"
-                            ? "bg-gradient-to-br from-accent-amber to-accent-electric"
-                            : "bg-brand-ink"
-                        }`}
-                      >
-                        {msg.role === "ai" ? (
-                          <Bot className="w-3.5 h-3.5 text-white" />
-                        ) : (
-                          <User className="w-3.5 h-3.5 text-white" />
-                        )}
-                      </div>
-                      <div
-                        className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
-                          msg.role === "ai"
-                            ? "bg-white/60 border border-black/5 rounded-tl-md text-brand-ink"
-                            : "bg-brand-ink text-white rounded-tr-md"
-                        }`}
-                      >
-                        {msg.content}
-                      </div>
-                    </div>
-                  ))
-                )}
-                <div ref={chatEndRef} />
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
-                  placeholder="向AI导师提问..."
-                  className="flex-1 h-10 px-3.5 rounded-xl bg-white/40 border border-black/5 text-sm outline-none focus:border-accent-electric/20 transition-colors"
-                />
-                <button
-                  onClick={handleSendChat}
-                  disabled={!chatInput.trim()}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-brand-ink text-white disabled:opacity-30 transition-opacity cursor-pointer"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            <ResearchTutorPanel selectedTask={selectedGeneratedTask} />
           </div>
         </div>
       </div>
@@ -983,6 +1078,7 @@ function DefaultResearchPage() {
 function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase; caseKey: string }) {
   const [result, setResult] = useState<ResearchTaskGenerateResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTaskIndex, setSelectedTaskIndex] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const caseDataRef = useRef(caseData);
   caseDataRef.current = caseData;
@@ -1003,7 +1099,10 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
           case_key: caseKey,
           mode: "case_driven",
         });
-        if (!cancelled) setResult(data);
+        if (!cancelled) {
+          setResult(data);
+          setSelectedTaskIndex(0);
+        }
       } catch (error) {
         if (!cancelled) {
           setGenerationError(error instanceof Error ? error.message : "科研任务生成失败");
@@ -1032,6 +1131,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
     if (scope.includes("模板") || scope.includes("template")) return "基于当前研究主题生成";
     return "基于当前研究主题生成";
   };
+  const selectedCaseTask = result?.tasks?.[selectedTaskIndex] || null;
 
   return (
     <div className="min-h-screen pt-[var(--nav-height)] px-6 md:px-10 pb-20">
@@ -1135,19 +1235,28 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
                 </div>
 
                 <div className="space-y-2.5 mb-4">
-                  {(result.tasks || []).map((task, i) => (
-                    <TaskCard
-                      key={i}
-                      task={task}
-                      index={i}
-                      defaultExpanded={i === 0}
-                      caseTitle={caseData.title}
-                      caseId={caseData.id}
-                      researchQuestion={result.research_question || caseData.coreProblem}
-                    />
+	                  {(result.tasks || []).map((task, i) => (
+	                    <TaskCard
+	                      key={i}
+	                      task={task}
+	                      index={i}
+	                      selected={selectedTaskIndex === i}
+	                      onSelect={() => setSelectedTaskIndex(i)}
+	                      caseTitle={caseData.title}
+	                      caseId={caseData.id}
+	                      researchQuestion={result.research_question || caseData.coreProblem}
+	                    />
                   ))}
                 </div>
-              </section>
+	              </section>
+
+	              <section>
+	                <ResearchTutorPanel
+	                  selectedTask={selectedCaseTask}
+	                  caseId={caseData.id}
+	                  caseTitle={caseData.title}
+	                />
+	              </section>
 
               <section className="glass-card rounded-2xl p-6 md:p-8">
                 <div className="flex items-center gap-2.5 mb-4">

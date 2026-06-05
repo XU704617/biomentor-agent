@@ -41,7 +41,7 @@ test("industry fallback contains complete and enriched case library", () => {
   const cases = extractIndustryCases();
 
   assert.ok(cases.length >= 23, `expected at least 23 cases, got ${cases.length}`);
-  assert.ok(cases.length >= 30 && cases.length <= 35, `expected enriched library around 30-35 cases, got ${cases.length}`);
+  assert.ok(cases.length >= 36 && cases.length <= 40, `expected enriched library around 36-40 cases, got ${cases.length}`);
 
   const categories = new Set(cases.map((item) => item.category).filter(Boolean));
   assert.ok(categories.size > 1, "category filter should have real categories beyond all-cases");
@@ -65,7 +65,10 @@ test("industry fallback keeps backend-first behavior and local fallback", () => 
 test("new enriched cases have traceable source notes", () => {
   const cases = extractIndustryCases();
   const notes = readFileSync(repoPath("docs/CASE_SOURCE_NOTES.md"), "utf8");
-  const newCaseIds = ["case-024", "case-025", "case-026", "case-027", "case-028", "case-029", "case-030"];
+  const newCaseIds = [
+    "case-024", "case-025", "case-026", "case-027", "case-028", "case-029", "case-030",
+    "case-031", "case-032", "case-033", "case-034", "case-035", "case-036",
+  ];
 
   for (const id of newCaseIds) {
     const item = cases.find((caseItem) => caseItem.id === id);
@@ -125,11 +128,17 @@ test("evidence note generation is guarded and visible in the task panel", () => 
   assert.match(evidenceApi, /selected_papers\.length === 0/);
   assert.match(evidenceApi, /请先选择参考文献/);
   assert.match(evidenceApi, /selected_count: selected\.length/);
-  assert.match(evidenceApi, /边界说明/);
-  assert.match(evidenceApi, /不是完整文献综述/);
+  assert.match(evidenceApi, /direct_answer/);
+  assert.match(evidenceApi, /literature_roles/);
+  assert.match(evidenceApi, /case_connection/);
+  assert.match(evidenceApi, /不替代完整论文阅读/);
 
   assert.match(panel, /disabled=\{selectedCount === 0/);
   assert.match(panel, /文献支撑笔记 · 基于 \{noteResult\.selected_count\} 篇参考文献/);
+  assert.match(panel, /直接回答/);
+  assert.match(panel, /证据怎么支持/);
+  assert.match(panel, /每篇文献的作用/);
+  assert.match(panel, /可用于答辩的一句话/);
   assert.match(panel, /本地精选/);
   assert.match(panel, /公开文献/);
   assert.match(panel, /复制笔记/);
@@ -148,6 +157,10 @@ test("research page avoids blank literature navigation and task-card wording", (
   assert.match(researchPage, /本地精选文献/);
   assert.match(researchPage, /训练任务/);
   assert.match(researchPage, /NEXT_PUBLIC_SHOW_DEBUG_BADGES/);
+  assert.match(researchPage, /当前选中/);
+  assert.match(researchPage, /选择此任务进行文献支撑/);
+  assert.match(researchPage, /请先选择一个科研训练任务/);
+  assert.match(researchPage, /askResearchTutor/);
 });
 
 test("research task generation falls back to a compatible four-task structure", () => {
@@ -158,6 +171,8 @@ test("research task generation falls back to a compatible four-task structure", 
   assert.match(researchApi, /catch \{/);
   assert.match(researchApi, /研究引导 \/ 产业转化分析/);
   assert.match(researchApi, /测试提示：当前为本地训练框架生成/);
+  assert.match(researchApi, /source_mode/);
+  assert.match(researchApi, /evidence_items/);
   assert.match(researchRoute, /generateLocalResearchTask\(topic, caseKey, mode\)/);
 });
 
@@ -177,4 +192,17 @@ test("research-to-seminar and case-detail learning loop is wired", () => {
   assert.match(caseDetail, /coreQuestion/);
   assert.match(caseCard, /coreQuestion/);
   assert.match(caseCard, /keywords/);
+  assert.match(caseCard, /filter\(\(item\) => typeof item === "string" && item\.trim\(\)\.length > 0\)/);
+  assert.match(caseCard, /\{migrationSummary && \(/);
+});
+
+test("grounded GLM provider and tutor routes are wired without exposing keys", () => {
+  const route = readFrontend("app/api/research/tutor/route.ts");
+  const researchApi = readFrontend("lib/researchApi.ts");
+
+  assert.match(route, /\/api\/research\/tutor/);
+  assert.doesNotMatch(route, /GLM_API_KEY|NEXT_PUBLIC_GLM/);
+  assert.match(researchApi, /askResearchTutor/);
+  assert.match(researchApi, /local_fallback/);
+  assert.match(researchApi, /ai_grounded/);
 });

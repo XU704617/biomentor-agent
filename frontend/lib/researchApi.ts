@@ -12,6 +12,11 @@ export interface ResearchTaskItem {
   output_requirement: string;
   suggested_keywords: string[];
   example_outline: string;
+  why_this_task?: string;
+  expected_output?: string;
+  keywords?: string[];
+  evidence_ids?: string[];
+  difficulty?: string;
 }
 
 export interface MatchedCase {
@@ -34,6 +39,11 @@ export interface ResearchTaskGenerateResponse {
   seminar_topic: string;
   source_scope: string;
   disclaimer: string;
+  source_mode?: "ai_grounded" | "local_fallback" | string;
+  evidence_mode?: string;
+  debug_hint?: string;
+  evidence_items?: Array<Record<string, unknown>>;
+  limitations?: string;
 }
 
 export interface ResearchTaskGenerateRequest {
@@ -124,6 +134,11 @@ export function generateLocalResearchTask(
         output_requirement: "提交3000字以上文献综述，包含至少15篇参考文献，明确标注知识空白和研究方向",
         suggested_keywords: ["文献调研", "综述撰写", "检索策略", "研究现状", "知识空白"],
         example_outline: "1. 引言与研究背景\n2. 核心概念与理论基础\n3. 研究现状与进展\n4. 关键技术方法比较\n5. 知识空白与研究展望\n6. 参考文献",
+        why_this_task: "先建立证据边界，避免直接进入实验设计时缺少文献依据。",
+        expected_output: "一份文献证据表和一段 300 字研究现状摘要。",
+        keywords: ["文献调研", "综述撰写", "检索策略", "研究现状", "知识空白"],
+        evidence_ids: [],
+        difficulty: "中等",
       },
       {
         type: "experiment_design",
@@ -154,6 +169,11 @@ export function generateLocalResearchTask(
         output_requirement: "提交完整实验方案文档，包含假设、分组设计、方法描述、预期结果、潜在风险与应对策略",
         suggested_keywords: ["实验设计", "对照设置", "预实验", "方法优化", "Protocol"],
         example_outline: "1. 研究假设\n2. 实验分组设计\n3. 材料与设备\n4. 详细操作步骤\n5. 检测指标与分析方法\n6. 预期结果\n7. 风险与应对",
+        why_this_task: "把文献中提出的机制或现象转化为可验证问题。",
+        expected_output: "一份包含对照、指标和风险边界的高层实验设计框架。",
+        keywords: ["实验设计", "对照设置", "预实验", "方法优化", "Protocol"],
+        evidence_ids: [],
+        difficulty: "中等",
       },
       {
         type: "mechanism_explanation",
@@ -179,6 +199,11 @@ export function generateLocalResearchTask(
         output_requirement: "提交机制分析报告，包含分子通路图、关键节点说明、未解决问题列表",
         suggested_keywords: ["机制分析", "信号通路", "分子互作", "模型构建", "假说验证"],
         example_outline: "1. 分子机制概述\n2. 关键信号通路分析\n3. 调控网络与互作关系\n4. 机制模型图\n5. 未解决问题与假说",
+        why_this_task: "帮助学生把案例中的产品或技术还原到分子机制层面。",
+        expected_output: "一张机制图和一份关键节点说明。",
+        keywords: ["机制分析", "信号通路", "分子互作", "模型构建", "假说验证"],
+        evidence_ids: [],
+        difficulty: "中等",
       },
       {
         type: "evidence_judgement",
@@ -204,6 +229,11 @@ export function generateLocalResearchTask(
         output_requirement: "提交研究引导报告，包含证据分级表、数据分析方案、转化路径和风险边界",
         suggested_keywords: ["证据等级", "统计分析", "转化路径", "应用边界", "批判性思维"],
         example_outline: "1. 证据检索策略\n2. 证据等级分级表\n3. 关键数据指标\n4. 转化路径分析\n5. 应用边界与风险\n6. 下一步研究建议",
+        why_this_task: "训练从科研证据走向产业判断时识别适用范围和不确定性。",
+        expected_output: "一份证据边界与转化风险分析表。",
+        keywords: ["证据等级", "统计分析", "转化路径", "应用边界", "批判性思维"],
+        evidence_ids: [],
+        difficulty: "中等",
       },
     ],
     expected_outputs: ["文献综述报告", "实验设计方案", "机制分析报告", "研究引导报告"],
@@ -213,6 +243,11 @@ export function generateLocalResearchTask(
     source_scope: "测试提示：当前为本地训练框架生成",
     disclaimer:
       "本训练框架仅供学习参考，具体研究设计请结合实际条件、原始文献和导师指导。",
+    source_mode: "local_fallback",
+    evidence_mode: "local_only",
+    debug_hint: "测试提示：当前为本地训练框架生成",
+    evidence_items: [],
+    limitations: "生成内容用于科研训练，不等同于完整实验方案。",
   };
 }
 
@@ -229,4 +264,37 @@ export async function generateResearchTask(params: ResearchTaskGenerateRequest):
     return generateLocalResearchTask(params.topic, params.case_key, params.mode);
   }
   return generateLocalResearchTask(params.topic, params.case_key, params.mode);
+}
+
+export interface ResearchTutorResponse {
+  source_mode: "ai_grounded" | "local_fallback" | string;
+  answer: string;
+  evidence_used: string[];
+  suggested_next_questions: string[];
+  boundary: string;
+}
+
+export async function askResearchTutor(input: {
+  case_id?: string;
+  case_title?: string;
+  selected_task?: ResearchTaskItem | null;
+  selected_literature?: Array<Record<string, unknown>>;
+  question: string;
+}): Promise<ResearchTutorResponse> {
+  try {
+    const data = await apiFetch<ResearchTutorResponse>("/api/research/tutor", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    if (data?.answer) return data;
+  } catch {
+    // handled below
+  }
+  return {
+    source_mode: "local_fallback",
+    answer: `可以先围绕「${input.selected_task?.title || "当前任务"}」把问题拆成研究目标、证据来源、方法设计和局限性四部分。针对你的问题「${input.question}」，建议先确认已选文献是否直接支持该判断。`,
+    evidence_used: [],
+    suggested_next_questions: ["哪些证据能直接支持这个判断？", "实验对照应该如何设置？", "当前资料还有哪些不能证明？"],
+    boundary: "该回答用于科研训练，不替代真实实验设计审批。",
+  };
 }

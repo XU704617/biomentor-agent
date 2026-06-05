@@ -36,7 +36,7 @@ export function IndustryCaseCard({ caseData, onViewDetail, isRecommended }: Indu
     c.migrationPath.textbookBase[0],
     c.migrationPath.researchFrontier[0],
     c.migrationPath.industryApplication[0],
-  ].join(" → ");
+  ].filter((item) => typeof item === "string" && item.trim().length > 0).join(" → ");
 
   return (
     <div className="glass-card rounded-2xl p-5 flex flex-col group h-full relative">
@@ -83,10 +83,12 @@ export function IndustryCaseCard({ caseData, onViewDetail, isRecommended }: Indu
         ))}
       </div>
 
-      <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50/50 mb-3">
-        <span className="text-[9px] text-brand-faint font-body uppercase tracking-wider shrink-0">知识迁移</span>
-        <span className="text-[10px] font-medium text-brand-ink leading-snug truncate">{migrationSummary}</span>
-      </div>
+      {migrationSummary && (
+        <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50/50 mb-3">
+          <span className="text-[9px] text-brand-faint font-body uppercase tracking-wider shrink-0">知识迁移</span>
+          <span className="text-[10px] font-medium text-brand-ink leading-snug truncate">{migrationSummary}</span>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 pt-3 border-t border-black/5">
         <button

@@ -75,7 +75,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-001",
     "title": "细胞凋亡与抗肿瘤药物研发",
     "subtitle": "从线粒体凋亡通路到 BCL-2 靶向药物",
-    "category": "生物医药与药物研发",
+    "category": "核酸药物与靶向药物研发",
     "realProductOrTechnology": "Venetoclax / VENCLEXTA，BCL-2 小分子抑制剂",
     "relatedKnowledgePoints": [
       "细胞凋亡",
@@ -129,7 +129,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "Venetoclax / VENCLEXTA，BCL-2 小分子抑制剂",
         "药物研发 / 靶向治疗 / 肿瘤精准治疗",
-        "生物医药与药物研发"
+        "核酸药物与靶向药物研发"
       ]
     },
     "references": [
@@ -153,7 +153,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-002",
     "title": "CAR-T 细胞治疗与肿瘤免疫",
     "subtitle": "从 T 细胞活化到工程化细胞治疗",
-    "category": "生物医药与药物研发",
+    "category": "细胞与基因治疗",
     "realProductOrTechnology": "Tisagenlecleucel / KYMRIAH，CD19 CAR-T 细胞治疗",
     "relatedKnowledgePoints": [
       "T 细胞活化",
@@ -204,7 +204,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "Tisagenlecleucel / KYMRIAH，CD19 CAR-T 细胞治疗",
         "细胞治疗 / 肿瘤免疫治疗 / 个体化治疗",
-        "生物医药与药物研发"
+        "细胞与基因治疗"
       ]
     },
     "references": [
@@ -228,7 +228,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-003",
     "title": "PD-1/PD-L1 免疫检查点抑制剂",
     "subtitle": "从免疫逃逸机制到抗体药物开发",
-    "category": "生物医药与药物研发",
+    "category": "抗体药物与肿瘤免疫治疗",
     "realProductOrTechnology": "Pembrolizumab / KEYTRUDA，PD-1 阻断抗体",
     "relatedKnowledgePoints": [
       "细胞通讯",
@@ -278,7 +278,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "Pembrolizumab / KEYTRUDA，PD-1 阻断抗体",
         "免疫治疗 / 抗体药物 / 肿瘤精准治疗",
-        "生物医药与药物研发"
+        "抗体药物与肿瘤免疫治疗"
       ]
     },
     "references": [
@@ -302,7 +302,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-004",
     "title": "mRNA 疫苗递送技术",
     "subtitle": "从脂质纳米颗粒到抗原表达",
-    "category": "生物医药与药物研发",
+    "category": "核酸药物与靶向药物研发",
     "realProductOrTechnology": "BNT162b2 / COMIRNATY，mRNA-LNP 疫苗",
     "relatedKnowledgePoints": [
       "细胞膜结构",
@@ -354,7 +354,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "BNT162b2 / COMIRNATY，mRNA-LNP 疫苗",
         "疫苗研发 / 核酸药物 / 药物递送",
-        "生物医药与药物研发"
+        "核酸药物与靶向药物研发"
       ]
     },
     "references": [
@@ -378,7 +378,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-005",
     "title": "CRISPR 基因编辑治疗",
     "subtitle": "从 DNA 修复机制到遗传病细胞治疗",
-    "category": "生物医药与药物研发",
+    "category": "细胞与基因治疗",
     "realProductOrTechnology": "Exagamglogene autotemcel / CASGEVY，CRISPR/Cas9 基因编辑细胞治疗",
     "relatedKnowledgePoints": [
       "DNA 双链断裂",
@@ -431,7 +431,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "Exagamglogene autotemcel / CASGEVY，CRISPR/Cas9 基因编辑细胞治疗",
         "基因治疗 / 细胞治疗 / 遗传病治疗",
-        "生物医药与药物研发"
+        "细胞与基因治疗"
       ]
     },
     "references": [
@@ -461,7 +461,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-006",
     "title": "ZOLGENSMA 脊髓性肌萎缩症基因治疗",
     "subtitle": "从 SMN1 缺陷到 AAV9 递送基因补充",
-    "category": "生物医药与药物研发",
+    "category": "细胞与基因治疗",
     "realProductOrTechnology": "Onasemnogene abeparvovec-xioi / ZOLGENSMA，AAV9 基因治疗",
     "relatedKnowledgePoints": [
       "SMN1 基因",
@@ -509,7 +509,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "Onasemnogene abeparvovec-xioi / ZOLGENSMA，AAV9 基因治疗",
         "细胞与基因治疗",
-        "生物医药与药物研发"
+        "细胞与基因治疗"
       ]
     },
     "references": [
@@ -527,7 +527,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-007",
     "title": "HERCEPTIN 抗 HER2 单克隆抗体靶向治疗",
     "subtitle": "从 HER2 受体扩增到抗体药物治疗",
-    "category": "生物医药与药物研发",
+    "category": "抗体药物与肿瘤免疫治疗",
     "realProductOrTechnology": "Trastuzumab / HERCEPTIN，HER2 靶向单克隆抗体",
     "relatedKnowledgePoints": [
       "HER2/ERBB2",
@@ -576,7 +576,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "Trastuzumab / HERCEPTIN，HER2 靶向单克隆抗体",
         "抗体药物与靶向治疗",
-        "生物医药与药物研发"
+        "抗体药物与肿瘤免疫治疗"
       ]
     },
     "references": [
@@ -727,7 +727,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-010",
     "title": "MON 87705 / Vistive Gold 高油酸大豆",
     "subtitle": "从脂肪酸代谢调控到作物品质改良",
-    "category": "农业生物技术",
+    "category": "农业与动物水产生物技术",
     "realProductOrTechnology": "MON 87705 soybean / Vistive Gold，高油酸大豆",
     "relatedKnowledgePoints": [
       "脂肪酸代谢",
@@ -775,7 +775,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "MON 87705 soybean / Vistive Gold，高油酸大豆",
         "转基因与分子育种作物品质改良",
-        "农业生物技术"
+        "农业与动物水产生物技术"
       ]
     },
     "references": [
@@ -793,7 +793,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-011",
     "title": "Bt 生物农药与 Bt 抗虫作物",
     "subtitle": "从微生物毒蛋白到害虫精准防控",
-    "category": "农业生物技术",
+    "category": "农业与动物水产生物技术",
     "realProductOrTechnology": "Bacillus thuringiensis / Bt 生物农药与 Bt 作物",
     "relatedKnowledgePoints": [
       "苏云金芽孢杆菌",
@@ -841,7 +841,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "Bacillus thuringiensis / Bt 生物农药与 Bt 作物",
         "生物农药与微生物菌肥",
-        "农业生物技术"
+        "农业与动物水产生物技术"
       ]
     },
     "references": [
@@ -859,7 +859,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-012",
     "title": "IDEXX SNAP 4Dx Plus 犬用即时诊断检测",
     "subtitle": "从免疫检测到动物健康快速筛查",
-    "category": "动物与水产生物技术",
+    "category": "分子诊断与检测平台",
     "realProductOrTechnology": "IDEXX SNAP 4Dx Plus Test，犬用即时免疫诊断检测",
     "relatedKnowledgePoints": [
       "抗原抗体反应",
@@ -908,7 +908,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "IDEXX SNAP 4Dx Plus Test，犬用即时免疫诊断检测",
         "动物疫苗与兽医诊断",
-        "动物与水产生物技术"
+        "分子诊断与检测平台"
       ]
     },
     "references": [
@@ -926,7 +926,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-013",
     "title": "AquAdvantage Salmon 转基因大西洋鲑",
     "subtitle": "从生长激素调控到水产生物育种",
-    "category": "动物与水产生物技术",
+    "category": "农业与动物水产生物技术",
     "realProductOrTechnology": "AquAdvantage Salmon，含 opAFP-GHc2 rDNA 构建的转基因大西洋鲑",
     "relatedKnowledgePoints": [
       "转基因动物",
@@ -975,7 +975,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "AquAdvantage Salmon，含 opAFP-GHc2 rDNA 构建的转基因大西洋鲑",
         "水产养殖生物技术",
-        "动物与水产生物技术"
+        "农业与动物水产生物技术"
       ]
     },
     "references": [
@@ -1257,7 +1257,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-018",
     "title": "CARBIOS PET depolymerase 塑料降解酶产业化",
     "subtitle": "从蛋白质工程到 PET 生物回收",
-    "category": "蛋白质工程与酶工程",
+    "category": "蛋白质工程与智能研发平台",
     "realProductOrTechnology": "CARBIOS PET depolymerase / engineered LCC enzyme，PET 酶法解聚技术",
     "relatedKnowledgePoints": [
       "PETase",
@@ -1305,7 +1305,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "CARBIOS PET depolymerase / engineered LCC enzyme，PET 酶法解聚技术",
         "工业酶制剂开发",
-        "蛋白质工程与酶工程"
+        "蛋白质工程与智能研发平台"
       ]
     },
     "references": [
@@ -1323,7 +1323,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-019",
     "title": "HUMULIN R 重组人胰岛素",
     "subtitle": "从重组 DNA 到蛋白药物产业化",
-    "category": "蛋白质工程与酶工程",
+    "category": "蛋白质工程与智能研发平台",
     "realProductOrTechnology": "HUMULIN R，重组人胰岛素注射液",
     "relatedKnowledgePoints": [
       "重组 DNA",
@@ -1371,7 +1371,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "HUMULIN R，重组人胰岛素注射液",
         "重组蛋白与蛋白质改造",
-        "蛋白质工程与酶工程"
+        "蛋白质工程与智能研发平台"
       ]
     },
     "references": [
@@ -1521,7 +1521,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-022",
     "title": "AlphaFold Protein Structure Database",
     "subtitle": "从 AI 结构预测到蛋白功能研究平台",
-    "category": "生物信息与智能研发平台",
+    "category": "蛋白质工程与智能研发平台",
     "realProductOrTechnology": "AlphaFold Protein Structure Database，AI 蛋白结构预测数据库",
     "relatedKnowledgePoints": [
       "蛋白质折叠",
@@ -1570,7 +1570,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "AlphaFold Protein Structure Database，AI 蛋白结构预测数据库",
         "AI 药物发现与蛋白结构预测",
-        "生物信息与智能研发平台"
+        "蛋白质工程与智能研发平台"
       ]
     },
     "references": [
@@ -1588,7 +1588,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-023",
     "title": "10x Genomics Chromium 单细胞转录组平台",
     "subtitle": "从微流控条形码到单细胞多组学分析",
-    "category": "生物信息与智能研发平台",
+    "category": "蛋白质工程与智能研发平台",
     "realProductOrTechnology": "10x Genomics Chromium Single Cell Gene Expression，单细胞转录组平台",
     "relatedKnowledgePoints": [
       "单细胞 RNA-seq",
@@ -1638,7 +1638,7 @@ export const industryCases: IndustryCase[] = [
       "industryApplication": [
         "10x Genomics Chromium Single Cell Gene Expression，单细胞转录组平台",
         "多组学数据分析与智能实验平台",
-        "生物信息与智能研发平台"
+        "蛋白质工程与智能研发平台"
       ]
     },
     "references": [
@@ -1656,7 +1656,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-024",
     "title": "ENHERTU HER2 抗体偶联药物",
     "subtitle": "从靶向抗体到细胞毒载荷递送",
-    "category": "生物医药与药物研发",
+    "category": "抗体药物与肿瘤免疫治疗",
     "realProductOrTechnology": "Fam-trastuzumab deruxtecan-nxki / ENHERTU，HER2-directed antibody-drug conjugate",
     "relatedKnowledgePoints": [
       "抗体偶联药物",
@@ -1734,7 +1734,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-025",
     "title": "ONPATTRO siRNA 脂质递送药物",
     "subtitle": "从 RNA 干扰到肝脏靶向基因沉默",
-    "category": "生物医药与药物研发",
+    "category": "核酸药物与靶向药物研发",
     "realProductOrTechnology": "Patisiran / ONPATTRO，siRNA lipid complex",
     "relatedKnowledgePoints": [
       "RNA 干扰",
@@ -1892,7 +1892,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-027",
     "title": "BLINCYTO 双特异性 T 细胞连接器",
     "subtitle": "从 CD19/CD3 双靶结合到免疫细胞重定向",
-    "category": "生物医药与药物研发",
+    "category": "抗体药物与肿瘤免疫治疗",
     "realProductOrTechnology": "Blinatumomab / BLINCYTO，CD19-directed CD3 T-cell engager",
     "relatedKnowledgePoints": [
       "双特异性抗体",
@@ -1965,7 +1965,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-028",
     "title": "LANTIDRA 胰岛细胞治疗",
     "subtitle": "从胰岛细胞移植到 1 型糖尿病再生医学",
-    "category": "生物医药与药物研发",
+    "category": "细胞与基因治疗",
     "realProductOrTechnology": "Donislecel-jujn / LANTIDRA，allogeneic pancreatic islet cellular therapy",
     "relatedKnowledgePoints": [
       "胰岛细胞",
@@ -2121,7 +2121,7 @@ export const industryCases: IndustryCase[] = [
     "id": "case-030",
     "title": "REBYOTA 微生物群活体治疗产品",
     "subtitle": "从肠道菌群恢复到复发性 CDI 预防",
-    "category": "生物医药与药物研发",
+    "category": "工业生物制造与合成生物学",
     "realProductOrTechnology": "Fecal microbiota, live-jslm / REBYOTA",
     "relatedKnowledgePoints": [
       "肠道菌群",
@@ -2187,6 +2187,382 @@ export const industryCases: IndustryCase[] = [
     "sourceUrls": [
       "https://www.fda.gov/vaccines-blood-biologics/vaccines/rebyota",
       "https://www.fda.gov/vaccines-blood-biologics/fecal-microbiota-products"
+    ]
+  },
+  {
+    "id": "case-031",
+    "title": "Bt 作物与昆虫抗性管理",
+    "subtitle": "从 Bacillus thuringiensis 蛋白到农业生物技术",
+    "category": "农业与动物水产生物技术",
+    "realProductOrTechnology": "Bt corn / Bt cotton plant-incorporated protectants",
+    "relatedKnowledgePoints": [
+      "Bt 蛋白",
+      "昆虫肠道受体",
+      "抗性管理",
+      "庇护所策略",
+      "农业生态风险"
+    ],
+    "industryDirection": "转基因作物 / 生物防治 / 抗性治理",
+    "coreProblem": "如何在利用 Bt 蛋白降低虫害压力的同时，延缓靶标害虫抗性并管理生态风险？",
+    "researchFoundation": "Bt 蛋白来源于 Bacillus thuringiensis，特定 Cry 蛋白在昆虫肠道中与受体结合并影响肠道上皮完整性。产业化应用需要把分子机制、田间防效、抗性演化和生态风险放在同一证据框架下讨论。",
+    "applicationValue": "补足农业生物技术方向，展示基础微生物毒素机制如何转化为作物抗虫性状。",
+    "requiredAbilities": [
+      "农业场景证据判断能力",
+      "抗性演化分析能力",
+      "生态风险讨论能力"
+    ],
+    "recommendedKeywords": [
+      "Bt crop",
+      "Bacillus thuringiensis",
+      "plant-incorporated protectant",
+      "resistance management"
+    ],
+    "linkedResearchTask": "Bt 作物抗性管理证据分析",
+    "evidenceLevel": "高",
+    "sourceType": "监管文件",
+    "background": "美国 EPA 将 Bt 作物中的植物内置保护剂作为农业生物技术监管对象之一，可用于教学讨论转基因性状、靶标害虫控制和抗性管理边界。",
+    "applicationScenario": "用于农业生物技术、转基因作物、抗性管理和生态风险教学。",
+    "displayFocus": "Bt 蛋白表达—昆虫摄食—受体作用—田间防控—抗性管理流程。",
+    "migrationPath": {
+      "textbookBase": [
+        "微生物毒素",
+        "昆虫生理",
+        "遗传工程"
+      ],
+      "researchFrontier": [
+        "抗性演化监测",
+        "庇护所策略",
+        "生态风险评估"
+      ],
+      "industryApplication": [
+        "Bt 玉米",
+        "Bt 棉花",
+        "作物抗虫性状管理"
+      ]
+    },
+    "references": [
+      {
+        "title": "EPA: Plant-Incorporated Protectants",
+        "url": "https://www.epa.gov/regulation-biotechnology-under-tsca-and-fifra/plant-incorporated-protectants",
+        "type": "Other"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.epa.gov/regulation-biotechnology-under-tsca-and-fifra/plant-incorporated-protectants"
+    ]
+  },
+  {
+    "id": "case-032",
+    "title": "AquAdvantage Salmon 水产生物技术",
+    "subtitle": "从生长调控基因到转基因动物食品监管",
+    "category": "农业与动物水产生物技术",
+    "realProductOrTechnology": "AquAdvantage Salmon",
+    "relatedKnowledgePoints": [
+      "生长激素调控",
+      "转基因动物",
+      "水产养殖",
+      "食品安全评价",
+      "生态隔离"
+    ],
+    "industryDirection": "转基因动物 / 水产养殖 / 食品监管",
+    "coreProblem": "如何评价转基因水产动物的生产优势、食品安全性和生态管理边界？",
+    "researchFoundation": "该案例把生长调控、转基因构建、养殖系统和监管审评连接起来。教学中应避免夸大生产表现，只基于公开监管资料讨论评价维度。",
+    "applicationValue": "补足动物与水产生物技术方向，展示动物生物技术不同于医药产品的证据结构。",
+    "requiredAbilities": [
+      "监管资料阅读能力",
+      "生态风险判断能力",
+      "动物生物技术机制解释能力"
+    ],
+    "recommendedKeywords": [
+      "AquAdvantage Salmon",
+      "genetically engineered animal",
+      "aquaculture biotechnology",
+      "FDA"
+    ],
+    "linkedResearchTask": "转基因水产动物监管证据边界分析",
+    "evidenceLevel": "高",
+    "sourceType": "监管文件",
+    "background": "FDA AquAdvantage Salmon 页面记录了该转基因三文鱼的监管背景，适合讨论动物生物技术产品如何进入食品监管和环境风险讨论。",
+    "applicationScenario": "用于动物生物技术、水产育种、食品安全评价和生态风险管理教学。",
+    "displayFocus": "基因构建—生长调控—养殖系统—食品评价—生态边界流程。",
+    "migrationPath": {
+      "textbookBase": [
+        "基因表达调控",
+        "动物生长生理",
+        "遗传工程"
+      ],
+      "researchFrontier": [
+        "转基因动物审评",
+        "封闭养殖系统",
+        "生态风险建模"
+      ],
+      "industryApplication": [
+        "AquAdvantage Salmon",
+        "水产养殖效率",
+        "动物食品生物技术"
+      ]
+    },
+    "references": [
+      {
+        "title": "FDA: AquAdvantage Salmon",
+        "url": "https://www.fda.gov/animal-veterinary/animals-intentional-genomic-alterations/aquadvantage-salmon",
+        "type": "FDA"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.fda.gov/animal-veterinary/animals-intentional-genomic-alterations/aquadvantage-salmon"
+    ]
+  },
+  {
+    "id": "case-033",
+    "title": "工业酶在洗涤剂中的应用",
+    "subtitle": "从酶工程到低温洗涤和绿色制造",
+    "category": "工业生物制造与合成生物学",
+    "realProductOrTechnology": "Detergent enzymes",
+    "relatedKnowledgePoints": [
+      "蛋白酶",
+      "淀粉酶",
+      "脂肪酶",
+      "酶稳定性",
+      "配方兼容性"
+    ],
+    "industryDirection": "工业酶 / 洗涤剂 / 绿色制造",
+    "coreProblem": "如何通过酶工程和配方优化，让工业酶在洗涤剂复杂环境中保持活性和稳定性？",
+    "researchFoundation": "工业酶需要在表面活性剂、氧化剂、不同 pH 和温度条件下保持功能。蛋白质工程可围绕热稳定性、底物识别、抗氧化和配方兼容性进行优化。",
+    "applicationValue": "补足非医药蛋白工程案例，展示酶工程在日化产业中的真实应用。",
+    "requiredAbilities": [
+      "酶结构功能分析能力",
+      "工业条件约束建模能力",
+      "绿色制造评价能力"
+    ],
+    "recommendedKeywords": [
+      "detergent enzymes",
+      "protease",
+      "amylase",
+      "enzyme stability",
+      "protein engineering"
+    ],
+    "linkedResearchTask": "洗涤剂酶稳定性优化方案设计",
+    "evidenceLevel": "中",
+    "sourceType": "产业报告",
+    "background": "Novonesis 等工业酶企业公开介绍洗涤剂酶在低温洗涤和去污中的应用，可用于讨论酶工程与消费品产业连接。",
+    "applicationScenario": "用于工业酶工程、绿色制造、消费品配方和蛋白质稳定性教学。",
+    "displayFocus": "底物污渍—酶催化—配方环境—稳定性优化—低温洗涤流程。",
+    "migrationPath": {
+      "textbookBase": [
+        "酶催化",
+        "蛋白质结构",
+        "环境因素影响酶活"
+      ],
+      "researchFrontier": [
+        "定向进化",
+        "酶稳定性设计",
+        "配方兼容性筛选"
+      ],
+      "industryApplication": [
+        "洗涤剂酶",
+        "低温洗涤",
+        "绿色日化产品"
+      ]
+    },
+    "references": [
+      {
+        "title": "Novonesis: Detergents solutions",
+        "url": "https://www.novonesis.com/en/solutions/household-care/detergents",
+        "type": "Other"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.novonesis.com/en/solutions/household-care/detergents"
+    ]
+  },
+  {
+    "id": "case-034",
+    "title": "废水监测与公共卫生预警",
+    "subtitle": "从环境样本到群体感染趋势判断",
+    "category": "环境与海洋生物技术",
+    "realProductOrTechnology": "Wastewater-based disease surveillance",
+    "relatedKnowledgePoints": [
+      "qPCR",
+      "环境样本",
+      "病毒 RNA",
+      "群体监测",
+      "公共卫生预警"
+    ],
+    "industryDirection": "废水流行病学 / 分子检测 / 公共卫生监测",
+    "coreProblem": "如何从复杂废水样本中的核酸信号推断社区层面的病原体传播趋势？",
+    "researchFoundation": "废水样本包含来自社区的混合生物信号，需要采样、浓缩、核酸提取、定量检测和趋势解释。教学中应强调它反映群体趋势，不等同于个体诊断。",
+    "applicationValue": "补足环境生物技术案例，展示分子检测从临床走向社区尺度监测。",
+    "requiredAbilities": [
+      "环境样本分析能力",
+      "检测数据解释能力",
+      "公共卫生证据边界判断能力"
+    ],
+    "recommendedKeywords": [
+      "wastewater surveillance",
+      "qPCR",
+      "SARS-CoV-2",
+      "public health",
+      "environmental monitoring"
+    ],
+    "linkedResearchTask": "废水监测数据证据边界分析",
+    "evidenceLevel": "高",
+    "sourceType": "监管文件",
+    "background": "CDC National Wastewater Surveillance System 公开介绍废水监测在公共卫生中的用途，适合讨论环境生物技术和分子检测的真实场景。",
+    "applicationScenario": "用于环境生物监测、感染趋势预警、分子检测和公共卫生数据解释教学。",
+    "displayFocus": "采样—浓缩—核酸检测—趋势分析—公共卫生响应流程。",
+    "migrationPath": {
+      "textbookBase": [
+        "核酸检测",
+        "环境微生物",
+        "流行病学"
+      ],
+      "researchFrontier": [
+        "废水流行病学",
+        "病原体趋势监测",
+        "多靶标检测"
+      ],
+      "industryApplication": [
+        "城市废水监测",
+        "公共卫生预警",
+        "环境检测服务"
+      ]
+    },
+    "references": [
+      {
+        "title": "CDC: National Wastewater Surveillance System",
+        "url": "https://www.cdc.gov/nwss/",
+        "type": "Other"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.cdc.gov/nwss/"
+    ]
+  },
+  {
+    "id": "case-035",
+    "title": "AlphaFold DB 蛋白结构智能研发平台",
+    "subtitle": "从蛋白质结构预测到研发工具平台",
+    "category": "蛋白质工程与智能研发平台",
+    "realProductOrTechnology": "AlphaFold Protein Structure Database",
+    "relatedKnowledgePoints": [
+      "蛋白质结构",
+      "深度学习",
+      "结构数据库",
+      "置信度",
+      "功能假设"
+    ],
+    "industryDirection": "AI 蛋白结构预测 / 数据库 / 智能研发",
+    "coreProblem": "如何把 AI 预测蛋白结构用于科研假设生成，同时识别预测结果的适用边界？",
+    "researchFoundation": "结构预测可以帮助提出结构功能假设、定位保守区域和辅助实验设计，但预测结构不等同于实验测定结构，仍需要结合置信度、复合物状态和功能实验解释。",
+    "applicationValue": "补足智能研发平台方向，展示 AI 与结构生物学结合的研发入口。",
+    "requiredAbilities": [
+      "结构数据解读能力",
+      "AI 工具边界判断能力",
+      "科研假设生成能力"
+    ],
+    "recommendedKeywords": [
+      "AlphaFold",
+      "protein structure prediction",
+      "EMBL-EBI",
+      "pLDDT",
+      "bioinformatics"
+    ],
+    "linkedResearchTask": "AlphaFold 结构预测结果边界分析",
+    "evidenceLevel": "高",
+    "sourceType": "产业报告",
+    "background": "AlphaFold Protein Structure Database 由 EMBL-EBI 等公开维护，提供大量蛋白结构预测结果，适合讨论 AI 工具如何辅助生物研发。",
+    "applicationScenario": "用于生物信息学、蛋白质工程、药物研发前期分析和科研工具平台教学。",
+    "displayFocus": "序列输入—结构预测—置信度阅读—功能假设—实验验证流程。",
+    "migrationPath": {
+      "textbookBase": [
+        "蛋白质一级结构",
+        "三维结构",
+        "结构功能关系"
+      ],
+      "researchFrontier": [
+        "深度学习结构预测",
+        "结构数据库",
+        "蛋白设计辅助"
+      ],
+      "industryApplication": [
+        "AlphaFold DB",
+        "药物研发前期分析",
+        "蛋白工程靶点筛选"
+      ]
+    },
+    "references": [
+      {
+        "title": "AlphaFold Protein Structure Database",
+        "url": "https://alphafold.ebi.ac.uk/",
+        "type": "Other"
+      }
+    ],
+    "sourceUrls": [
+      "https://alphafold.ebi.ac.uk/"
+    ]
+  },
+  {
+    "id": "case-036",
+    "title": "UPSIDE Foods 培养细胞食品",
+    "subtitle": "从动物细胞培养到新型食品安全评价",
+    "category": "食品发酵与营养健康",
+    "realProductOrTechnology": "Cultured chicken cell material",
+    "relatedKnowledgePoints": [
+      "动物细胞培养",
+      "培养基",
+      "食品安全评价",
+      "规模化生产",
+      "替代蛋白"
+    ],
+    "industryDirection": "细胞培养食品 / 新食品评价 / 替代蛋白",
+    "coreProblem": "如何评价由培养动物细胞制成食品原料的生产过程、安全性和产业化边界？",
+    "researchFoundation": "培养细胞食品涉及细胞系、培养基、扩增、收获和食品安全评价。教学中应区分“可作为食品安全咨询案例”与具体营养、成本或市场表现结论。",
+    "applicationValue": "补足食品生物技术方向，展示细胞培养技术从生物医学工具走向食品产业的证据结构。",
+    "requiredAbilities": [
+      "细胞培养流程分析能力",
+      "食品安全资料阅读能力",
+      "产业化边界判断能力"
+    ],
+    "recommendedKeywords": [
+      "cultivated meat",
+      "cultured cells",
+      "UPSIDE Foods",
+      "food safety",
+      "alternative protein"
+    ],
+    "linkedResearchTask": "培养细胞食品安全评价路径分析",
+    "evidenceLevel": "高",
+    "sourceType": "监管文件",
+    "background": "FDA 完成 UPSIDE Foods 培养鸡细胞材料上市前咨询，公开资料可用于讨论培养细胞食品的安全评价和边界。",
+    "applicationScenario": "用于新食品、细胞培养、替代蛋白、食品安全评价和产业化放大教学。",
+    "displayFocus": "细胞系—培养扩增—收获加工—安全评价—食品应用流程。",
+    "migrationPath": {
+      "textbookBase": [
+        "动物细胞培养",
+        "培养基",
+        "食品安全"
+      ],
+      "researchFrontier": [
+        "细胞农业",
+        "规模化培养",
+        "新食品评价"
+      ],
+      "industryApplication": [
+        "培养鸡细胞材料",
+        "替代蛋白食品",
+        "新食品产业化"
+      ]
+    },
+    "references": [
+      {
+        "title": "FDA: Human Food Made with Cultured Animal Cells",
+        "url": "https://www.fda.gov/food/food-ingredients-packaging/human-food-made-cultured-animal-cells",
+        "type": "FDA"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.fda.gov/food/food-ingredients-packaging/human-food-made-cultured-animal-cells"
     ]
   }
 ];
