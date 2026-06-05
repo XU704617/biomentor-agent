@@ -43,7 +43,7 @@ export function IndustryCaseCard({ caseData, onViewDetail, isRecommended }: Indu
       {isRecommended && (
         <div className="absolute top-3 right-3 z-10">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 text-white text-[9px] font-bold shadow-sm">
-            优先体验
+            精选案例
           </span>
         </div>
       )}

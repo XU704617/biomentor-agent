@@ -253,8 +253,8 @@ export default function CasesPage() {
 
               <div className="rounded-xl bg-gradient-to-r from-amber-50/60 to-orange-50/40 border border-amber-200/40 p-4 mb-5">
                 <p className="text-xs text-amber-800 font-body mb-1">
-                  <span className="font-semibold">优先体验推荐</span>
-                  <span className="text-amber-700/80 ml-1">带「优先体验」标签的案例为推荐演示案例，覆盖 mRNA 疫苗、CAR-T、CRISPR、细胞凋亡、PD-1 等核心技术，文献丰富度高，演示效果稳定。</span>
+                  <span className="font-semibold">精选案例推荐：</span>
+                  <span className="text-amber-700/80 ml-1">标注「精选案例」的案例适合作为展示与科研训练入口，覆盖 mRNA 疫苗、CAR-T、CRISPR、细胞凋亡、PD-1 等核心技术，文献与案例详情较完整，适合优先讲解。</span>
                 </p>
               </div>
 

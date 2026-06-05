@@ -2931,9 +2931,22 @@ export function getMockAnswer(query: string): IndustryAnswer {
   const answer = buildMockAnswer(query.trim());
 
   const lower = query.toLowerCase();
+  const aliases: Record<string, string[]> = {
+    "case-002": ["car-t", "cart", "嵌合抗原受体", "t 细胞", "t细胞", "细胞治疗"],
+    "case-004": ["mrna", "lnp", "脂质纳米", "疫苗递送", "递送系统"],
+    "case-003": ["crispr", "基因编辑"],
+    "case-005": ["pet", "petase", "塑料降解", "蛋白工程"],
+    "case-006": ["pd-1", "pd-l1", "免疫检查点"],
+    "case-001": ["venetoclax", "bcl-2", "细胞凋亡"],
+    "case-035": ["alphafold", "蛋白结构预测", "结构预测", "蛋白工程"],
+    "case-036": ["培养细胞食品", "cultured meat", "upside", "培养动物细胞", "细胞培养食品"],
+  };
+  const aliasHit = (c: IndustryCase) =>
+    (aliases[c.id] || []).some((alias) => lower.includes(alias.toLowerCase()));
   const matched: MatchCase[] = industryCases
     .filter((c) => {
       return (
+        aliasHit(c) ||
         c.title.toLowerCase().includes(lower) ||
         c.industryDirection.toLowerCase().includes(lower) ||
         c.relatedKnowledgePoints.some((k) => k.toLowerCase().includes(lower)) ||

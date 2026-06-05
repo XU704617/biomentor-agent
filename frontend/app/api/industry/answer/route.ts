@@ -112,10 +112,20 @@ function extractJson(raw: string): string {
 }
 
 function buildFallbackResponse(query: string): IndustryAnswerResponse {
+  const lower = query.toLowerCase();
+  const aliases: Record<string, string[]> = {
+    "case-002": ["car-t", "cart", "嵌合抗原受体", "t 细胞", "t细胞"],
+    "case-004": ["mrna", "lnp", "脂质纳米"],
+    "case-003": ["crispr", "基因编辑"],
+    "case-006": ["pd-1", "pd-l1", "免疫检查点"],
+    "case-001": ["venetoclax", "bcl-2", "细胞凋亡"],
+    "case-035": ["alphafold", "蛋白结构预测", "结构预测"],
+    "case-036": ["培养细胞食品", "cultured meat", "upside", "培养动物细胞"],
+  };
   const relevantCases = industryCases
     .filter((c) => {
-      const lower = query.toLowerCase();
       return (
+        (aliases[c.id] || []).some((alias) => lower.includes(alias.toLowerCase())) ||
         c.title.toLowerCase().includes(lower) ||
         c.industryDirection.toLowerCase().includes(lower) ||
         c.relatedKnowledgePoints.some((k) => k.toLowerCase().includes(lower)) ||
@@ -138,7 +148,7 @@ function buildFallbackResponse(query: string): IndustryAnswerResponse {
 
   return {
     query,
-    answer: `⚠️ LLM 不可用，以下为基于本地案例库匹配的结果。
+    answer: `以下为基于本地案例库匹配的结果。
 
 根据当前产业案例库，找到 ${matchedCases.length} 个可能与您问题相关的案例。建议点击案例卡片查看详情，或使用"查看详情"按钮深入阅读科研基础和产业应用信息。`,
     relatedKnowledgePoints: relevantCases.flatMap((c) => c.relatedKnowledgePoints).slice(0, 8),
@@ -149,7 +159,7 @@ function buildFallbackResponse(query: string): IndustryAnswerResponse {
     recommendedKeywords: uniqueKeywords,
     nextTasks: relevantCases.map((c) => c.linkedResearchTask),
     sourceScope: matchedCases.length > 0 ? "based_on_local_cases" : "no_direct_match",
-    disclaimer: "⚠️ 本回答基于本地案例库模板匹配生成，非 AI 实时分析。用于课程学习和科研训练，不构成医疗或临床建议。",
+    disclaimer: "本回答基于本地案例库匹配生成，用于课程学习和科研训练，不构成医疗或临床建议。",
     _source: "local_fallback",
   };
 }

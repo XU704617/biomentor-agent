@@ -159,7 +159,7 @@ test("research page avoids blank literature navigation and task-card wording", (
   assert.match(researchPage, /NEXT_PUBLIC_SHOW_DEBUG_BADGES/);
   assert.match(researchPage, /当前选中/);
   assert.match(researchPage, /选择此任务进行文献支撑/);
-  assert.match(researchPage, /请先选择一个科研训练任务/);
+  assert.match(researchPage, /可直接输入研究问题/);
   assert.match(researchPage, /askResearchTutor/);
 });
 
@@ -169,7 +169,8 @@ test("research task generation falls back to a compatible four-task structure", 
 
   assert.match(researchApi, /generateLocalResearchTask/);
   assert.match(researchApi, /catch \{/);
-  assert.match(researchApi, /研究引导 \/ 产业转化分析/);
+  assert.match(researchApi, /evidence_judgement/);
+  assert.match(researchApi, /taskCopy\.evidenceTitle/);
   assert.match(researchApi, /测试提示：当前为本地训练框架生成/);
   assert.match(researchApi, /source_mode/);
   assert.match(researchApi, /evidence_items/);

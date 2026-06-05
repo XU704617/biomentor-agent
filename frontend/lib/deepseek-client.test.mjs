@@ -10,7 +10,7 @@ test("resolveDeepSeekConfig accepts server-side key aliases without exposing the
   const config = resolveDeepSeekConfig({
     BIOMENTOR_DEEPSEEK_API_KEY: "server-key",
     DEEPSEEK_MODEL: "glm-4.7-flash",
-  });
+  }, { includeFileEnv: false });
 
   assert.equal(config.apiKey, "server-key");
   assert.equal(config.model, "glm-4.7-flash");
@@ -22,7 +22,7 @@ test("resolveDeepSeekConfig normalizes base URLs that already include the v1 pat
   const config = resolveDeepSeekConfig({
     DEEPSEEK_API_KEY: "server-key",
     DEEPSEEK_BASE_URL: "https://api.deepseek.com/v1/",
-  });
+  }, { includeFileEnv: false });
 
   assert.equal(config.baseUrl, "https://api.deepseek.com");
   assert.equal(config.chatCompletionsUrl, "https://api.deepseek.com/v1/chat/completions");

@@ -91,8 +91,17 @@ export async function searchIndustryCases(query: string): Promise<(IndustryCase 
     return data.map(c => ({ ...convertApiCaseToFrontend(c), _dataSource: "api" }));
   }
   const lower = query.toLowerCase();
+  const aliasMap: Record<string, string[]> = {
+    "case-002": ["car-t", "cart", "嵌合抗原受体", "t 细胞", "t细胞"],
+    "case-004": ["mrna", "lnp", "脂质纳米"],
+    "case-003": ["crispr", "基因编辑"],
+    "case-006": ["pd-1", "pd-l1", "免疫检查点"],
+    "case-001": ["venetoclax", "bcl-2", "细胞凋亡"],
+    "case-035": ["alphafold", "蛋白结构预测", "结构预测"],
+    "case-036": ["培养细胞食品", "cultured meat", "upside", "培养动物细胞"],
+  };
   return mockCases
-    .filter(c => c.title.toLowerCase().includes(lower) || c.industryDirection.toLowerCase().includes(lower) || c.category.toLowerCase().includes(lower) || c.relatedKnowledgePoints.some(k => k.toLowerCase().includes(lower)) || c.recommendedKeywords.some(k => k.toLowerCase().includes(lower)) || c.coreProblem.toLowerCase().includes(lower))
+    .filter(c => (aliasMap[c.id] || []).some(alias => lower.includes(alias.toLowerCase())) || c.title.toLowerCase().includes(lower) || c.industryDirection.toLowerCase().includes(lower) || c.category.toLowerCase().includes(lower) || c.relatedKnowledgePoints.some(k => k.toLowerCase().includes(lower)) || c.recommendedKeywords.some(k => k.toLowerCase().includes(lower)) || c.coreProblem.toLowerCase().includes(lower))
     .map(c => ({ ...c, _dataSource: "local_fallback" }));
 }
 
