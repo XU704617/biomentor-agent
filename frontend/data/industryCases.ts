@@ -7,7 +7,7 @@ export interface MigrationPath {
 export interface Reference {
   title: string;
   url: string;
-  type: "FDA" | "PubMed" | "DOI" | "NCI" | "Label" | "Review" | "Other";
+  type: "FDA" | "PubMed" | "DOI" | "NCI" | "Label" | "Review" | "ProductPage" | "Other";
 }
 
 export interface IndustryCase {
@@ -26,7 +26,7 @@ export interface IndustryCase {
   guideQuestions: string[];
   linkedResearchTask: string;
   evidenceLevel: "高" | "中" | "发展中";
-  sourceType: "学术文献" | "产业报告" | "专利文献" | "临床试验" | "监管文件";
+  sourceType: "学术文献" | "产业报告" | "专利文献" | "临床试验" | "监管文件" | "产品页";
   background: string;
   applicationScenario: string;
   displayFocus: string;
@@ -307,7 +307,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "Merck reference 1",
         "url": "https://www.merck.com/product/usa/pi_circulars/k/keytruda/keytruda_pi.pdf",
-        "type": "Other"
+        "type": "ProductPage"
       },
       {
         "title": "PubMed reference 2",
@@ -629,7 +629,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "Genentech reference 1",
         "url": "https://www.gene.com/download/pdf/herceptin_prescribing.pdf",
-        "type": "Other"
+        "type": "ProductPage"
       }
     ],
     "sourceUrls": [
@@ -991,7 +991,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "IDEXX reference 1",
         "url": "https://www.idexx.com/en/veterinary/snap-tests/snap-4dx-plus-test/",
-        "type": "Other"
+        "type": "ProductPage"
       }
     ],
     "sourceUrls": [
@@ -1136,7 +1136,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "Yakult reference 1",
         "url": "https://www.yakultusa.com/products/yakult/",
-        "type": "Other"
+        "type": "ProductPage"
       }
     ],
     "sourceUrls": [
@@ -1352,7 +1352,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "KANEKA reference 1",
         "url": "https://www.kaneka.co.jp/en/business/material/nbd_001.html",
-        "type": "Other"
+        "type": "ProductPage"
       }
     ],
     "sourceUrls": [
@@ -1496,7 +1496,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "Lilly reference 1",
         "url": "https://pi.lilly.com/us/humulin-r-pi.pdf",
-        "type": "Other"
+        "type": "ProductPage"
       }
     ],
     "sourceUrls": [
@@ -1713,7 +1713,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "AlphaFold DB reference 1",
         "url": "https://alphafold.ebi.ac.uk/",
-        "type": "Other"
+        "type": "ProductPage"
       }
     ],
     "sourceUrls": [
@@ -1787,7 +1787,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "10x Genomics reference 1",
         "url": "https://www.10xgenomics.com/products/single-cell-gene-expression",
-        "type": "Other"
+        "type": "ProductPage"
       }
     ],
     "sourceUrls": [
@@ -2545,7 +2545,7 @@ export const industryCases: IndustryCase[] = [
     ],
     "linkedResearchTask": "洗涤剂酶稳定性优化方案设计",
     "evidenceLevel": "中",
-    "sourceType": "产业报告",
+    "sourceType": "产品页",
     "background": "工业酶在洗涤剂中的应用是蛋白质工程进入日常消费品的典型非医药案例。Novonesis 等企业公开资料介绍了洗涤剂酶在去除蛋白、淀粉、脂肪等污渍以及支持低温洗涤中的作用，适合用于连接酶催化、蛋白稳定性、配方兼容性和绿色制造，也能说明生物技术如何进入高频消费场景。",
     "applicationScenario": "用于工业酶工程、绿色制造、消费品配方、生物催化和蛋白质稳定性教学。可以让学生比较淀粉酶、蛋白酶、脂肪酶、纤维素酶在不同污渍和洗涤条件下的功能边界，并设计配方兼容性或低温性能评价思路。",
     "displayFocus": "底物污渍—酶催化—配方环境—稳定性优化—低温洗涤流程。",
@@ -2571,7 +2571,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "Novonesis: Detergents solutions",
         "url": "https://www.novonesis.com/en/solutions/household-care/detergents",
-        "type": "Other"
+        "type": "ProductPage"
       }
     ],
     "sourceUrls": [
@@ -2683,7 +2683,7 @@ export const industryCases: IndustryCase[] = [
     ],
     "linkedResearchTask": "AlphaFold 结构预测结果边界分析",
     "evidenceLevel": "高",
-    "sourceType": "产业报告",
+    "sourceType": "产品页",
     "background": "AlphaFold Protein Structure Database 是 AI 辅助生物研发的重要平台案例。EMBL-EBI 等机构公开维护该数据库，提供大量蛋白结构预测结果，适合用于讨论结构预测如何帮助提出功能假设、辅助蛋白工程和药物研发前期分析。",
     "applicationScenario": "用于生物信息学、蛋白质工程、结构功能关系、药物研发前期分析和科研工具平台教学。学生可练习从序列、结构模型、置信度信息和保守区域提出可验证假设，并判断哪些结论仍需要实验结构或功能实验支撑。",
     "displayFocus": "序列输入—结构预测—置信度阅读—功能假设—实验验证流程。",
@@ -2709,7 +2709,7 @@ export const industryCases: IndustryCase[] = [
       {
         "title": "AlphaFold Protein Structure Database",
         "url": "https://alphafold.ebi.ac.uk/",
-        "type": "Other"
+        "type": "ProductPage"
       }
     ],
     "sourceUrls": [

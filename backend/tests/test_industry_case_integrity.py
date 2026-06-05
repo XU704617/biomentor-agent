@@ -145,6 +145,11 @@ def test_seed_source_types_are_supported_by_backend_enum():
             if source_type:
                 seen.add(source_type)
 
+        for source in case.get("references", []):
+            source_type = source.get("type") or source.get("source_type")
+            if source_type:
+                seen.add(source_type)
+
     unsupported = seen - supported
     assert not unsupported, f"Unsupported source types in seed data: {sorted(unsupported)}"
-
+    assert "product_page" in seen

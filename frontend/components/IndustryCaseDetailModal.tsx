@@ -16,7 +16,12 @@ const refTypeStyles: Record<string, string> = {
   NCI: "bg-teal-50 text-teal-700 border-teal-200",
   Label: "bg-amber-50 text-amber-700 border-amber-200",
   Review: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  ProductPage: "bg-indigo-50 text-indigo-700 border-indigo-200",
   Other: "bg-gray-50 text-gray-600 border-gray-200",
+};
+
+const refTypeLabels: Record<string, string> = {
+  ProductPage: "产品页",
 };
 
 function hasText(value: string | undefined | null) {
@@ -314,7 +319,7 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[0.02] transition-colors group"
                 >
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase ${refTypeStyles[ref.type] || refTypeStyles.Other}`}>
-                    {ref.type}
+                    {refTypeLabels[ref.type] || ref.type}
                   </span>
                   <span className="text-xs text-brand-muted font-body group-hover:text-blue-600 transition-colors flex-1 leading-snug">
                     {ref.title}
