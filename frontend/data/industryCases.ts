@@ -23,12 +23,14 @@ export interface IndustryCase {
   applicationValue: string;
   requiredAbilities: string[];
   recommendedKeywords: string[];
+  guideQuestions: string[];
   linkedResearchTask: string;
   evidenceLevel: "高" | "中" | "发展中";
   sourceType: "学术文献" | "产业报告" | "专利文献" | "临床试验" | "监管文件";
   background: string;
   applicationScenario: string;
   displayFocus: string;
+  notes: string;
   migrationPath: MigrationPath;
   references: Reference[];
   sourceUrls: string[];
@@ -109,12 +111,19 @@ export const industryCases: IndustryCase[] = [
       "caspase activation",
       "drug resistance"
     ],
+    "guideQuestions": [
+      "BH3 profiling 实验设计",
+      "BCL-2 抑制剂作用路径排序",
+      "BCL-2/BCL-XL/MCL-1 功能比较",
+      "肿瘤溶解综合征风险判断。"
+    ],
     "linkedResearchTask": "BH3 profiling 实验设计",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "许多肿瘤细胞并不只是增殖速度异常，还会通过抑制程序性死亡来获得生存优势。BCL-2 是线粒体凋亡通路中的关键抗凋亡蛋白，BCL-2 过度表达可帮助 CLL、SLL、AML 等肿瘤细胞抵抗应激和药物杀伤。Venetoclax 是围绕 BCL-2 设计的小分子抑制剂，是把基础细胞死亡机制转化为真实药物产品的典型案例。",
     "applicationScenario": "主要用于血液肿瘤治疗，包括成人 CLL/SLL，以及与阿扎胞苷、地西他滨或低剂量阿糖胞苷联合用于部分新诊断 AML 成人患者。教学上可延伸到靶点发现、结构基础药物设计、BH3 profiling、联合用药、耐药机制和肿瘤溶解综合征风险管理。",
     "displayFocus": "线粒体凋亡通路示意图；BCL-2 如何阻断凋亡；Venetoclax 如何解除抗凋亡信号；治疗中为什么关注 TLS 风险。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "细胞凋亡",
@@ -184,12 +193,19 @@ export const industryCases: IndustryCase[] = [
       "immunotherapy",
       "cytokine release syndrome"
     ],
+    "guideQuestions": [
+      "CAR-T 制备流程排序",
+      "CAR 结构识别",
+      "CD19 靶向杀伤机制解释",
+      "CRS 风险判断。"
+    ],
     "linkedResearchTask": "CAR-T 制备流程排序",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "传统化疗主要依赖药物直接杀伤肿瘤细胞，而 CAR-T 治疗把患者自身 T 细胞改造成“活的药物”。KYMRIAH 是真实获批的 CD19-directed genetically modified autologous T-cell immunotherapy，代表了细胞治疗从实验室免疫学走向产业化生产和临床应用的重要方向。",
     "applicationScenario": "主要用于部分复发或难治性 B 细胞血液肿瘤。教学上适合连接 T 细胞识别、免疫突触、细胞信号转导、基因转导、细胞扩增、GMP 生产、回输治疗和临床风险管理。",
     "displayFocus": "患者 T 细胞采集—体外改造—扩增—回输流程；CAR 结构图；CAR-T 识别 CD19 阳性肿瘤细胞并杀伤的过程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "T 细胞活化",
@@ -258,12 +274,18 @@ export const industryCases: IndustryCase[] = [
       "T cell exhaustion",
       "tumor immune escape"
     ],
+    "guideQuestions": [
+      "PD-1/PD-L1 免疫逃逸机制分析",
+      "受体-配体匹配",
+      "免疫治疗与化疗策略比较。"
+    ],
     "linkedResearchTask": "PD-1/PD-L1 免疫逃逸机制分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "肿瘤细胞常利用免疫检查点通路让 T 细胞“踩刹车”。PD-1 是 T 细胞表面的抑制性受体，PD-L1 可表达在肿瘤细胞或抗原呈递细胞上。KEYTRUDA 官方说明书明确 pembrolizumab 是 programmed death receptor-1 (PD-1)-blocking antibody，已用于多种肿瘤治疗场景。",
     "applicationScenario": "广泛用于黑色素瘤、非小细胞肺癌、头颈部鳞癌、尿路上皮癌、MSI-H/dMMR 实体瘤等多个治疗场景，具体适应证需以最新说明书和临床指南为准。",
     "displayFocus": "PD-1/PD-L1 结合如何抑制 T 细胞；PD-1 抗体如何解除免疫刹车；免疫治疗与传统化疗的差异。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "细胞通讯",
@@ -283,7 +305,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "merck.com 1",
+        "title": "Merck reference 1",
         "url": "https://www.merck.com/product/usa/pi_circulars/k/keytruda/keytruda_pi.pdf",
         "type": "Other"
       },
@@ -334,12 +356,18 @@ export const industryCases: IndustryCase[] = [
       "BNT162b2",
       "Comirnaty"
     ],
+    "guideQuestions": [
+      "mRNA-LNP 递送流程图构建",
+      "细胞结构对应题",
+      "mRNA 疫苗与传统疫苗比较。"
+    ],
     "linkedResearchTask": "mRNA-LNP 递送流程图构建",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "mRNA 疫苗不是把完整病毒直接打入人体，而是递送一段编码抗原蛋白的 mRNA，让宿主细胞短暂表达抗原，再诱导免疫系统识别。COMIRNATY 的 FDA 说明书明确其核苷修饰 mRNA 被脂质颗粒包裹，脂质颗粒帮助 mRNA 进入宿主细胞并表达 SARS-CoV-2 S 抗原。",
     "applicationScenario": "典型应用是传染病疫苗，也可拓展到肿瘤治疗性疫苗、罕见病蛋白替代、基因编辑工具递送等方向。教学上适合解释细胞膜、胞吞、翻译、抗原呈递和平台型疫苗研发。",
     "displayFocus": "LNP 包裹 mRNA 的结构；LNP 进入细胞、释放 mRNA、翻译抗原流程；mRNA 疫苗与灭活/蛋白疫苗差异。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "细胞膜结构",
@@ -411,12 +439,18 @@ export const industryCases: IndustryCase[] = [
       "sickle cell disease",
       "beta thalassemia"
     ],
+    "guideQuestions": [
+      "CRISPR 编辑 BCL11A 增强子机制分析",
+      "DNA 双链断裂修复判断",
+      "基因治疗流程排序。"
+    ],
     "linkedResearchTask": "CRISPR 编辑 BCL11A 增强子机制分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "CASGEVY 是 CRISPR 基因编辑治疗进入真实临床应用的标志性案例。FDA 明确其为首个使用 CRISPR/Cas9 技术的 FDA 批准疗法之一，用于 12 岁及以上、伴反复血管闭塞危象的镰状细胞病患者，并进一步获批用于输血依赖型 β 地中海贫血患者。",
     "applicationScenario": "主要应用于遗传性血液病治疗，包括镰状细胞病和输血依赖型 β 地中海贫血。也适合用于讲解体外编辑、细胞回输、长期安全性随访和治疗伦理。",
     "displayFocus": "造血干细胞采集—CRISPR 编辑—回输流程；BCL11A 抑制 HbF 的机制；为什么提高 HbF 可以改善血红蛋白病。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "DNA 双链断裂",
@@ -489,12 +523,18 @@ export const industryCases: IndustryCase[] = [
       "spinal muscular atrophy",
       "gene addition"
     ],
+    "guideQuestions": [
+      "SMA 致病机制图构建",
+      "AAV 递送流程排序",
+      "基因补充与 CRISPR 编辑比较。"
+    ],
     "linkedResearchTask": "SMA 致病机制图构建",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "脊髓性肌萎缩症（SMA）与 SMN1 基因缺陷密切相关，患者运动神经元因 SMN 蛋白不足而退化，造成进行性肌无力。FDA 页面显示 ZOLGENSMA 的 proper name 为 onasemnogene abeparvovec-xioi，用于 2 岁以下、SMN1 双等位基因突变的 SMA 儿童患者。",
     "applicationScenario": "用于儿科遗传病基因治疗教学，可连接遗传突变、神经细胞功能、病毒载体、递送效率、一次性治疗定价与长期安全性评估。",
     "displayFocus": "SMN1 缺陷—运动神经元退化—AAV9 递送 SMN 基因—表达恢复的路径图。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "SMN1 基因",
@@ -556,12 +596,18 @@ export const industryCases: IndustryCase[] = [
       "ADCC",
       "breast cancer"
     ],
+    "guideQuestions": [
+      "HER2 信号通路解释",
+      "IHC/FISH 伴随诊断判断",
+      "抗体药物与小分子靶向药比较。"
+    ],
     "linkedResearchTask": "HER2 信号通路解释",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "HER2 阳性乳腺癌常由 ERBB2/HER2 扩增或过度表达驱动，肿瘤细胞依赖 HER2 相关信号获得增殖优势。HERCEPTIN 是经典抗 HER2 单克隆抗体药物，说明书中明确其适用于 HER2 过表达或扩增相关治疗场景。",
     "applicationScenario": "用于 HER2 阳性乳腺癌、胃癌等治疗相关教学，可延伸到肿瘤分子分型、抗体药物设计、IHC/FISH 检测和耐药机制分析。",
     "displayFocus": "HER2 过表达驱动肿瘤；trastuzumab 结合 HER2 的位置；ADCC 与信号抑制双重机制。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "HER2/ERBB2",
@@ -581,7 +627,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "gene.com 1",
+        "title": "Genentech reference 1",
         "url": "https://www.gene.com/download/pdf/herceptin_prescribing.pdf",
         "type": "Other"
       }
@@ -623,12 +669,18 @@ export const industryCases: IndustryCase[] = [
       "MSI",
       "targeted therapy"
     ],
+    "guideQuestions": [
+      "肿瘤 NGS 报告解读",
+      "驱动突变与靶向药匹配",
+      "MSI/TMB 生物标志物分析。"
+    ],
     "linkedResearchTask": "肿瘤 NGS 报告解读",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "肿瘤治疗越来越依赖分子分型。FoundationOne CDx 是真实的肿瘤综合基因组检测案例，FDA 文件显示其为 NGS 体外诊断设备，可检测多个基因突变、MSI、TMB，并作为伴随诊断用于匹配靶向治疗。",
     "applicationScenario": "用于实体瘤基因组检测、靶向药匹配、免疫治疗标志物分析、临床试验入组筛选和精准医学教学。",
     "displayFocus": "样本—测序—变异注释—治疗匹配流程；NGS 面板与单基因检测对比。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "NGS",
@@ -689,12 +741,18 @@ export const industryCases: IndustryCase[] = [
       "rpoB",
       "nucleic acid amplification"
     ],
+    "guideQuestions": [
+      "rpoB 突变与耐药机制解释",
+      "结核检测流程排序",
+      "分子诊断与培养法比较。"
+    ],
     "linkedResearchTask": "rpoB 突变与耐药机制解释",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "传统结核培养耗时较长，耐药检测更加延后。WHO 文件明确 Xpert MTB/RIF 是用于快速、同步检测结核和利福平耐药的自动化实时核酸扩增技术，是感染诊断从培养依赖走向分子快速检测的代表案例。",
     "applicationScenario": "用于结核病快速筛查、疑似耐药结核评估、HIV 合并感染患者诊断、基层或区域实验室感染病检测能力建设。",
     "displayFocus": "封闭式检测盒流程；rpoB 探针检测耐药突变；快速诊断对治疗决策的影响。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "PCR",
@@ -714,7 +772,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "who.int 1",
+        "title": "WHO reference 1",
         "url": "https://www.who.int/publications/i/item/9789241501545",
         "type": "Other"
       }
@@ -755,12 +813,18 @@ export const industryCases: IndustryCase[] = [
       "FATB",
       "fatty acid profile"
     ],
+    "guideQuestions": [
+      "脂肪酸代谢路径图绘制",
+      "FAD2/FATB 功能判断",
+      "品质改良与抗虫作物比较。"
+    ],
     "linkedResearchTask": "脂肪酸代谢路径图绘制",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "USDA APHIS 文件明确 MON 87705 是 improved fatty acid profile soybean，涉及 FAD2、FATB 等脂肪酸代谢相关基因。它适合作为农业生物技术中“作物品质改良”而不是单纯增产或抗虫的案例。",
     "applicationScenario": "用于讲解植物代谢工程、油料作物育种、营养品质改良、转基因作物监管和食品加工性能评价。",
     "displayFocus": "脂肪酸通路如何影响油脂稳定性；FAD2/FATB 在油酸比例中的作用。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "脂肪酸代谢",
@@ -780,7 +844,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "aphis.usda.gov 1",
+        "title": "USDA APHIS reference 1",
         "url": "https://www.aphis.usda.gov/sites/default/files/09_20101p_dea.pdf",
         "type": "Other"
       }
@@ -821,12 +885,18 @@ export const industryCases: IndustryCase[] = [
       "plant-incorporated protectant",
       "insect resistance management"
     ],
+    "guideQuestions": [
+      "Cry 蛋白作用机制排序",
+      "Bt 制剂与 Bt 作物比较",
+      "抗性治理方案设计。"
+    ],
     "linkedResearchTask": "Cry 蛋白作用机制排序",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "EPA 官方资料说明 Bt 是广泛使用的微生物农药，Bt 蛋白可杀灭特定昆虫幼虫，相关基因也可导入植物形成植物内源保护物。",
     "applicationScenario": "用于玉米、棉花、蔬菜等害虫防控，也适合讲解生物农药、转基因抗虫作物、害虫抗性管理和生态风险评估。",
     "displayFocus": "幼虫取食—中肠激活—受体结合—孔道形成—害虫死亡流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "苏云金芽孢杆菌",
@@ -846,7 +916,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "epa.gov 1",
+        "title": "EPA reference 1",
         "url": "https://www.epa.gov/ingredients-used-pesticide-products/what-are-biopesticides",
         "type": "Other"
       }
@@ -888,12 +958,18 @@ export const industryCases: IndustryCase[] = [
       "Anaplasma",
       "ELISA"
     ],
+    "guideQuestions": [
+      "抗原抗体检测机制解释",
+      "阳性结果复核路径设计",
+      "人用/兽用免疫诊断比较。"
+    ],
     "linkedResearchTask": "抗原抗体检测机制解释",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "IDEXX 官方页面说明 SNAP 4Dx Plus 可用于犬心丝虫、莱姆病、埃立克体、无形体等媒介传播疾病筛查，是动物健康诊断平台的真实商业化案例。",
     "applicationScenario": "用于宠物医院体检、媒介传播疾病筛查、犬心丝虫管理、蜱媒病风险评估和兽医公共卫生教学。",
     "displayFocus": "检测卡结构；心丝虫抗原与蜱媒病抗体筛查逻辑；结果解释边界。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "抗原抗体反应",
@@ -913,7 +989,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "idexx.com 1",
+        "title": "IDEXX reference 1",
         "url": "https://www.idexx.com/en/veterinary/snap-tests/snap-4dx-plus-test/",
         "type": "Other"
       }
@@ -955,12 +1031,18 @@ export const industryCases: IndustryCase[] = [
       "triploid",
       "aquaculture"
     ],
+    "guideQuestions": [
+      "转基因构建图解析",
+      "生长激素调控机制说明",
+      "水产基因工程风险评估。"
+    ],
     "linkedResearchTask": "转基因构建图解析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "FDA 批准文件明确 AquAdvantage Salmon 含 opAFP-GHc2 rDNA 构建，并列出 NADA 141-454 批准信息。这是动物基因工程进入食品动物监管的代表案例。",
     "applicationScenario": "用于水产养殖、生长性状改良、转基因动物监管、生物安全评估和现代渔业技术教学。",
     "displayFocus": "opAFP-GHc2 构建；生长激素表达与生长速度；三倍体和封闭养殖作为风险控制。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "转基因动物",
@@ -1021,12 +1103,18 @@ export const industryCases: IndustryCase[] = [
       "fermentation",
       "gut microbiota"
     ],
+    "guideQuestions": [
+      "益生菌与普通发酵菌区别",
+      "乳酸菌发酵流程",
+      "健康声称证据边界判断。"
+    ],
     "linkedResearchTask": "益生菌与普通发酵菌区别",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "Yakult 官方产品资料明确其为 probiotic drink，核心菌株为 L. paracasei strain Shirota。它是益生菌与功能发酵食品产业化的典型消费级案例。",
     "applicationScenario": "用于功能发酵乳、益生菌饮品、肠道健康消费品、食品发酵工艺和营养健康教学。",
     "displayFocus": "菌株—发酵—活菌稳定—肠道作用的产业链条。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "乳酸菌发酵",
@@ -1046,7 +1134,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "yakultusa.com 1",
+        "title": "Yakult reference 1",
         "url": "https://www.yakultusa.com/products/yakult/",
         "type": "Other"
       }
@@ -1087,12 +1175,18 @@ export const industryCases: IndustryCase[] = [
       "whey protein",
       "GRAS Notice 863"
     ],
+    "guideQuestions": [
+      "精准发酵流程图",
+      "重组食品蛋白与传统乳蛋白比较",
+      "GRAS 证据检索。"
+    ],
     "linkedResearchTask": "精准发酵流程图",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "FDA GRAS Notice 863 明确该项目为 Perfect Day 申报的 β-lactoglobulin produced by Trichoderma reesei，拟作为食品中乳或植物蛋白替代来源使用，FDA 对该 GRAS 通知表示 no questions。",
     "applicationScenario": "用于新食品、替代蛋白、乳制品配方、精准发酵平台、食品安全评价和生物制造教学。",
     "displayFocus": "工程菌构建—发酵表达—蛋白纯化—食品应用—安全评价流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "精准发酵",
@@ -1153,12 +1247,18 @@ export const industryCases: IndustryCase[] = [
       "mevalonate pathway",
       "synthetic biology"
     ],
+    "guideQuestions": [
+      "青蒿素前体合成路径图",
+      "工程菌通量优化策略",
+      "植物提取与微生物制造比较。"
+    ],
     "linkedResearchTask": "青蒿素前体合成路径图",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "Nature 论文报道工程化酿酒酵母可高水平生产 artemisinic acid，是半合成青蒿素产业化基础。这是合成生物学和工业生物制造的经典真实案例。",
     "applicationScenario": "用于抗疟药物供应、植物天然产物替代生产、工程菌细胞工厂、发酵放大和合成生物学教学。",
     "displayFocus": "甲羟戊酸途径增强；amorphadiene synthase 与 CYP71AV1 的作用；发酵到半合成的流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "合成生物学",
@@ -1178,7 +1278,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "nature.com 1",
+        "title": "Nature reference 1",
         "url": "https://www.nature.com/articles/nature12051",
         "type": "DOI"
       }
@@ -1219,12 +1319,18 @@ export const industryCases: IndustryCase[] = [
       "microbial biosynthesis",
       "plant oils"
     ],
+    "guideQuestions": [
+      "PHA/PHBH 合成路径说明",
+      "生物基与可降解概念区分",
+      "材料应用场景分析。"
+    ],
     "linkedResearchTask": "PHA/PHBH 合成路径说明",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "KANEKA 官方资料说明 Green Planet™（PHBH）由微生物以植物油等为主要原料生物合成，可在土壤和海水中被环境微生物最终降解为 CO2 和 H2O。",
     "applicationScenario": "用于食品包装、吸管、购物袋、餐具等塑料替代场景，也适合用于讲解生物基材料、微生物发酵、环境降解和循环经济。",
     "displayFocus": "微生物储碳颗粒；植物油到聚合物；土壤/海水降解路径。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "PHA",
@@ -1244,7 +1350,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "kaneka.co.jp 1",
+        "title": "KANEKA reference 1",
         "url": "https://www.kaneka.co.jp/en/business/material/nbd_001.html",
         "type": "Other"
       }
@@ -1285,12 +1391,18 @@ export const industryCases: IndustryCase[] = [
       "enzymatic recycling",
       "PET hydrolase"
     ],
+    "guideQuestions": [
+      "PET 酯键水解机制",
+      "酶稳定性改造分析",
+      "机械回收与酶法回收比较。"
+    ],
     "linkedResearchTask": "PET 酯键水解机制",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "Nature 论文报道工程化 PET depolymerase 可在 10 小时内实现至少 90% PET 解聚，并可将生物回收单体重新制成性能等同石化 PET 的材料。",
     "applicationScenario": "用于 PET 塑料回收、纺织聚酯回收、工业酶开发、循环经济和环境生物技术教学。",
     "displayFocus": "PET 高分子链—酶结合—酯键水解—单体回收—再聚合流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "PETase",
@@ -1310,7 +1422,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "nature.com 1",
+        "title": "Nature reference 1",
         "url": "https://www.nature.com/articles/s41586-020-2149-4",
         "type": "DOI"
       }
@@ -1351,12 +1463,18 @@ export const industryCases: IndustryCase[] = [
       "protein expression",
       "diabetes"
     ],
+    "guideQuestions": [
+      "重组蛋白生产流程排序",
+      "胰岛素结构与功能解释",
+      "动物来源与重组来源比较。"
+    ],
     "linkedResearchTask": "重组蛋白生产流程排序",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "Lilly 说明书明确 HUMULIN R 是 human insulin injection，且由 recombinant DNA technology 使用非致病性 E. coli 生产，是重组蛋白药物产业化的经典案例。",
     "applicationScenario": "用于糖尿病治疗、重组蛋白药物生产、微生物表达系统、蛋白纯化和生物制药质量控制教学。",
     "displayFocus": "人胰岛素基因—E. coli 表达—蛋白纯化—药物制剂流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "重组 DNA",
@@ -1376,7 +1494,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "pi.lilly.com 1",
+        "title": "Lilly reference 1",
         "url": "https://pi.lilly.com/us/humulin-r-pi.pdf",
         "type": "Other"
       }
@@ -1417,12 +1535,18 @@ export const industryCases: IndustryCase[] = [
       "public health",
       "community monitoring"
     ],
+    "guideQuestions": [
+      "废水监测流程图",
+      "个体检测与群体监测比较",
+      "数据归一化因素分析。"
+    ],
     "linkedResearchTask": "废水监测流程图",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "CDC 官方页面说明 Wastewater Monitoring Program 利用废水监测传染病，帮助社区更快采取公共卫生行动，是环境生物监测与公共卫生结合的真实平台案例。",
     "applicationScenario": "用于传染病趋势监测、疫情预警、病原变异监测、社区公共卫生管理和环境生物检测教学。",
     "displayFocus": "污水采样—核酸浓缩—PCR/测序—趋势分析—公共卫生预警流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "病原核酸",
@@ -1442,7 +1566,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "cdc.gov 1",
+        "title": "CDC reference 1",
         "url": "https://www.cdc.gov/wastewater/index.html",
         "type": "Other"
       }
@@ -1483,12 +1607,18 @@ export const industryCases: IndustryCase[] = [
       "thickener",
       "stabilizer"
     ],
+    "guideQuestions": [
+      "κ/ι/λ 卡拉胶功能比较",
+      "多糖结构与食品质构关系",
+      "海洋资源产业化案例分析。"
+    ],
     "linkedResearchTask": "κ/ι/λ 卡拉胶功能比较",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "eCFR 21 CFR 172.620 明确 carrageenan 可作为食品添加剂使用，来源于红藻类原料，并可作为乳化剂、稳定剂或增稠剂使用。",
     "applicationScenario": "用于食品增稠、乳化稳定、凝胶甜品、乳制品悬浮稳定、海藻资源开发和海洋生物材料教学。",
     "displayFocus": "红藻提取—硫酸化多糖结构—离子/蛋白相互作用—食品稳定功能。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "红藻",
@@ -1508,7 +1638,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "ecfr.gov 1",
+        "title": "eCFR reference 1",
         "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-172/subpart-G/section-172.620",
         "type": "Other"
       }
@@ -1550,12 +1680,18 @@ export const industryCases: IndustryCase[] = [
       "pLDDT",
       "structural biology"
     ],
+    "guideQuestions": [
+      "AlphaFold 结构可信度解读",
+      "预测结构与实验结构比较",
+      "基于结构设计突变位点。"
+    ],
     "linkedResearchTask": "AlphaFold 结构可信度解读",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "AlphaFold DB 官方页面说明该数据库由 Google DeepMind 与 EMBL-EBI 开发，开放超过 2 亿个蛋白结构预测，用于加速科学研究。",
     "applicationScenario": "用于蛋白功能预测、突变影响分析、酶工程、抗体/抗原研究、靶点结构建模和 AI 药物发现教学。",
     "displayFocus": "序列输入—AI 预测—置信度评估—功能解释—实验验证流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "蛋白质折叠",
@@ -1575,7 +1711,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "alphafold.ebi.ac.uk 1",
+        "title": "AlphaFold DB reference 1",
         "url": "https://alphafold.ebi.ac.uk/",
         "type": "Other"
       }
@@ -1618,12 +1754,18 @@ export const industryCases: IndustryCase[] = [
       "transcriptomics",
       "multiomics"
     ],
+    "guideQuestions": [
+      "单细胞 RNA-seq 流程排序",
+      "barcode/UMI 作用解释",
+      "bulk 与 single-cell 数据比较。"
+    ],
     "linkedResearchTask": "单细胞 RNA-seq 流程排序",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "10x Genomics 官方页面说明 Chromium Single Cell Universal 3' 支持全转录组覆盖、500–20,000 个细胞通量和多组学选项，是单细胞组学平台的代表案例。",
     "applicationScenario": "用于肿瘤异质性研究、免疫细胞图谱、发育轨迹分析、药物响应研究、空间组学前期设计和多组学数据分析教学。",
     "displayFocus": "单细胞分隔—条形码标记—测序—矩阵构建—聚类注释流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "单细胞 RNA-seq",
@@ -1643,7 +1785,7 @@ export const industryCases: IndustryCase[] = [
     },
     "references": [
       {
-        "title": "10xgenomics.com 1",
+        "title": "10x Genomics reference 1",
         "url": "https://www.10xgenomics.com/products/single-cell-gene-expression",
         "type": "Other"
       }
@@ -1684,12 +1826,18 @@ export const industryCases: IndustryCase[] = [
       "topoisomerase inhibitor",
       "bystander effect"
     ],
+    "guideQuestions": [
+      "ADC 结构与作用流程图",
+      "HER2 表达与用药匹配讨论",
+      "ADC 与单抗/小分子药物比较。"
+    ],
     "linkedResearchTask": "ADC 结构与 HER2 靶向递送机制分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "ENHERTU 是 HER2 方向抗体偶联药物的代表案例。FDA 公开资料显示 fam-trastuzumab deruxtecan-nxki 是 HER2-directed antibody and topoisomerase inhibitor conjugate，并在多个 HER2 相关肿瘤治疗场景中获得批准或加速批准。",
     "applicationScenario": "用于肿瘤靶向治疗、抗体工程、药物递送、伴随诊断和 ADC 安全性讨论。",
     "displayFocus": "HER2 识别—ADC 内吞—连接子裂解—载荷释放—肿瘤细胞杀伤流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "抗原抗体特异性识别",
@@ -1763,12 +1911,18 @@ export const industryCases: IndustryCase[] = [
       "transthyretin amyloidosis",
       "TTR"
     ],
+    "guideQuestions": [
+      "siRNA-RISC 作用流程图",
+      "mRNA 递送与 siRNA 递送比较",
+      "TTR 表达降低机制分析。"
+    ],
     "linkedResearchTask": "siRNA 脂质递送与 TTR 基因沉默机制分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "FDA 对 RNA 药物的介绍中将 patisiran / ONPATTRO 作为 RNA-based medicine 的重要案例。DailyMed 说明书显示 ONPATTRO 含有 patisiran，是用于递送至肝细胞的 double-stranded siRNA lipid complex。",
     "applicationScenario": "用于 RNA 药物、罕见病治疗、核酸递送、肝脏靶向和基因沉默机制教学。",
     "displayFocus": "siRNA 保护递送—肝细胞摄取—RISC 加载—TTR mRNA 降解—蛋白表达下降流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "RNA 结构与降解",
@@ -1842,12 +1996,18 @@ export const industryCases: IndustryCase[] = [
       "sotorasib",
       "KRAS G12C"
     ],
+    "guideQuestions": [
+      "ctDNA 检测流程排序",
+      "液体活检阴性结果边界分析",
+      "组织检测与血液检测比较。"
+    ],
     "linkedResearchTask": "ctDNA 液体活检结果解释边界分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "FDA 近期批准设备页面显示 Guardant360 CDx 可帮助识别特定非小细胞肺癌患者是否可能从相关 FDA 批准治疗中获益。NCI 也将 FDA 批准的血液检测作为可帮助指导癌症治疗的案例进行介绍。",
     "applicationScenario": "用于肿瘤基因检测、靶向药匹配、治疗过程中动态监测和精准医学教学。",
     "displayFocus": "血液样本—cfDNA/ctDNA 提取—NGS 检测—变异注释—治疗匹配流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "DNA 突变",
@@ -1921,12 +2081,18 @@ export const industryCases: IndustryCase[] = [
       "CD3",
       "acute lymphoblastic leukemia"
     ],
+    "guideQuestions": [
+      "CD19/CD3 双结合机制图",
+      "BLINCYTO 与 CAR-T 比较",
+      "T 细胞重定向安全性讨论。"
+    ],
     "linkedResearchTask": "双特异性 T 细胞连接器作用机制比较",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "NCI 药物信息页面说明 blinatumomab 通过同时结合 T 细胞上的 CD3 和 B 细胞上的 CD19，使 T 细胞更有效地杀伤白血病细胞，并将其归类为 bispecific T-cell engager。",
     "applicationScenario": "用于急性淋巴细胞白血病免疫治疗、双抗药物设计、T 细胞重定向和免疫治疗毒性管理教学。",
     "displayFocus": "CD19 肿瘤细胞—BLINCYTO—CD3 T 细胞空间连接与杀伤流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "T 细胞活化",
@@ -1993,12 +2159,18 @@ export const industryCases: IndustryCase[] = [
       "type 1 diabetes",
       "allogeneic"
     ],
+    "guideQuestions": [
+      "胰岛 β 细胞功能机制图",
+      "细胞治疗与胰岛素治疗比较",
+      "免疫抑制风险讨论。"
+    ],
     "linkedResearchTask": "胰岛细胞治疗机制与免疫风险分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "FDA 新闻稿说明 LANTIDRA 是由已故供体胰腺细胞制成的首个异体胰岛细胞治疗，用于特定 1 型糖尿病患者。FDA 产品页也列出其 proper name 为 donislecel-jujn。",
     "applicationScenario": "用于 1 型糖尿病、细胞治疗、再生医学、移植免疫和产品质量控制教学。",
     "displayFocus": "供体胰岛细胞制备—移植—葡萄糖感应—胰岛素分泌—免疫管理流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "胰岛素分泌",
@@ -2071,12 +2243,18 @@ export const industryCases: IndustryCase[] = [
       "heme protein",
       "GRAS Notice 737"
     ],
+    "guideQuestions": [
+      "Pichia pastoris 表达流程图",
+      "精准发酵与传统发酵比较",
+      "GRAS 资料阅读与边界说明。"
+    ],
     "linkedResearchTask": "精准发酵食品蛋白安全性证据梳理",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "FDA GRAS Notice GRN 737 页面显示该通知对象为 Impossible Foods 的 soy leghemoglobin preparation from a strain of Pichia pastoris，用于优化 ground beef analogue products 的风味。",
     "applicationScenario": "用于替代蛋白、植物基食品、精准发酵、食品安全评价和消费者接受度讨论。",
     "displayFocus": "目标蛋白设计—工程酵母发酵—蛋白制备—食品应用—安全资料说明流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "重组蛋白表达",
@@ -2149,12 +2327,18 @@ export const industryCases: IndustryCase[] = [
       "microbiome therapy",
       "recurrent CDI"
     ],
+    "guideQuestions": [
+      "抗生素后菌群失衡机制图",
+      "微生物群产品质控要点",
+      "治疗适用边界讨论。"
+    ],
     "linkedResearchTask": "微生物组治疗产品适用边界分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
     "background": "FDA REBYOTA 产品页显示 REBYOTA 的 proper name 为 fecal microbiota, live-jslm，适用于 18 岁及以上人群在抗生素治疗复发性 CDI 后预防复发。FDA fecal microbiota products 页面也将其列为 FDA 批准的粪菌微生物群产品。",
     "applicationScenario": "用于微生物组治疗、感染复发预防、活体生物制品监管、供体筛查和肠道生态教学。",
     "displayFocus": "供体筛查—微生物群制备—给药—肠道生态恢复—复发风险管理流程。",
+    "notes": "",
     "migrationPath": {
       "textbookBase": [
         "肠道菌群",
@@ -2204,8 +2388,8 @@ export const industryCases: IndustryCase[] = [
     ],
     "industryDirection": "转基因作物 / 生物防治 / 抗性治理",
     "coreProblem": "如何在利用 Bt 蛋白降低虫害压力的同时，延缓靶标害虫抗性并管理生态风险？",
-    "researchFoundation": "Bt 蛋白来源于 Bacillus thuringiensis，特定 Cry 蛋白在昆虫肠道中与受体结合并影响肠道上皮完整性。产业化应用需要把分子机制、田间防效、抗性演化和生态风险放在同一证据框架下讨论。",
-    "applicationValue": "补足农业生物技术方向，展示基础微生物毒素机制如何转化为作物抗虫性状。",
+    "researchFoundation": "Bt 蛋白通常在昆虫取食后进入中肠环境，经过活化并与特定受体结合，进而影响肠道上皮完整性，导致靶标昆虫受损。不同 Cry 蛋白的靶标范围、受体结合和抗性风险并不相同，因此产业化应用需要把分子机制、作物表达、田间防效、害虫种群演化和抗性治理放在同一证据框架下讨论。抗性管理通常会涉及庇护所策略、靶标害虫监测和多性状组合，但这些措施的有效性依赖具体作物、害虫和地区条件。",
+    "applicationValue": "该案例补足非医药方向，展示微生物毒素机制如何通过植物工程转化为作物抗虫性状，也帮助学生理解农业产品评价与药物评价不同：它更强调田间生态系统、抗性演化、长期管理边界和多方利益权衡。",
     "requiredAbilities": [
       "农业场景证据判断能力",
       "抗性演化分析能力",
@@ -2217,12 +2401,18 @@ export const industryCases: IndustryCase[] = [
       "plant-incorporated protectant",
       "resistance management"
     ],
+    "guideQuestions": [
+      "Bt 蛋白如何选择性作用于昆虫？",
+      "为什么需要抗性管理策略？",
+      "如何区分防效证据和生态风险证据？"
+    ],
     "linkedResearchTask": "Bt 作物抗性管理证据分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
-    "background": "美国 EPA 将 Bt 作物中的植物内置保护剂作为农业生物技术监管对象之一，可用于教学讨论转基因性状、靶标害虫控制和抗性管理边界。",
-    "applicationScenario": "用于农业生物技术、转基因作物、抗性管理和生态风险教学。",
+    "background": "Bt 作物利用来源于 Bacillus thuringiensis 的杀虫蛋白表达抗虫性状，是农业生物技术中连接微生物学、植物遗传工程和田间害虫管理的代表案例。美国 EPA 将植物内置保护剂作为监管对象之一，公开资料强调其评价不仅关注靶标害虫控制，也关注抗性演化、非靶标生物和生态风险边界。教学中可把它作为“基础机制如何进入农业场景”的案例，而不是简单把抗虫性状理解为单一技术胜利。",
+    "applicationScenario": "用于农业生物技术、转基因作物、害虫综合治理、抗性管理和生态风险教学。课堂上可以让学生比较实验室杀虫活性证据、田间防效证据、监管风险评价和长期抗性监测之间的差异，并进一步讨论不同作物、不同靶标害虫和不同地区条件下证据能否迁移。",
     "displayFocus": "Bt 蛋白表达—昆虫摄食—受体作用—田间防控—抗性管理流程。",
+    "notes": "备注：适合用于机制解释、证据边界判断和产业转化讨论。公开资料支持其作为植物内置保护剂和抗性管理教学案例，但不应把具体防效、生态影响或商业表现扩大到未被来源覆盖的地区和作物。",
     "migrationPath": {
       "textbookBase": [
         "微生物毒素",
@@ -2266,8 +2456,8 @@ export const industryCases: IndustryCase[] = [
     ],
     "industryDirection": "转基因动物 / 水产养殖 / 食品监管",
     "coreProblem": "如何评价转基因水产动物的生产优势、食品安全性和生态管理边界？",
-    "researchFoundation": "该案例把生长调控、转基因构建、养殖系统和监管审评连接起来。教学中应避免夸大生产表现，只基于公开监管资料讨论评价维度。",
-    "applicationValue": "补足动物与水产生物技术方向，展示动物生物技术不同于医药产品的证据结构。",
+    "researchFoundation": "该案例把生长调控、外源基因构建、表达调控、三倍体或隔离养殖系统、食品安全评价和环境暴露风险连接起来。转基因水产动物的核心科学问题并不仅是“能否长得更快”，还包括构建体稳定性、遗传与生理影响、养殖系统控制、逃逸概率、生态互作和可追溯监管记录。课堂讨论应区分机制假设、监管文件结论和真实产业运营数据。",
+    "applicationValue": "该案例补足动物与水产生物技术方向，展示生物技术产品并不只存在于医疗场景。学生可以借此理解动物生物技术产品如何同时面对分子机制、食品安全、生态风险、监管透明度和产业沟通。",
     "requiredAbilities": [
       "监管资料阅读能力",
       "生态风险判断能力",
@@ -2279,12 +2469,18 @@ export const industryCases: IndustryCase[] = [
       "aquaculture biotechnology",
       "FDA"
     ],
+    "guideQuestions": [
+      "转基因动物食品评价关注哪些证据？",
+      "养殖隔离如何影响生态风险？",
+      "怎样避免把监管结论扩大到未覆盖场景？"
+    ],
     "linkedResearchTask": "转基因水产动物监管证据边界分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
-    "background": "FDA AquAdvantage Salmon 页面记录了该转基因三文鱼的监管背景，适合讨论动物生物技术产品如何进入食品监管和环境风险讨论。",
-    "applicationScenario": "用于动物生物技术、水产育种、食品安全评价和生态风险管理教学。",
+    "background": "AquAdvantage Salmon 是动物生物技术和水产养殖监管讨论中的代表案例。FDA 公开资料围绕其 intentional genomic alteration、食品安全评价和环境风险管理提供了可追溯信息，适合用于讨论转基因动物食品与医药生物技术在证据结构上的差异。教学中应聚焦监管评价维度和风险边界，不把公开资料扩展为对所有养殖场景或商业表现的判断。",
+    "applicationScenario": "用于动物生物技术、水产育种、食品安全评价、封闭养殖系统和生态风险管理教学。可作为案例让学生梳理转基因动物从构建、养殖到监管评价的证据链，并讨论食品安全、环境暴露、养殖隔离和公众沟通如何共同影响产业转化。",
     "displayFocus": "基因构建—生长调控—养殖系统—食品评价—生态边界流程。",
+    "notes": "备注：该案例与已有 AquAdvantage Salmon 案例存在主题重叠，本条更偏向“监管证据边界与水产养殖场景”训练。公开 FDA 资料可支持教学讨论，但不要推断未公开的营养优势、成本优势或市场结论。",
     "migrationPath": {
       "textbookBase": [
         "基因表达调控",
@@ -2328,8 +2524,8 @@ export const industryCases: IndustryCase[] = [
     ],
     "industryDirection": "工业酶 / 洗涤剂 / 绿色制造",
     "coreProblem": "如何通过酶工程和配方优化，让工业酶在洗涤剂复杂环境中保持活性和稳定性？",
-    "researchFoundation": "工业酶需要在表面活性剂、氧化剂、不同 pH 和温度条件下保持功能。蛋白质工程可围绕热稳定性、底物识别、抗氧化和配方兼容性进行优化。",
-    "applicationValue": "补足非医药蛋白工程案例，展示酶工程在日化产业中的真实应用。",
+    "researchFoundation": "洗涤剂酶需要在表面活性剂、螯合剂、氧化剂、不同 pH、不同温度和机械搅拌条件下保持活性。蛋白质工程可围绕热稳定性、底物识别、抗氧化、抗蛋白酶降解和配方兼容性进行优化。与医学蛋白不同，工业酶评价更关注成本、稳定性、复配效果、批量生产和应用场景，而不是临床疗效。",
+    "applicationValue": "该案例展示酶工程如何进入大规模消费品产业，帮助学生理解“结构—功能—工艺—产品体验”的转化路径，也能补足案例库中过度偏医药的问题，并训练他们把实验室酶活指标转化为真实应用约束。",
     "requiredAbilities": [
       "酶结构功能分析能力",
       "工业条件约束建模能力",
@@ -2342,12 +2538,18 @@ export const industryCases: IndustryCase[] = [
       "enzyme stability",
       "protein engineering"
     ],
+    "guideQuestions": [
+      "洗涤剂酶为什么需要耐受复杂配方？",
+      "酶工程如何改善低温性能？",
+      "怎样评价绿色制造收益与证据边界？"
+    ],
     "linkedResearchTask": "洗涤剂酶稳定性优化方案设计",
     "evidenceLevel": "中",
     "sourceType": "产业报告",
-    "background": "Novonesis 等工业酶企业公开介绍洗涤剂酶在低温洗涤和去污中的应用，可用于讨论酶工程与消费品产业连接。",
-    "applicationScenario": "用于工业酶工程、绿色制造、消费品配方和蛋白质稳定性教学。",
+    "background": "工业酶在洗涤剂中的应用是蛋白质工程进入日常消费品的典型非医药案例。Novonesis 等企业公开资料介绍了洗涤剂酶在去除蛋白、淀粉、脂肪等污渍以及支持低温洗涤中的作用，适合用于连接酶催化、蛋白稳定性、配方兼容性和绿色制造，也能说明生物技术如何进入高频消费场景。",
+    "applicationScenario": "用于工业酶工程、绿色制造、消费品配方、生物催化和蛋白质稳定性教学。可以让学生比较淀粉酶、蛋白酶、脂肪酶、纤维素酶在不同污渍和洗涤条件下的功能边界，并设计配方兼容性或低温性能评价思路。",
     "displayFocus": "底物污渍—酶催化—配方环境—稳定性优化—低温洗涤流程。",
+    "notes": "备注：适合用于蛋白质工程、定向进化和绿色制造讨论。企业产品页可支持应用方向与技术类型介绍，但具体配方性能、市场份额、节能比例或消费者效果需要对应来源，不能凭空扩展。",
     "migrationPath": {
       "textbookBase": [
         "酶催化",
@@ -2391,8 +2593,8 @@ export const industryCases: IndustryCase[] = [
     ],
     "industryDirection": "废水流行病学 / 分子检测 / 公共卫生监测",
     "coreProblem": "如何从复杂废水样本中的核酸信号推断社区层面的病原体传播趋势？",
-    "researchFoundation": "废水样本包含来自社区的混合生物信号，需要采样、浓缩、核酸提取、定量检测和趋势解释。教学中应强调它反映群体趋势，不等同于个体诊断。",
-    "applicationValue": "补足环境生物技术案例，展示分子检测从临床走向社区尺度监测。",
+    "researchFoundation": "废水样本包含来自社区的混合生物信号，通常需要采样、浓缩、核酸提取、定量检测、归一化和趋势解释。影响结果的因素包括采样点、流量、降雨、人口波动、样本保存、检测靶标和数据归一化方式。该证据适合判断群体趋势和预警信号，但不能直接推出某个个体是否感染。",
+    "applicationValue": "该案例展示分子检测从临床实验室走向社区尺度监测的路径，帮助学生理解生物技术在公共卫生和环境治理中的应用价值，同时训练他们识别数据解释边界、采样不确定性和政策沟通风险。",
     "requiredAbilities": [
       "环境样本分析能力",
       "检测数据解释能力",
@@ -2405,12 +2607,18 @@ export const industryCases: IndustryCase[] = [
       "public health",
       "environmental monitoring"
     ],
+    "guideQuestions": [
+      "废水信号和个体病例有什么区别？",
+      "采样和归一化会影响哪些判断？",
+      "怎样避免过度解释趋势数据？"
+    ],
     "linkedResearchTask": "废水监测数据证据边界分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
-    "background": "CDC National Wastewater Surveillance System 公开介绍废水监测在公共卫生中的用途，适合讨论环境生物技术和分子检测的真实场景。",
-    "applicationScenario": "用于环境生物监测、感染趋势预警、分子检测和公共卫生数据解释教学。",
+    "background": "废水监测与公共卫生预警把环境样本、分子检测和群体健康趋势连接起来。CDC National Wastewater Surveillance System 公开介绍了废水数据在监测社区层面病原体趋势中的作用，适合用于讨论环境生物技术如何服务公共卫生，而不是替代个体临床诊断。",
+    "applicationScenario": "用于环境生物监测、感染趋势预警、分子检测、公共卫生数据解释和城市环境管理教学。学生可以围绕采样方案、检测靶标、趋势图解读、归一化方法和决策边界设计训练任务，理解社区尺度数据与个体诊断的差异。",
     "displayFocus": "采样—浓缩—核酸检测—趋势分析—公共卫生响应流程。",
+    "notes": "备注：适合做证据解释、采样设计和数据边界训练。CDC 资料支持废水监测作为公共卫生趋势工具，但不能把废水信号直接解释为个体诊断、具体病例数或单一地区的确定传播结论。",
     "migrationPath": {
       "textbookBase": [
         "核酸检测",
@@ -2454,8 +2662,8 @@ export const industryCases: IndustryCase[] = [
     ],
     "industryDirection": "AI 蛋白结构预测 / 数据库 / 智能研发",
     "coreProblem": "如何把 AI 预测蛋白结构用于科研假设生成，同时识别预测结果的适用边界？",
-    "researchFoundation": "结构预测可以帮助提出结构功能假设、定位保守区域和辅助实验设计，但预测结构不等同于实验测定结构，仍需要结合置信度、复合物状态和功能实验解释。",
-    "applicationValue": "补足智能研发平台方向，展示 AI 与结构生物学结合的研发入口。",
+    "researchFoundation": "结构预测可帮助研究者从序列出发观察潜在折叠、结构域、保守区域和可能的功能位点。阅读 AlphaFold 结果时需要结合置信度指标、结构区域可靠性、蛋白动态性、复合物状态、配体结合和实验验证需求。预测结构可以支持假设生成和实验优先级排序，但不等同于 X-ray、cryo-EM 或 NMR 等实验结构，也不能单独证明蛋白功能。",
+    "applicationValue": "该案例展示 AI 平台如何进入生命科学研发流程，帮助学生理解智能研发工具的价值和边界：它能提升探索效率和假设生成速度，但仍需要实验验证、场景判断和领域知识解释，不能把预测直接当作事实结论。",
     "requiredAbilities": [
       "结构数据解读能力",
       "AI 工具边界判断能力",
@@ -2468,12 +2676,18 @@ export const industryCases: IndustryCase[] = [
       "pLDDT",
       "bioinformatics"
     ],
+    "guideQuestions": [
+      "AlphaFold 预测结果能支持哪些问题？",
+      "哪些问题仍需实验结构或功能实验？",
+      "如何结合置信度阅读结构模型？"
+    ],
     "linkedResearchTask": "AlphaFold 结构预测结果边界分析",
     "evidenceLevel": "高",
     "sourceType": "产业报告",
-    "background": "AlphaFold Protein Structure Database 由 EMBL-EBI 等公开维护，提供大量蛋白结构预测结果，适合讨论 AI 工具如何辅助生物研发。",
-    "applicationScenario": "用于生物信息学、蛋白质工程、药物研发前期分析和科研工具平台教学。",
+    "background": "AlphaFold Protein Structure Database 是 AI 辅助生物研发的重要平台案例。EMBL-EBI 等机构公开维护该数据库，提供大量蛋白结构预测结果，适合用于讨论结构预测如何帮助提出功能假设、辅助蛋白工程和药物研发前期分析。",
+    "applicationScenario": "用于生物信息学、蛋白质工程、结构功能关系、药物研发前期分析和科研工具平台教学。学生可练习从序列、结构模型、置信度信息和保守区域提出可验证假设，并判断哪些结论仍需要实验结构或功能实验支撑。",
     "displayFocus": "序列输入—结构预测—置信度阅读—功能假设—实验验证流程。",
+    "notes": "备注：适合用于 AI 工具边界、结构数据解读和科研假设生成训练。公开数据库可支持平台功能与结构预测用途介绍，但不能把预测结果写成已实验验证结论，也不能由结构模型直接推出临床或产业成效。",
     "migrationPath": {
       "textbookBase": [
         "蛋白质一级结构",
@@ -2517,8 +2731,8 @@ export const industryCases: IndustryCase[] = [
     ],
     "industryDirection": "细胞培养食品 / 新食品评价 / 替代蛋白",
     "coreProblem": "如何评价由培养动物细胞制成食品原料的生产过程、安全性和产业化边界？",
-    "researchFoundation": "培养细胞食品涉及细胞系、培养基、扩增、收获和食品安全评价。教学中应区分“可作为食品安全咨询案例”与具体营养、成本或市场表现结论。",
-    "applicationValue": "补足食品生物技术方向，展示细胞培养技术从生物医学工具走向食品产业的证据结构。",
+    "researchFoundation": "培养细胞食品通常涉及细胞来源、细胞库建立、培养基、扩增过程、分化或成熟、收获加工以及食品安全评价。关键训练点包括细胞系稳定性、培养过程控制、残留物与成分分析、微生物安全、生产放大和监管沟通。教学中应区分“FDA 完成某项咨询流程”与“所有培养细胞食品都已被证明具有某种营养或市场优势”。",
+    "applicationValue": "该案例补足食品与营养健康方向，展示细胞培养、过程工程和食品监管如何结合，也帮助学生看到非医药生物产业同样需要严谨证据链。它适合训练学生区分安全评价、营养判断、成本判断和市场判断。",
     "requiredAbilities": [
       "细胞培养流程分析能力",
       "食品安全资料阅读能力",
@@ -2531,12 +2745,18 @@ export const industryCases: IndustryCase[] = [
       "food safety",
       "alternative protein"
     ],
+    "guideQuestions": [
+      "培养细胞食品和传统发酵食品证据结构有何不同？",
+      "安全评价关注哪些生产过程信息？",
+      "哪些市场或营养结论不能由咨询文件直接推出？"
+    ],
     "linkedResearchTask": "培养细胞食品安全评价路径分析",
     "evidenceLevel": "高",
     "sourceType": "监管文件",
-    "background": "FDA 完成 UPSIDE Foods 培养鸡细胞材料上市前咨询，公开资料可用于讨论培养细胞食品的安全评价和边界。",
-    "applicationScenario": "用于新食品、细胞培养、替代蛋白、食品安全评价和产业化放大教学。",
+    "background": "UPSIDE Foods 培养细胞食品案例可用于讨论细胞培养技术从生物医学工具走向食品产业。FDA 关于培养动物细胞食品的公开资料和上市前咨询信息，为课堂提供了食品安全评价、生产过程描述和证据边界讨论材料，也适合比较细胞农业与传统发酵食品的证据结构差异。",
+    "applicationScenario": "用于新食品、动物细胞培养、替代蛋白、食品安全评价、生产放大和产业化边界教学。可以让学生构建培养细胞食品从细胞来源、细胞库、培养扩增、收获加工到安全评价的证据清单，并讨论哪些数据仍需公开来源支撑。",
     "displayFocus": "细胞系—培养扩增—收获加工—安全评价—食品应用流程。",
+    "notes": "备注：适合用于食品生物技术和监管边界讨论。FDA 公开资料可支持安全评价流程和案例背景，但不应延伸为成本、环境影响、营养优势或市场接受度的确定结论；这些问题需要单独来源支撑。",
     "migrationPath": {
       "textbookBase": [
         "动物细胞培养",

@@ -60,12 +60,12 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "FDA reference 1",
         "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/208573s031lbl.pdf",
         "type": "regulatory"
       },
       {
-        "title": "",
+        "title": "PubMed reference 2",
         "url": "https://pubmed.ncbi.nlm.nih.gov/26639348/",
         "type": "academic"
       }
@@ -144,12 +144,12 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "FDA reference 1",
         "url": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/kymriah",
         "type": "regulatory"
       },
       {
-        "title": "",
+        "title": "PubMed reference 2",
         "url": "https://pubmed.ncbi.nlm.nih.gov/29385370/",
         "type": "academic"
       }
@@ -226,12 +226,12 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "Merck reference 1",
         "url": "https://www.merck.com/product/usa/pi_circulars/k/keytruda/keytruda_pi.pdf",
         "type": "product_page"
       },
       {
-        "title": "",
+        "title": "PubMed reference 2",
         "url": "https://pubmed.ncbi.nlm.nih.gov/25891173/",
         "type": "academic"
       }
@@ -310,12 +310,12 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "FDA reference 1",
         "url": "https://www.fda.gov/media/151707/download",
         "type": "regulatory"
       },
       {
-        "title": "",
+        "title": "PubMed reference 2",
         "url": "https://pubmed.ncbi.nlm.nih.gov/33301246/",
         "type": "academic"
       }
@@ -396,17 +396,17 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "FDA reference 1",
         "url": "https://www.fda.gov/news-events/press-announcements/fda-approves-first-gene-therapies-treat-patients-sickle-cell-disease",
         "type": "regulatory"
       },
       {
-        "title": "",
+        "title": "FDA reference 2",
         "url": "https://www.fda.gov/media/175179/download",
         "type": "regulatory"
       },
       {
-        "title": "",
+        "title": "PubMed reference 3",
         "url": "https://pubmed.ncbi.nlm.nih.gov/38661449/",
         "type": "academic"
       }
@@ -480,7 +480,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "FDA reference 1",
         "url": "https://www.fda.gov/vaccines-blood-biologics/zolgensma",
         "type": "regulatory"
       }
@@ -555,7 +555,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "Genentech reference 1",
         "url": "https://www.gene.com/download/pdf/herceptin_prescribing.pdf",
         "type": "product_page"
       }
@@ -630,7 +630,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "FDA reference 1",
         "url": "https://www.accessdata.fda.gov/cdrh_docs/pdf17/P170019B.pdf",
         "type": "regulatory"
       }
@@ -704,7 +704,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "WHO reference 1",
         "url": "https://www.who.int/publications/i/item/9789241501545",
         "type": "regulatory"
       }
@@ -778,7 +778,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "USDA APHIS reference 1",
         "url": "https://www.aphis.usda.gov/sites/default/files/09_20101p_dea.pdf",
         "type": "regulatory"
       }
@@ -852,7 +852,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "EPA reference 1",
         "url": "https://www.epa.gov/ingredients-used-pesticide-products/what-are-biopesticides",
         "type": "regulatory"
       }
@@ -927,7 +927,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "IDEXX reference 1",
         "url": "https://www.idexx.com/en/veterinary/snap-tests/snap-4dx-plus-test/",
         "type": "product_page"
       }
@@ -1002,7 +1002,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "FDA reference 1",
         "url": "https://www.fda.gov/animal-veterinary/animals-intentional-genomic-alterations/aquadvantage-salmon-approval-letter-and-appendix",
         "type": "regulatory"
       }
@@ -1076,7 +1076,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "Yakult reference 1",
         "url": "https://www.yakultusa.com/products/yakult/",
         "type": "product_page"
       }
@@ -1150,7 +1150,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "FDA reference 1",
         "url": "https://www.hfpappexternal.fda.gov/scripts/fdcc/index.cfm?id=863&set=GRASNotices",
         "type": "regulatory"
       }
@@ -1224,7 +1224,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "Nature reference 1",
         "url": "https://www.nature.com/articles/nature12051",
         "type": "academic"
       }
@@ -1298,7 +1298,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "KANEKA reference 1",
         "url": "https://www.kaneka.co.jp/en/business/material/nbd_001.html",
         "type": "product_page"
       }
@@ -1372,7 +1372,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "Nature reference 1",
         "url": "https://www.nature.com/articles/s41586-020-2149-4",
         "type": "academic"
       }
@@ -1446,7 +1446,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "Lilly reference 1",
         "url": "https://pi.lilly.com/us/humulin-r-pi.pdf",
         "type": "product_page"
       }
@@ -1520,7 +1520,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "CDC reference 1",
         "url": "https://www.cdc.gov/wastewater/index.html",
         "type": "regulatory"
       }
@@ -1594,7 +1594,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "eCFR reference 1",
         "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-172/subpart-G/section-172.620",
         "type": "regulatory"
       }
@@ -1669,7 +1669,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "AlphaFold DB reference 1",
         "url": "https://alphafold.ebi.ac.uk/",
         "type": "product_page"
       }
@@ -1745,7 +1745,7 @@
     "is_featured": false,
     "references": [
       {
-        "title": "",
+        "title": "10x Genomics reference 1",
         "url": "https://www.10xgenomics.com/products/single-cell-gene-expression",
         "type": "product_page"
       }
@@ -2458,11 +2458,11 @@
       "农业生态风险"
     ],
     "core_problem": "如何在利用 Bt 蛋白降低虫害压力的同时，延缓靶标害虫抗性并管理生态风险？",
-    "background": "美国 EPA 将 Bt 作物中的植物内置保护剂作为农业生物技术监管对象之一，可用于教学讨论转基因性状、靶标害虫控制和抗性管理边界。",
+    "background": "Bt 作物利用来源于 Bacillus thuringiensis 的杀虫蛋白表达抗虫性状，是农业生物技术中连接微生物学、植物遗传工程和田间害虫管理的代表案例。美国 EPA 将植物内置保护剂作为监管对象之一，公开资料强调其评价不仅关注靶标害虫控制，也关注抗性演化、非靶标生物和生态风险边界。教学中可把它作为“基础机制如何进入农业场景”的案例，而不是简单把抗虫性状理解为单一技术胜利。",
     "problem_statement": "如何在利用 Bt 蛋白降低虫害压力的同时，延缓靶标害虫抗性并管理生态风险？",
-    "research_foundation": "Bt 蛋白来源于 Bacillus thuringiensis，特定 Cry 蛋白在昆虫肠道中与受体结合并影响肠道上皮完整性。产业化应用需要把分子机制、田间防效、抗性演化和生态风险放在同一证据框架下讨论。",
-    "application_scenario": "用于农业生物技术、转基因作物、抗性管理和生态风险教学。",
-    "application_value": "补足农业生物技术方向，展示基础微生物毒素机制如何转化为作物抗虫性状。",
+    "research_foundation": "Bt 蛋白通常在昆虫取食后进入中肠环境，经过活化并与特定受体结合，进而影响肠道上皮完整性，导致靶标昆虫受损。不同 Cry 蛋白的靶标范围、受体结合和抗性风险并不相同，因此产业化应用需要把分子机制、作物表达、田间防效、害虫种群演化和抗性治理放在同一证据框架下讨论。抗性管理通常会涉及庇护所策略、靶标害虫监测和多性状组合，但这些措施的有效性依赖具体作物、害虫和地区条件。",
+    "application_scenario": "用于农业生物技术、转基因作物、害虫综合治理、抗性管理和生态风险教学。课堂上可以让学生比较实验室杀虫活性证据、田间防效证据、监管风险评价和长期抗性监测之间的差异，并进一步讨论不同作物、不同靶标害虫和不同地区条件下证据能否迁移。",
+    "application_value": "该案例补足非医药方向，展示微生物毒素机制如何通过植物工程转化为作物抗虫性状，也帮助学生理解农业产品评价与药物评价不同：它更强调田间生态系统、抗性演化、长期管理边界和多方利益权衡。",
     "required_abilities": [
       "农业场景证据判断能力",
       "抗性演化分析能力",
@@ -2520,7 +2520,7 @@
     ],
     "related_papers": [],
     "related_concepts": [],
-    "analysis_text": ""
+    "analysis_text": "备注：适合用于机制解释、证据边界判断和产业转化讨论。公开资料支持其作为植物内置保护剂和抗性管理教学案例，但不应把具体防效、生态影响或商业表现扩大到未被来源覆盖的地区和作物。"
   },
   {
     "case_key": "case-032",
@@ -2537,11 +2537,11 @@
       "生态隔离"
     ],
     "core_problem": "如何评价转基因水产动物的生产优势、食品安全性和生态管理边界？",
-    "background": "FDA AquAdvantage Salmon 页面记录了该转基因三文鱼的监管背景，适合讨论动物生物技术产品如何进入食品监管和环境风险讨论。",
+    "background": "AquAdvantage Salmon 是动物生物技术和水产养殖监管讨论中的代表案例。FDA 公开资料围绕其 intentional genomic alteration、食品安全评价和环境风险管理提供了可追溯信息，适合用于讨论转基因动物食品与医药生物技术在证据结构上的差异。教学中应聚焦监管评价维度和风险边界，不把公开资料扩展为对所有养殖场景或商业表现的判断。",
     "problem_statement": "如何评价转基因水产动物的生产优势、食品安全性和生态管理边界？",
-    "research_foundation": "该案例把生长调控、转基因构建、养殖系统和监管审评连接起来。教学中应避免夸大生产表现，只基于公开监管资料讨论评价维度。",
-    "application_scenario": "用于动物生物技术、水产育种、食品安全评价和生态风险管理教学。",
-    "application_value": "补足动物与水产生物技术方向，展示动物生物技术不同于医药产品的证据结构。",
+    "research_foundation": "该案例把生长调控、外源基因构建、表达调控、三倍体或隔离养殖系统、食品安全评价和环境暴露风险连接起来。转基因水产动物的核心科学问题并不仅是“能否长得更快”，还包括构建体稳定性、遗传与生理影响、养殖系统控制、逃逸概率、生态互作和可追溯监管记录。课堂讨论应区分机制假设、监管文件结论和真实产业运营数据。",
+    "application_scenario": "用于动物生物技术、水产育种、食品安全评价、封闭养殖系统和生态风险管理教学。可作为案例让学生梳理转基因动物从构建、养殖到监管评价的证据链，并讨论食品安全、环境暴露、养殖隔离和公众沟通如何共同影响产业转化。",
+    "application_value": "该案例补足动物与水产生物技术方向，展示生物技术产品并不只存在于医疗场景。学生可以借此理解动物生物技术产品如何同时面对分子机制、食品安全、生态风险、监管透明度和产业沟通。",
     "required_abilities": [
       "监管资料阅读能力",
       "生态风险判断能力",
@@ -2599,7 +2599,7 @@
     ],
     "related_papers": [],
     "related_concepts": [],
-    "analysis_text": ""
+    "analysis_text": "备注：该案例与已有 AquAdvantage Salmon 案例存在主题重叠，本条更偏向“监管证据边界与水产养殖场景”训练。公开 FDA 资料可支持教学讨论，但不要推断未公开的营养优势、成本优势或市场结论。"
   },
   {
     "case_key": "case-033",
@@ -2616,11 +2616,11 @@
       "配方兼容性"
     ],
     "core_problem": "如何通过酶工程和配方优化，让工业酶在洗涤剂复杂环境中保持活性和稳定性？",
-    "background": "Novonesis 等工业酶企业公开介绍洗涤剂酶在低温洗涤和去污中的应用，可用于讨论酶工程与消费品产业连接。",
+    "background": "工业酶在洗涤剂中的应用是蛋白质工程进入日常消费品的典型非医药案例。Novonesis 等企业公开资料介绍了洗涤剂酶在去除蛋白、淀粉、脂肪等污渍以及支持低温洗涤中的作用，适合用于连接酶催化、蛋白稳定性、配方兼容性和绿色制造，也能说明生物技术如何进入高频消费场景。",
     "problem_statement": "如何通过酶工程和配方优化，让工业酶在洗涤剂复杂环境中保持活性和稳定性？",
-    "research_foundation": "工业酶需要在表面活性剂、氧化剂、不同 pH 和温度条件下保持功能。蛋白质工程可围绕热稳定性、底物识别、抗氧化和配方兼容性进行优化。",
-    "application_scenario": "用于工业酶工程、绿色制造、消费品配方和蛋白质稳定性教学。",
-    "application_value": "补足非医药蛋白工程案例，展示酶工程在日化产业中的真实应用。",
+    "research_foundation": "洗涤剂酶需要在表面活性剂、螯合剂、氧化剂、不同 pH、不同温度和机械搅拌条件下保持活性。蛋白质工程可围绕热稳定性、底物识别、抗氧化、抗蛋白酶降解和配方兼容性进行优化。与医学蛋白不同，工业酶评价更关注成本、稳定性、复配效果、批量生产和应用场景，而不是临床疗效。",
+    "application_scenario": "用于工业酶工程、绿色制造、消费品配方、生物催化和蛋白质稳定性教学。可以让学生比较淀粉酶、蛋白酶、脂肪酶、纤维素酶在不同污渍和洗涤条件下的功能边界，并设计配方兼容性或低温性能评价思路。",
+    "application_value": "该案例展示酶工程如何进入大规模消费品产业，帮助学生理解“结构—功能—工艺—产品体验”的转化路径，也能补足案例库中过度偏医药的问题，并训练他们把实验室酶活指标转化为真实应用约束。",
     "required_abilities": [
       "酶结构功能分析能力",
       "工业条件约束建模能力",
@@ -2679,7 +2679,7 @@
     ],
     "related_papers": [],
     "related_concepts": [],
-    "analysis_text": ""
+    "analysis_text": "备注：适合用于蛋白质工程、定向进化和绿色制造讨论。企业产品页可支持应用方向与技术类型介绍，但具体配方性能、市场份额、节能比例或消费者效果需要对应来源，不能凭空扩展。"
   },
   {
     "case_key": "case-034",
@@ -2696,11 +2696,11 @@
       "公共卫生预警"
     ],
     "core_problem": "如何从复杂废水样本中的核酸信号推断社区层面的病原体传播趋势？",
-    "background": "CDC National Wastewater Surveillance System 公开介绍废水监测在公共卫生中的用途，适合讨论环境生物技术和分子检测的真实场景。",
+    "background": "废水监测与公共卫生预警把环境样本、分子检测和群体健康趋势连接起来。CDC National Wastewater Surveillance System 公开介绍了废水数据在监测社区层面病原体趋势中的作用，适合用于讨论环境生物技术如何服务公共卫生，而不是替代个体临床诊断。",
     "problem_statement": "如何从复杂废水样本中的核酸信号推断社区层面的病原体传播趋势？",
-    "research_foundation": "废水样本包含来自社区的混合生物信号，需要采样、浓缩、核酸提取、定量检测和趋势解释。教学中应强调它反映群体趋势，不等同于个体诊断。",
-    "application_scenario": "用于环境生物监测、感染趋势预警、分子检测和公共卫生数据解释教学。",
-    "application_value": "补足环境生物技术案例，展示分子检测从临床走向社区尺度监测。",
+    "research_foundation": "废水样本包含来自社区的混合生物信号，通常需要采样、浓缩、核酸提取、定量检测、归一化和趋势解释。影响结果的因素包括采样点、流量、降雨、人口波动、样本保存、检测靶标和数据归一化方式。该证据适合判断群体趋势和预警信号，但不能直接推出某个个体是否感染。",
+    "application_scenario": "用于环境生物监测、感染趋势预警、分子检测、公共卫生数据解释和城市环境管理教学。学生可以围绕采样方案、检测靶标、趋势图解读、归一化方法和决策边界设计训练任务，理解社区尺度数据与个体诊断的差异。",
+    "application_value": "该案例展示分子检测从临床实验室走向社区尺度监测的路径，帮助学生理解生物技术在公共卫生和环境治理中的应用价值，同时训练他们识别数据解释边界、采样不确定性和政策沟通风险。",
     "required_abilities": [
       "环境样本分析能力",
       "检测数据解释能力",
@@ -2759,7 +2759,7 @@
     ],
     "related_papers": [],
     "related_concepts": [],
-    "analysis_text": ""
+    "analysis_text": "备注：适合做证据解释、采样设计和数据边界训练。CDC 资料支持废水监测作为公共卫生趋势工具，但不能把废水信号直接解释为个体诊断、具体病例数或单一地区的确定传播结论。"
   },
   {
     "case_key": "case-035",
@@ -2776,11 +2776,11 @@
       "功能假设"
     ],
     "core_problem": "如何把 AI 预测蛋白结构用于科研假设生成，同时识别预测结果的适用边界？",
-    "background": "AlphaFold Protein Structure Database 由 EMBL-EBI 等公开维护，提供大量蛋白结构预测结果，适合讨论 AI 工具如何辅助生物研发。",
+    "background": "AlphaFold Protein Structure Database 是 AI 辅助生物研发的重要平台案例。EMBL-EBI 等机构公开维护该数据库，提供大量蛋白结构预测结果，适合用于讨论结构预测如何帮助提出功能假设、辅助蛋白工程和药物研发前期分析。",
     "problem_statement": "如何把 AI 预测蛋白结构用于科研假设生成，同时识别预测结果的适用边界？",
-    "research_foundation": "结构预测可以帮助提出结构功能假设、定位保守区域和辅助实验设计，但预测结构不等同于实验测定结构，仍需要结合置信度、复合物状态和功能实验解释。",
-    "application_scenario": "用于生物信息学、蛋白质工程、药物研发前期分析和科研工具平台教学。",
-    "application_value": "补足智能研发平台方向，展示 AI 与结构生物学结合的研发入口。",
+    "research_foundation": "结构预测可帮助研究者从序列出发观察潜在折叠、结构域、保守区域和可能的功能位点。阅读 AlphaFold 结果时需要结合置信度指标、结构区域可靠性、蛋白动态性、复合物状态、配体结合和实验验证需求。预测结构可以支持假设生成和实验优先级排序，但不等同于 X-ray、cryo-EM 或 NMR 等实验结构，也不能单独证明蛋白功能。",
+    "application_scenario": "用于生物信息学、蛋白质工程、结构功能关系、药物研发前期分析和科研工具平台教学。学生可练习从序列、结构模型、置信度信息和保守区域提出可验证假设，并判断哪些结论仍需要实验结构或功能实验支撑。",
+    "application_value": "该案例展示 AI 平台如何进入生命科学研发流程，帮助学生理解智能研发工具的价值和边界：它能提升探索效率和假设生成速度，但仍需要实验验证、场景判断和领域知识解释，不能把预测直接当作事实结论。",
     "required_abilities": [
       "结构数据解读能力",
       "AI 工具边界判断能力",
@@ -2839,7 +2839,7 @@
     ],
     "related_papers": [],
     "related_concepts": [],
-    "analysis_text": ""
+    "analysis_text": "备注：适合用于 AI 工具边界、结构数据解读和科研假设生成训练。公开数据库可支持平台功能与结构预测用途介绍，但不能把预测结果写成已实验验证结论，也不能由结构模型直接推出临床或产业成效。"
   },
   {
     "case_key": "case-036",
@@ -2856,11 +2856,11 @@
       "替代蛋白"
     ],
     "core_problem": "如何评价由培养动物细胞制成食品原料的生产过程、安全性和产业化边界？",
-    "background": "FDA 完成 UPSIDE Foods 培养鸡细胞材料上市前咨询，公开资料可用于讨论培养细胞食品的安全评价和边界。",
+    "background": "UPSIDE Foods 培养细胞食品案例可用于讨论细胞培养技术从生物医学工具走向食品产业。FDA 关于培养动物细胞食品的公开资料和上市前咨询信息，为课堂提供了食品安全评价、生产过程描述和证据边界讨论材料，也适合比较细胞农业与传统发酵食品的证据结构差异。",
     "problem_statement": "如何评价由培养动物细胞制成食品原料的生产过程、安全性和产业化边界？",
-    "research_foundation": "培养细胞食品涉及细胞系、培养基、扩增、收获和食品安全评价。教学中应区分“可作为食品安全咨询案例”与具体营养、成本或市场表现结论。",
-    "application_scenario": "用于新食品、细胞培养、替代蛋白、食品安全评价和产业化放大教学。",
-    "application_value": "补足食品生物技术方向，展示细胞培养技术从生物医学工具走向食品产业的证据结构。",
+    "research_foundation": "培养细胞食品通常涉及细胞来源、细胞库建立、培养基、扩增过程、分化或成熟、收获加工以及食品安全评价。关键训练点包括细胞系稳定性、培养过程控制、残留物与成分分析、微生物安全、生产放大和监管沟通。教学中应区分“FDA 完成某项咨询流程”与“所有培养细胞食品都已被证明具有某种营养或市场优势”。",
+    "application_scenario": "用于新食品、动物细胞培养、替代蛋白、食品安全评价、生产放大和产业化边界教学。可以让学生构建培养细胞食品从细胞来源、细胞库、培养扩增、收获加工到安全评价的证据清单，并讨论哪些数据仍需公开来源支撑。",
+    "application_value": "该案例补足食品与营养健康方向，展示细胞培养、过程工程和食品监管如何结合，也帮助学生看到非医药生物产业同样需要严谨证据链。它适合训练学生区分安全评价、营养判断、成本判断和市场判断。",
     "required_abilities": [
       "细胞培养流程分析能力",
       "食品安全资料阅读能力",
@@ -2919,6 +2919,6 @@
     ],
     "related_papers": [],
     "related_concepts": [],
-    "analysis_text": ""
+    "analysis_text": "备注：适合用于食品生物技术和监管边界讨论。FDA 公开资料可支持安全评价流程和案例背景，但不应延伸为成本、环境影响、营养优势或市场接受度的确定结论；这些问题需要单独来源支撑。"
   }
 ]

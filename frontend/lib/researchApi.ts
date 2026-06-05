@@ -1,3 +1,5 @@
+import { industryCases } from "@/data/industryCases";
+
 export interface TaskStep {
   title: string;
   description: string;
@@ -87,14 +89,12 @@ export function generateLocalResearchTask(
   caseKey: string | null,
   mode: "independent" | "case_driven",
 ): ResearchTaskGenerateResponse {
-  return {
-    topic,
-    case_key: caseKey,
-    mode,
-    research_question: topic,
-    background: `测试提示：当前为本地训练框架生成。\n\n围绕「${topic}」这一主题，本训练框架整合生物制造领域核心研究方法、案例线索与文献阅读路径，帮助你从问题拆解进入科研训练。`,
-    matched_cases: [],
-    related_knowledge_points: [
+  const caseDetail = caseKey ? industryCases.find((item) => item.id === caseKey) : undefined;
+  const caseKeywords = caseDetail?.recommendedKeywords || [];
+  const caseKnowledge = caseDetail?.relatedKnowledgePoints || [];
+  const defaultKnowledge = caseKnowledge.length > 0
+    ? caseKnowledge
+    : [
       "分子生物学基础",
       "细胞信号通路",
       "实验设计方法",
@@ -103,7 +103,40 @@ export function generateLocalResearchTask(
       "科研伦理",
       "生物信息学工具",
       "产业转化路径",
-    ],
+    ];
+  const defaultKeywords = caseKeywords.length > 0
+    ? caseKeywords
+    : ["生物制造", "实验设计", "文献调研", "数据分析", "机制研究", "产业应用", "科研方法", "证据评估"];
+  const caseEvidence = caseDetail
+    ? [{
+      id: `case-detail-${caseDetail.id}`,
+      title: `${caseDetail.title}：案例详情`,
+      source_type: "local_case_detail",
+      source_name: "本地产业案例详情",
+      snippet: [
+        `核心问题：${caseDetail.coreProblem}`,
+        `科研基础：${caseDetail.researchFoundation}`,
+        `应用场景：${caseDetail.applicationScenario}`,
+      ].filter(Boolean).join("\n"),
+      relevance_reason: "提供当前科研训练任务的案例背景和机制上下文。",
+      trust_level: "curated",
+    }]
+    : [];
+  const matchedCase = caseDetail
+    ? [{ case_key: caseDetail.id, title: caseDetail.title, reason: `基于当前产业案例「${caseDetail.category || caseDetail.industryDirection}」生成训练任务` }]
+    : [];
+  const caseContextLine = caseDetail
+    ? `已读取当前案例「${caseDetail.title}」：${caseDetail.coreProblem} ${caseDetail.researchFoundation.slice(0, 160)}`
+    : "当前平台知识库暂无直接匹配案例，以下基于通用生物制造科研方法生成训练框架。";
+
+  return {
+    topic,
+    case_key: caseKey,
+    mode,
+    research_question: topic,
+    background: `测试提示：当前为本地训练框架生成。\n\n围绕「${topic}」这一主题，本训练框架整合生物制造领域核心研究方法、案例线索与文献阅读路径。${caseContextLine}`,
+    matched_cases: matchedCase,
+    related_knowledge_points: defaultKnowledge,
     tasks: [
       {
         type: "literature_review",
@@ -132,12 +165,12 @@ export function generateLocalResearchTask(
           },
         ],
         output_requirement: "提交3000字以上文献综述，包含至少15篇参考文献，明确标注知识空白和研究方向",
-        suggested_keywords: ["文献调研", "综述撰写", "检索策略", "研究现状", "知识空白"],
+        suggested_keywords: defaultKeywords.slice(0, 8),
         example_outline: "1. 引言与研究背景\n2. 核心概念与理论基础\n3. 研究现状与进展\n4. 关键技术方法比较\n5. 知识空白与研究展望\n6. 参考文献",
         why_this_task: "先建立证据边界，避免直接进入实验设计时缺少文献依据。",
         expected_output: "一份文献证据表和一段 300 字研究现状摘要。",
-        keywords: ["文献调研", "综述撰写", "检索策略", "研究现状", "知识空白"],
-        evidence_ids: [],
+        keywords: defaultKeywords.slice(0, 8),
+        evidence_ids: caseEvidence.map((item) => item.id),
         difficulty: "中等",
       },
       {
@@ -167,12 +200,12 @@ export function generateLocalResearchTask(
           },
         ],
         output_requirement: "提交完整实验方案文档，包含假设、分组设计、方法描述、预期结果、潜在风险与应对策略",
-        suggested_keywords: ["实验设计", "对照设置", "预实验", "方法优化", "Protocol"],
+        suggested_keywords: defaultKeywords.slice(0, 8),
         example_outline: "1. 研究假设\n2. 实验分组设计\n3. 材料与设备\n4. 详细操作步骤\n5. 检测指标与分析方法\n6. 预期结果\n7. 风险与应对",
         why_this_task: "把文献中提出的机制或现象转化为可验证问题。",
         expected_output: "一份包含对照、指标和风险边界的高层实验设计框架。",
-        keywords: ["实验设计", "对照设置", "预实验", "方法优化", "Protocol"],
-        evidence_ids: [],
+        keywords: defaultKeywords.slice(0, 8),
+        evidence_ids: caseEvidence.map((item) => item.id),
         difficulty: "中等",
       },
       {
@@ -197,12 +230,12 @@ export function generateLocalResearchTask(
           },
         ],
         output_requirement: "提交机制分析报告，包含分子通路图、关键节点说明、未解决问题列表",
-        suggested_keywords: ["机制分析", "信号通路", "分子互作", "模型构建", "假说验证"],
+        suggested_keywords: defaultKeywords.slice(0, 8),
         example_outline: "1. 分子机制概述\n2. 关键信号通路分析\n3. 调控网络与互作关系\n4. 机制模型图\n5. 未解决问题与假说",
         why_this_task: "帮助学生把案例中的产品或技术还原到分子机制层面。",
         expected_output: "一张机制图和一份关键节点说明。",
-        keywords: ["机制分析", "信号通路", "分子互作", "模型构建", "假说验证"],
-        evidence_ids: [],
+        keywords: defaultKeywords.slice(0, 8),
+        evidence_ids: caseEvidence.map((item) => item.id),
         difficulty: "中等",
       },
       {
@@ -227,12 +260,12 @@ export function generateLocalResearchTask(
           },
         ],
         output_requirement: "提交研究引导报告，包含证据分级表、数据分析方案、转化路径和风险边界",
-        suggested_keywords: ["证据等级", "统计分析", "转化路径", "应用边界", "批判性思维"],
+        suggested_keywords: defaultKeywords.slice(0, 8),
         example_outline: "1. 证据检索策略\n2. 证据等级分级表\n3. 关键数据指标\n4. 转化路径分析\n5. 应用边界与风险\n6. 下一步研究建议",
         why_this_task: "训练从科研证据走向产业判断时识别适用范围和不确定性。",
         expected_output: "一份证据边界与转化风险分析表。",
-        keywords: ["证据等级", "统计分析", "转化路径", "应用边界", "批判性思维"],
-        evidence_ids: [],
+        keywords: defaultKeywords.slice(0, 8),
+        evidence_ids: caseEvidence.map((item) => item.id),
         difficulty: "中等",
       },
     ],
@@ -246,7 +279,7 @@ export function generateLocalResearchTask(
     source_mode: "local_fallback",
     evidence_mode: "local_only",
     debug_hint: "测试提示：当前为本地训练框架生成",
-    evidence_items: [],
+    evidence_items: caseEvidence,
     limitations: "生成内容用于科研训练，不等同于完整实验方案。",
   };
 }

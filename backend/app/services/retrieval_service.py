@@ -130,7 +130,7 @@ class RetrievalService:
             "evidence_items": deduped[: max(limit, 8)],
             "evidence_count": len(deduped[: max(limit, 8)]),
             "has_external_evidence": any(item.get("source_type") in {"pubmed", "crossref", "semantic_scholar"} for item in deduped),
-            "has_local_evidence": any(item.get("source_type") in {"case_context", "case_source", "local_curated"} for item in deduped),
+            "has_local_evidence": any(item.get("source_type") in {"local_case_detail", "case_source", "local_curated"} for item in deduped),
         }
 
     def _get_case(self, case_key: str | None) -> IndustryCase | None:
@@ -144,21 +144,39 @@ class RetrievalService:
         return {
             "case_key": case.case_key,
             "title": case.title,
+            "subtitle": case.subtitle,
+            "category": case.category,
             "industry_direction": case.industry_direction,
             "core_question": case.core_problem or case.problem_statement,
+            "background": case.background,
+            "research_foundation": case.research_foundation,
+            "application_scenario": case.application_scenario,
+            "application_value": case.application_value,
+            "display_focus": case.display_focus,
+            "training_abilities": case.required_abilities or [],
+            "discussion_questions": case.guide_questions or [],
             "keywords": case.recommended_keywords or [],
             "knowledge_points": case.knowledge_points or [],
         }
 
     def _case_evidence(self, case: IndustryCase) -> dict[str, Any]:
+        detail_parts = [
+            f"核心问题：{case.core_problem or case.problem_statement or ''}",
+            f"背景：{case.background or ''}",
+            f"科研基础：{case.research_foundation or ''}",
+            f"应用场景：{case.application_scenario or ''}",
+            f"应用价值：{case.application_value or ''}",
+            f"展示重点：{case.display_focus or ''}",
+        ]
+        snippet = "\n".join(part for part in detail_parts if not part.endswith("："))
         return {
-            "id": f"case-{case.case_key}",
-            "title": case.title,
-            "source_type": "case_context",
-            "source_name": "当前产业案例",
-            "snippet": case.research_foundation or case.background or case.core_problem or "",
-            "relevance_reason": "提供当前科研训练任务的案例背景和核心问题。",
-            "trust_level": "medium",
+            "id": f"case-detail-{case.case_key}",
+            "title": f"{case.title}：案例详情",
+            "source_type": "local_case_detail",
+            "source_name": "本地产业案例详情",
+            "snippet": snippet,
+            "relevance_reason": "提供当前案例的机制背景、科研基础、应用场景和训练任务上下文。",
+            "trust_level": "curated",
         }
 
     def _case_source_evidence(self, case: IndustryCase) -> list[dict[str, Any]]:
