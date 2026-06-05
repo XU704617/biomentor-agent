@@ -27,7 +27,7 @@ async function extractPdfText(buffer) {
   if (fallbackText) return fallbackText;
 
   try {
-    const pdfParse = await import("pdf-parse/lib/pdf-parse.js");
+    const pdfParse = await import("pdf-parse");
 
     if (typeof pdfParse.default === "function") {
       const result = await pdfParse.default(buffer);
