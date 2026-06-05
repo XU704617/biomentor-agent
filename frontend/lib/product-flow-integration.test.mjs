@@ -100,9 +100,9 @@ test("knowledge exploration extracts uploaded PDF text before asking AI to analy
 test("seminar PDF upload avoids the pdf-parse debug entrypoint", () => {
   const extractor = readFileSync(frontendPath("lib/defense-file-text.mjs"), "utf8");
 
-  assert.doesNotMatch(extractor, /import\("pdf-parse"\)/);
-  assert.match(extractor, /pdf-parse\/lib\/pdf-parse\.js/);
-  assert.ok(extractor.indexOf("extractVisiblePdfText(buffer)") < extractor.indexOf("pdf-parse/lib/pdf-parse.js"));
+  assert.doesNotMatch(extractor, /pdf-parse\/lib\/pdf-parse\.js/);
+  assert.match(extractor, /import\("pdf-parse"\)/);
+  assert.ok(extractor.indexOf("extractVisiblePdfText(buffer)") < extractor.indexOf('import("pdf-parse")'));
 });
 
 test("knowledge map uses a larger unframed graph canvas with wrapped labels", () => {

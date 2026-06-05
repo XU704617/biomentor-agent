@@ -102,8 +102,6 @@ def _write_frontend_env(api_key: str, base_url: str, model: str) -> None:
     lines = _write_env_value(lines, "DEEPSEEK_API_KEY", api_key)
     lines = _write_env_value(lines, "DEEPSEEK_BASE_URL", api_root)
     lines = _write_env_value(lines, "DEEPSEEK_MODEL", model)
-    lines = _write_env_value(lines, "NEXT_PUBLIC_API_BASE_URL", "http://106.14.194.186:10087")
-    lines = _write_env_value(lines, "FASTAPI_BACKEND_URL", "http://127.0.0.1:10087")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
