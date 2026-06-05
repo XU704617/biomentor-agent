@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 4096
 
+    # ---- GLM evidence-grounded generation ----
+    GLM_API_KEY: str = ""
+    GLM_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
+    GLM_MODEL: str = "glm-4-flash"
+    GLM_TIMEOUT_SECONDS: int = 30
+
     # ---- RAG ----
     RAG_TOP_K: int = 5
     RAG_SIMILARITY_THRESHOLD: float = 0.65

@@ -433,10 +433,13 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
             <span className="text-xs font-semibold text-brand-ink">
               文献支撑笔记 · 基于 {noteResult.selected_count} 篇参考文献
             </span>
+            {noteResult.source_mode && showDebugBadge(noteResult.source_mode) && (
+              <span className="text-[10px] rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 font-semibold">
+                {showDebugBadge(noteResult.source_mode)}
+              </span>
+            )}
           </div>
-          <div className="text-xs text-brand-muted leading-relaxed whitespace-pre-wrap">
-            {noteResult.note || "选择参考文献后，可生成文献支撑笔记。"}
-          </div>
+          <StructuredEvidenceNote noteResult={noteResult} />
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -491,6 +494,72 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
       {panelState === "error" && renderError()}
       {panelState === "empty" && renderEmpty()}
       {(panelState === "results" || panelState === "note_loading" || panelState === "note_ready") && renderResults()}
+    </div>
+  );
+}
+
+function showDebugBadge(sourceMode?: string) {
+  if (process.env.NEXT_PUBLIC_SHOW_DEBUG_BADGES !== "true" && process.env.NODE_ENV === "production") return "";
+  if (sourceMode === "ai_grounded") return "AI 增强生成";
+  if (sourceMode === "local_fallback") return "本地训练框架生成";
+  return "";
+}
+
+function StructuredEvidenceNote({ noteResult }: { noteResult: EvidenceNoteResponse }) {
+  const roles = noteResult.literature_roles || [];
+  const nextSteps = noteResult.next_steps || [];
+  if (!noteResult.direct_answer && roles.length === 0) {
+    return (
+      <div className="text-xs text-brand-muted leading-relaxed whitespace-pre-wrap">
+        {noteResult.note || "选择参考文献后，可生成文献支撑笔记。"}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 text-xs text-brand-muted leading-relaxed">
+      <NoteBlock title="直接回答" content={noteResult.direct_answer || noteResult.note} />
+      <NoteBlock title="证据怎么支持" content={noteResult.case_connection} />
+      {roles.length > 0 && (
+        <div>
+          <p className="font-semibold text-brand-ink mb-1">每篇文献的作用</p>
+          <div className="space-y-2">
+            {roles.map((role, index) => (
+              <div key={role.evidence_id || index} className="rounded-lg bg-white/50 border border-black/5 p-2">
+                <p className="font-semibold text-brand-ink">{role.title || "未提供标题"}</p>
+                <p>{role.role || "用于支撑当前科研训练任务。"}</p>
+                {role.usable_evidence && <p className="mt-1">可用证据：{role.usable_evidence}</p>}
+                {role.limitation && <p className="mt-1 text-amber-700">还不能证明：{role.limitation}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <NoteBlock title="可用于答辩的一句话" content={noteResult.seminar_quote} />
+      {nextSteps.length > 0 && (
+        <div>
+          <p className="font-semibold text-brand-ink mb-1">下一步建议</p>
+          <ul className="space-y-1">
+            {nextSteps.map((step, index) => (
+              <li key={index} className="flex gap-1.5">
+                <span className="text-accent-electric">{index + 1}.</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <NoteBlock title="使用边界" content={noteResult.limitations} />
+    </div>
+  );
+}
+
+function NoteBlock({ title, content }: { title: string; content?: string }) {
+  if (!content) return null;
+  return (
+    <div>
+      <p className="font-semibold text-brand-ink mb-1">{title}</p>
+      <p className="whitespace-pre-wrap">{content}</p>
     </div>
   );
 }

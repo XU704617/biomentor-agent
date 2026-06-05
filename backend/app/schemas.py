@@ -781,6 +781,11 @@ class TaskItem(BaseModel):
     output_requirement: str = ""
     suggested_keywords: list[str] = []
     example_outline: str = ""
+    why_this_task: str = ""
+    expected_output: str = ""
+    keywords: list[str] = []
+    evidence_ids: list[str] = []
+    difficulty: str = "中等"
 
 
 class ResearchTaskGenerateRequest(BaseModel):
@@ -803,6 +808,11 @@ class ResearchTaskGenerateResponse(BaseModel):
     seminar_topic: str = ""
     source_scope: str = ""
     disclaimer: str = ""
+    source_mode: str = "local_fallback"
+    evidence_mode: str = "local_only"
+    debug_hint: str = ""
+    evidence_items: list[dict[str, Any]] = []
+    limitations: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -882,12 +892,22 @@ class EvidenceNoteData(BaseModel):
     summary: str
     references: list[EvidenceReferenceItem] = []
     limitations: list[str] = []
+    source_mode: str = "local_fallback"
+    note_title: str = ""
+    direct_answer: str = ""
+    core_question: str = ""
+    literature_roles: list[dict[str, Any]] = []
+    case_connection: str = ""
+    seminar_quote: str = ""
+    next_steps: list[str] = []
+    evidence_items: list[dict[str, Any]] = []
 
 
 class EvidenceNoteRequest(BaseModel):
     task_title: str
     task_description: str | None = None
     selected_literature: list[EvidenceLiteratureItem] = []
+    case_title: str | None = None
 
 
 class EvidenceNoteResponse(BaseModel):

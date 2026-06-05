@@ -6,6 +6,7 @@ Uses existing LLMService and IndustryCase data to generate scaffolded research t
 from __future__ import annotations
 
 import json
+import asyncio
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.models import IndustryCase
 from app.services.llm import get_llm
 from app.schemas import TaskItem, TaskStep, ResearchTaskGenerateResponse
+from app.services.grounded_generation_service import GroundedGenerationService
 
 
 RESEARCH_TASK_SYSTEM = """你是一位资深的生物制造领域科研导师，擅长为研究生和科研人员设计结构化的科研训练任务。
@@ -56,9 +58,25 @@ class ResearchService:
         self.llm = get_llm()
 
     def generate_task(self, topic: str, case_key: str | None = None, mode: str = "independent") -> ResearchTaskGenerateResponse:
-        if case_key and mode == "case_driven":
-            return self._case_driven_task(topic, case_key)
-        return self._independent_task(topic)
+        def local_builder() -> ResearchTaskGenerateResponse:
+            if case_key and mode == "case_driven":
+                return self._case_driven_task(topic, case_key)
+            return self._independent_task(topic)
+
+        try:
+            payload = asyncio.run(
+                GroundedGenerationService(self.db).generate_research_tasks(
+                    topic=topic,
+                    case_key=case_key,
+                    mode=mode,
+                    local_builder=lambda: local_builder().model_dump(),
+                )
+            )
+            return self._response_from_grounded_payload(topic, case_key, mode, payload, local_builder)
+        except ValueError:
+            raise
+        except Exception:
+            return local_builder()
 
     def _case_driven_task(self, topic: str, case_key: str) -> ResearchTaskGenerateResponse:
         case = self.db.query(IndustryCase).filter(IndustryCase.case_key == case_key).first()
@@ -390,4 +408,69 @@ class ResearchService:
             seminar_topic=topic if "研讨" in topic else f"「{topic}」的研究进展与方法论探讨",
             source_scope="测试提示：当前为本地训练框架生成",
             disclaimer="本训练框架仅供学习参考，具体研究设计请结合实际条件、原始文献和导师指导。",
+            source_mode="local_fallback",
+            evidence_mode="local_only",
+            debug_hint="测试提示：当前为本地训练框架生成",
+            limitations="生成内容用于科研训练，不等同于完整实验方案。",
+        )
+
+    def _response_from_grounded_payload(
+        self,
+        topic: str,
+        case_key: str | None,
+        mode: str,
+        payload: dict[str, Any],
+        local_builder,
+    ) -> ResearchTaskGenerateResponse:
+        tasks = []
+        for idx, raw in enumerate(payload.get("tasks") or []):
+            steps = raw.get("steps") or []
+            normalized_steps = []
+            for step_idx, step in enumerate(steps):
+                if isinstance(step, str):
+                    normalized_steps.append(TaskStep(title=f"步骤 {step_idx + 1}", description=step, expected_duration=""))
+                elif isinstance(step, dict):
+                    normalized_steps.append(TaskStep(
+                        title=step.get("title") or f"步骤 {step_idx + 1}",
+                        description=step.get("description") or step.get("content") or "",
+                        expected_duration=step.get("expected_duration") or "",
+                    ))
+            keywords = raw.get("keywords") or raw.get("suggested_keywords") or []
+            tasks.append(TaskItem(
+                type=raw.get("type") or ["literature_review", "experiment_design", "mechanism_explanation", "evidence_judgement"][min(idx, 3)],
+                title=raw.get("title") or "科研训练任务",
+                goal=raw.get("goal") or "",
+                steps=normalized_steps,
+                output_requirement=raw.get("output_requirement") or raw.get("expected_output") or "",
+                suggested_keywords=keywords,
+                example_outline=raw.get("example_outline") or raw.get("expected_output") or "",
+                why_this_task=raw.get("why_this_task") or "",
+                expected_output=raw.get("expected_output") or raw.get("output_requirement") or "",
+                keywords=keywords,
+                evidence_ids=raw.get("evidence_ids") or [],
+                difficulty=raw.get("difficulty") or "中等",
+            ))
+
+        if len(tasks) < 4:
+            return local_builder()
+
+        return ResearchTaskGenerateResponse(
+            topic=topic,
+            case_key=case_key,
+            mode=mode,
+            research_question=payload.get("research_question") or topic,
+            background=payload.get("background") or "",
+            matched_cases=payload.get("matched_cases") or [],
+            related_knowledge_points=payload.get("related_knowledge_points") or [],
+            tasks=tasks[:4],
+            expected_outputs=payload.get("expected_outputs") or [t.expected_output or t.output_requirement for t in tasks[:4]],
+            mentor_advice=payload.get("mentor_advice") or "",
+            seminar_topic=payload.get("seminar_topic") or topic,
+            source_scope=payload.get("debug_hint") or payload.get("source_scope") or "",
+            disclaimer=payload.get("disclaimer") or payload.get("limitations") or "生成内容用于科研训练，不等同于完整实验方案。",
+            source_mode=payload.get("source_mode") or "local_fallback",
+            evidence_mode=payload.get("evidence_mode") or "local_only",
+            debug_hint=payload.get("debug_hint") or "",
+            evidence_items=payload.get("evidence_items") or [],
+            limitations=payload.get("limitations") or "生成内容用于科研训练，不等同于完整实验方案。",
         )

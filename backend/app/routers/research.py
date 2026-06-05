@@ -6,6 +6,7 @@ from app.schemas import ResearchPaperOut, ResearchPaperCreate
 from app.schemas import ResearchTaskGenerateRequest, ResearchTaskGenerateResponse
 from app.services.papers import PaperService
 from app.services.research_service import ResearchService
+from app.services.grounded_generation_service import GroundedGenerationService
 
 router = APIRouter(prefix="/api/research", tags=["research"])
 
@@ -132,8 +133,28 @@ def generate_task(data: ResearchTaskGenerateRequest, db: Session = Depends(get_d
         return service.generate_task(data.topic, data.case_key, data.mode)
     except ValueError as e:
         raise HTTPException(404, str(e))
-    except Exception as e:
-        raise HTTPException(500, f"Task generation failed: {e}")
+    except Exception:
+        return ResearchService(db)._build_fallback_task(
+            data.topic,
+            data.case_key,
+            data.mode,
+            [],
+            [],
+            [],
+            "当前资料暂不足，使用本地训练框架。",
+        )
+
+
+@router.post("/tutor")
+async def research_tutor(body: dict, db: Session = Depends(get_db)):
+    service = GroundedGenerationService(db)
+    return await service.answer_tutor(
+        question=str(body.get("question") or ""),
+        case_id=body.get("case_id"),
+        case_title=body.get("case_title"),
+        selected_task=body.get("selected_task") if isinstance(body.get("selected_task"), dict) else None,
+        selected_literature=body.get("selected_literature") if isinstance(body.get("selected_literature"), list) else [],
+    )
 
 
 def _default_steps(name: str, category: str) -> list[str]:

@@ -28,12 +28,14 @@ export interface ApiIndustryCase {
   application_value: string;
   knowledge_points: string[];
   required_abilities: string[];
+  guide_questions: string[];
   recommended_keywords: string[];
   linked_research_task: string;
   evidence_level: string;
   source_type: string;
   application_scenario: string;
   display_focus: string;
+  analysis_text: string;
   migration_path: {
     textbookBase: string[];
     researchFrontier: string[];
@@ -57,12 +59,14 @@ export function convertApiCaseToFrontend(apiCase: ApiIndustryCase): IndustryCase
     applicationValue: apiCase.application_value,
     requiredAbilities: apiCase.required_abilities || [],
     recommendedKeywords: apiCase.recommended_keywords || [],
+    guideQuestions: apiCase.guide_questions || [],
     linkedResearchTask: apiCase.linked_research_task,
     evidenceLevel: apiCase.evidence_level === "high" ? "高" : apiCase.evidence_level === "medium" ? "中" : "发展中",
     sourceType: apiCase.source_type === "academic" ? "学术文献" : apiCase.source_type === "clinical_trial" ? "临床试验" : apiCase.source_type === "patent" ? "专利文献" : apiCase.source_type === "regulatory" ? "监管文件" : "产业报告",
     background: apiCase.background,
     applicationScenario: apiCase.application_scenario,
     displayFocus: apiCase.display_focus,
+    notes: apiCase.analysis_text || "",
     migrationPath: apiCase.migration_path || { textbookBase: [], researchFrontier: [], industryApplication: [] },
     references: Array.isArray(apiCase.references) ? apiCase.references.map(r => ({
       title: r.title,

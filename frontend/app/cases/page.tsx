@@ -119,6 +119,19 @@ export default function CasesPage() {
 
   const recommendedCaseIds = ["case-004", "case-002", "case-005", "case-001", "case-003"];
 
+  const categoryStats = useMemo(() => {
+    return categories.map((cat) => {
+      const items = allCases.filter((c) => c.category === cat);
+      const abilities = Array.from(new Set(items.flatMap((c) => c.requiredAbilities || []))).slice(0, 3);
+      return {
+        category: cat,
+        count: items.length,
+        representatives: items.slice(0, 3).map((item) => item.title),
+        abilities,
+      };
+    });
+  }, [allCases, categories]);
+
   useEffect(() => {
     if (searchQuery.trim() !== "" || selectedCategory !== "") {
       setDisplayLimit(sortedCases.length);
@@ -335,26 +348,42 @@ export default function CasesPage() {
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {categories.map((cat) => {
-                const count = allCases.filter((c) => c.category === cat).length;
+              {categoryStats.map((stat) => {
                 return (
                   <button
-                    key={cat}
+                    key={stat.category}
                     onClick={() => {
-                      setSelectedCategory(selectedCategory === cat ? "" : cat);
+                      setSelectedCategory(selectedCategory === stat.category ? "" : stat.category);
                       scrollToSection("cases-section");
                     }}
-                    className={`glass-card rounded-xl p-5 text-center cursor-pointer transition-all hover:shadow-md ${
-                      selectedCategory === cat ? "ring-2 ring-blue-400/30" : ""
+                    className={`glass-card rounded-xl p-5 text-left cursor-pointer transition-all hover:shadow-md ${
+                      selectedCategory === stat.category ? "ring-2 ring-blue-400/30" : ""
                     }`}
                   >
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/8 flex items-center justify-center mx-auto mb-3">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/8 flex items-center justify-center mb-3">
                       <Building2 className="w-5 h-5 text-blue-600" />
                     </div>
-                    <h4 className="font-display text-sm font-bold text-brand-ink mb-1.5">{cat}</h4>
-                    <p className="text-[10px] text-brand-faint font-body leading-relaxed">
-                      {count} 个案例
+                    <h4 className="font-display text-sm font-bold text-brand-ink mb-1.5">{stat.category}</h4>
+                    <p className="text-[10px] text-brand-faint font-body leading-relaxed mb-2">
+                      {stat.count} 个案例
                     </p>
+                    {stat.representatives.length > 0 && (
+                      <div className="space-y-1 mb-2">
+                        {stat.representatives.map((title) => (
+                          <p key={title} className="text-[10px] text-brand-muted line-clamp-1">· {title}</p>
+                        ))}
+                      </div>
+                    )}
+                    {stat.abilities.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {stat.abilities.map((ability) => (
+                          <span key={ability} className="text-[9px] rounded-full bg-blue-50 text-blue-700 px-1.5 py-0.5">
+                            {ability}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <span className="text-[10px] font-semibold text-accent-electric">查看该方向案例</span>
                   </button>
                 );
               })}
