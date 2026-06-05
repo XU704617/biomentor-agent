@@ -84,6 +84,75 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
+function buildCaseTaskCopy(
+  topic: string,
+  caseDetail: (typeof industryCases)[number] | undefined,
+) {
+  const text = [
+    topic,
+    caseDetail?.id,
+    caseDetail?.title,
+    caseDetail?.subtitle,
+    caseDetail?.industryDirection,
+    caseDetail?.coreProblem,
+    caseDetail?.researchFoundation,
+    caseDetail?.displayFocus,
+    ...(caseDetail?.recommendedKeywords || []),
+    ...(caseDetail?.relatedKnowledgePoints || []),
+  ].filter(Boolean).join(" ");
+
+  if (/case-036|培养细胞食品|cultured meat|UPSIDE|细胞培养食品|培养动物细胞/i.test(text)) {
+    return {
+      literatureTitle: "培养细胞食品生产流程梳理",
+      experimentTitle: "食品安全性评价路径分析",
+      mechanismTitle: "规模化生产与质量控制方案",
+      evidenceTitle: "产业化边界与监管证据分析",
+      literatureGoal: "梳理培养动物细胞制成食品原料的生产流程、关键质量节点和公开安全评价资料。",
+      experimentGoal: "围绕细胞来源、培养基、生产过程、成品检测和对照材料设计高层评价路径。",
+      mechanismGoal: "解释细胞扩增、分化、收获和质量控制如何影响产品一致性与产业化可行性。",
+      evidenceGoal: "比较公开资料中的安全性、生产规模、成本和监管边界，整理仍不能确认的问题。",
+    };
+  }
+
+  if (/case-035|alphafold|蛋白结构预测|protein structure|结构预测/i.test(text)) {
+    return {
+      literatureTitle: "AlphaFold DB 结构预测证据解读",
+      experimentTitle: "蛋白结构预测实验验证设计",
+      mechanismTitle: "模型置信度与结构功能关系分析",
+      evidenceTitle: "蛋白工程应用边界评估",
+      literatureGoal: "梳理 AlphaFold DB、蛋白结构预测和模型置信度指标在科研中的使用方式。",
+      experimentGoal: "设计用于验证预测结构的高层实验框架，比较预测结果与实验结构或功能数据。",
+      mechanismGoal: "解释结构域、活性位点、置信度和蛋白功能之间的关系与不确定性。",
+      evidenceGoal: "评估结构预测在蛋白工程、药物发现和功能注释中的适用边界。",
+    };
+  }
+
+  if (/case-004|mRNA|LNP|脂质纳米|递送|内体逃逸|疫苗/i.test(text)) {
+    return {
+      literatureTitle: "mRNA/LNP 递送机制文献梳理",
+      experimentTitle: "LNP 递送效率与安全性评价设计",
+      mechanismTitle: "内体逃逸与免疫反应机制解释",
+      evidenceTitle: "mRNA 疫苗递送证据边界分析",
+      literatureGoal: "梳理 mRNA 稳定性、LNP 组成、细胞摄取、内体逃逸和免疫反应相关证据。",
+      experimentGoal: "围绕递送效率、表达水平、安全性和免疫反应设计高层评价框架。",
+      mechanismGoal: "解释 LNP 如何保护 mRNA、促进细胞摄取并影响抗原表达和免疫激活。",
+      evidenceGoal: "区分递送机制证据、产品效果证据和安全性证据的适用边界。",
+    };
+  }
+
+  const subject = caseDetail?.title || topic;
+  return {
+    literatureTitle: `${subject}证据梳理`,
+    experimentTitle: `${subject}评价方案设计`,
+    mechanismTitle: `${subject}机制解释`,
+    evidenceTitle: `${subject}产业转化边界分析`,
+    literatureGoal: `系统检索和分析与「${topic}」相关的核心文献，梳理研究现状与知识空白。`,
+    experimentGoal: `围绕「${topic}」设计高层验证方案，明确假设、对照、指标和风险边界。`,
+    mechanismGoal: `深入分析「${topic}」涉及的分子机制、技术原理或生产过程。`,
+    evidenceGoal: `系统评估「${topic}」相关研究证据质量，并梳理从机制理解到产业应用的转化路径。`,
+  };
+}
+
 export function generateLocalResearchTask(
   topic: string,
   caseKey: string | null,
@@ -107,6 +176,7 @@ export function generateLocalResearchTask(
   const defaultKeywords = caseKeywords.length > 0
     ? caseKeywords
     : ["生物制造", "实验设计", "文献调研", "数据分析", "机制研究", "产业应用", "科研方法", "证据评估"];
+  const taskCopy = buildCaseTaskCopy(topic, caseDetail);
   const caseEvidence = caseDetail
     ? [{
       id: `case-detail-${caseDetail.id}`,
@@ -140,8 +210,8 @@ export function generateLocalResearchTask(
     tasks: [
       {
         type: "literature_review",
-        title: "文献调研",
-        goal: `系统检索和分析与「${topic}」相关的核心文献，梳理研究现状与知识空白`,
+        title: taskCopy.literatureTitle,
+        goal: taskCopy.literatureGoal,
         steps: [
           {
             title: "确定检索策略",
@@ -175,8 +245,8 @@ export function generateLocalResearchTask(
       },
       {
         type: "experiment_design",
-        title: "实验设计",
-        goal: `围绕「${topic}」设计严谨的验证性实验方案`,
+        title: taskCopy.experimentTitle,
+        goal: taskCopy.experimentGoal,
         steps: [
           {
             title: "明确实验假设",
@@ -210,8 +280,8 @@ export function generateLocalResearchTask(
       },
       {
         type: "mechanism_explanation",
-        title: "机制解释",
-        goal: `深入分析「${topic}」涉及的分子机制和原理`,
+        title: taskCopy.mechanismTitle,
+        goal: taskCopy.mechanismGoal,
         steps: [
           {
             title: "梳理已知机制",
@@ -240,8 +310,8 @@ export function generateLocalResearchTask(
       },
       {
         type: "evidence_judgement",
-        title: "研究引导 / 产业转化分析",
-        goal: `系统评估「${topic}」相关研究的证据质量，并梳理从机制理解到产业应用的转化路径`,
+        title: taskCopy.evidenceTitle,
+        goal: taskCopy.evidenceGoal,
         steps: [
           {
             title: "证据分级评估",
@@ -325,7 +395,9 @@ export async function askResearchTutor(input: {
   }
   return {
     source_mode: "local_fallback",
-    answer: `可以先围绕「${input.selected_task?.title || "当前任务"}」把问题拆成研究目标、证据来源、方法设计和局限性四部分。针对你的问题「${input.question}」，建议先确认已选文献是否直接支持该判断。`,
+    answer: input.selected_task
+      ? `可以先围绕「${input.selected_task.title}」把问题拆成研究目标、证据来源、方法设计和局限性四部分。针对你的问题「${input.question}」，建议先确认已选文献是否直接支持该判断。`
+      : `可以先把你的问题「${input.question}」拆成研究方向、关键词、证据来源和可生成的训练任务。若当前页面带有案例信息，我会优先参考案例标题、核心问题和知识点；如果资料不足，应明确说明当前不能确认。`,
     evidence_used: [],
     suggested_next_questions: ["哪些证据能直接支持这个判断？", "实验对照应该如何设置？", "当前资料还有哪些不能证明？"],
     boundary: "该回答用于科研训练，不替代真实实验设计审批。",

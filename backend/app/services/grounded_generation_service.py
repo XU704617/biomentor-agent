@@ -166,14 +166,12 @@ class GroundedGenerationService:
             limit=5,
         )
         fallback = self._fallback_tutor(question, selected_task, package)
-        if not selected_task:
-            return fallback
 
         prompt = json.dumps(
             {
                 "question": question,
                 "case_context": {"case_id": case_id, "case_title": case_title},
-                "selected_task": selected_task,
+                "selected_task": selected_task or {},
                 "selected_literature": selected_literature or [],
                 "evidence_items": package["evidence_items"],
                 "output_schema": {
@@ -241,11 +239,11 @@ class GroundedGenerationService:
         }
 
     def _fallback_tutor(self, question: str, selected_task: dict[str, Any] | None, package: dict[str, Any]) -> dict[str, Any]:
-        task_title = selected_task.get("title") if selected_task else "当前任务"
+        task_title = selected_task.get("title") if selected_task else "当前问题"
         return {
             "source_mode": "local_fallback",
             "answer": (
-                f"可以先围绕「{task_title}」把问题拆成研究目标、证据来源、方法设计和局限性四部分。"
+                f"可以先围绕「{task_title}」把问题拆成研究方向、关键词、证据来源和训练任务四部分。"
                 f"针对你的问题「{question}」，建议先确认已选文献是否直接支持该判断；若没有直接证据，应写明当前资料不足，不能确认。"
             ),
             "evidence_used": [item.get("id") for item in package.get("evidence_items", [])[:2] if item.get("id")],

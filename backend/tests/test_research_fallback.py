@@ -1,7 +1,9 @@
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from app.routers.research import generate_task
 from app.schemas import ResearchTaskGenerateRequest
+from app.services.research_service import ResearchService
 
 
 class FakeUnavailableLLM:
@@ -78,3 +80,81 @@ def test_generate_task_returns_four_tasks_when_llm_raises_network_error():
         data = _post_generate_task("CAR-T 细胞治疗为什么会出现抗原逃逸？")
 
     _assert_stable_fallback_response(data)
+
+
+def _build_service_fallback(case_key, title, core_problem, keywords, knowledge_points):
+    service = ResearchService.__new__(ResearchService)
+    case = SimpleNamespace(
+        case_key=case_key,
+        title=title,
+        subtitle="",
+        industry_direction="测试方向",
+        core_problem=core_problem,
+        research_foundation=core_problem,
+        display_focus=core_problem,
+        recommended_keywords=keywords,
+        knowledge_points=knowledge_points,
+    )
+    return service._build_fallback_task(
+        core_problem,
+        case_key,
+        "case_driven",
+        knowledge_points,
+        keywords,
+        [{"case_key": case_key, "title": title, "reason": "测试匹配"}],
+        f"匹配产业案例：{title}（{case_key}）",
+        case,
+    )
+
+
+def _task_text(response):
+    return " ".join([task.title + " " + task.goal for task in response.tasks])
+
+
+def test_case_036_fallback_tasks_follow_cultured_food_context():
+    data = _build_service_fallback(
+        "case-036",
+        "UPSIDE Foods 培养细胞食品",
+        "如何评价由培养动物细胞制成食品原料的生产过程、安全性和产业化边界？",
+        ["培养细胞食品", "食品安全", "质量控制", "产业化"],
+        ["细胞培养", "食品安全评价", "生产过程控制"],
+    )
+
+    text = _task_text(data)
+    assert "培养细胞食品" in text
+    assert "食品安全性" in text
+    assert "质量控制" in text
+    assert "产业化边界" in text
+    assert "CRISPR" not in text
+    assert "Prime Editing" not in text
+    assert "LNP" not in text
+
+
+def test_case_004_fallback_tasks_follow_mrna_lnp_context():
+    data = _build_service_fallback(
+        "case-004",
+        "mRNA 疫苗递送技术",
+        "如何把不稳定的 mRNA 安全递送进细胞并诱导免疫反应？",
+        ["mRNA", "LNP", "递送", "内体逃逸"],
+        ["mRNA 稳定性", "脂质纳米颗粒", "免疫反应"],
+    )
+
+    text = _task_text(data)
+    assert "mRNA" in text
+    assert "LNP" in text
+    assert "递送" in text
+
+
+def test_case_035_fallback_tasks_follow_alphafold_context():
+    data = _build_service_fallback(
+        "case-035",
+        "AlphaFold DB 与蛋白结构预测",
+        "如何评价蛋白结构预测结果在蛋白工程中的可靠性？",
+        ["AlphaFold", "蛋白结构预测", "模型置信度", "蛋白工程"],
+        ["蛋白结构", "模型置信度", "实验验证"],
+    )
+
+    text = _task_text(data)
+    assert "AlphaFold" in text
+    assert "结构预测" in text
+    assert "蛋白" in text
