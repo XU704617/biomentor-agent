@@ -122,3 +122,34 @@ def test_retrieval_uses_local_case_detail_evidence():
     assert evidence["trust_level"] == "curated"
     assert "科研基础" in evidence["snippet"]
     assert "应用场景" in evidence["snippet"]
+
+
+def test_seed_source_types_are_supported_by_backend_enum():
+    import json
+    from pathlib import Path
+    from app.models import SourceType
+
+    seed_path = Path(__file__).resolve().parents[1] / "app" / "seed_data" / "industry_cases.json"
+    cases = json.loads(seed_path.read_text(encoding="utf-8"))
+
+    supported = {item.name for item in SourceType}
+    seen = set()
+
+    for case in cases:
+        case_source_type = case.get("source_type")
+        if case_source_type:
+            seen.add(case_source_type)
+
+        for source in case.get("sources", []):
+            source_type = source.get("type") or source.get("source_type")
+            if source_type:
+                seen.add(source_type)
+
+        for source in case.get("references", []):
+            source_type = source.get("type") or source.get("source_type")
+            if source_type:
+                seen.add(source_type)
+
+    unsupported = seen - supported
+    assert not unsupported, f"Unsupported source types in seed data: {sorted(unsupported)}"
+    assert "product_page" in seen

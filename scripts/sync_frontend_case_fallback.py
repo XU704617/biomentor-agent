@@ -26,7 +26,7 @@ SOURCE_TYPE = {
     "clinical_trial": "临床试验",
     "patent": "专利文献",
     "regulatory": "监管文件",
-    "product_page": "产业报告",
+    "product_page": "产品页",
     "review": "学术文献",
 }
 
@@ -45,6 +45,8 @@ def to_ref_type(url: str, raw_type: str | None) -> str:
         return "FDA"
     if "doi.org" in host or raw == "academic":
         return "DOI"
+    if raw == "product_page":
+        return "ProductPage"
     if raw == "review":
         return "Review"
     return "Other"

@@ -62,7 +62,7 @@ export function convertApiCaseToFrontend(apiCase: ApiIndustryCase): IndustryCase
     guideQuestions: apiCase.guide_questions || [],
     linkedResearchTask: apiCase.linked_research_task,
     evidenceLevel: apiCase.evidence_level === "high" ? "高" : apiCase.evidence_level === "medium" ? "中" : "发展中",
-    sourceType: apiCase.source_type === "academic" ? "学术文献" : apiCase.source_type === "clinical_trial" ? "临床试验" : apiCase.source_type === "patent" ? "专利文献" : apiCase.source_type === "regulatory" ? "监管文件" : "产业报告",
+    sourceType: apiCase.source_type === "academic" ? "学术文献" : apiCase.source_type === "clinical_trial" ? "临床试验" : apiCase.source_type === "patent" ? "专利文献" : apiCase.source_type === "regulatory" ? "监管文件" : apiCase.source_type === "product_page" ? "产品页" : "产业报告",
     background: apiCase.background,
     applicationScenario: apiCase.application_scenario,
     displayFocus: apiCase.display_focus,
@@ -71,7 +71,7 @@ export function convertApiCaseToFrontend(apiCase: ApiIndustryCase): IndustryCase
     references: Array.isArray(apiCase.references) ? apiCase.references.map(r => ({
       title: r.title,
       url: r.url,
-      type: r.type as "FDA" | "PubMed" | "DOI" | "NCI" | "Label" | "Review" | "Other",
+      type: r.type as "FDA" | "PubMed" | "DOI" | "NCI" | "Label" | "Review" | "ProductPage" | "Other",
     })) : [],
     sourceUrls: apiCase.source_urls || [],
   };
