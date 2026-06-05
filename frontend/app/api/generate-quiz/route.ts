@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
+import { buildChatCompletionsUrl, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,7 +55,7 @@ ${contextText.length > 3000 ? contextText.substring(0, 3000) + "..." : contextTe
   ]
 }`;
 
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+    const response = await fetch(buildChatCompletionsUrl(baseUrl), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

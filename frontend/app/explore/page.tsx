@@ -15,7 +15,7 @@ import {
   toQuizQuestions,
 } from "@/lib/photoLearningPipeline";
 
-const ACCEPTED_TYPES = "image/*,application/pdf,.docx,text/plain,.md";
+const ACCEPTED_TYPES = "image/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,text/plain,.md,.html";
 
 interface Message { role: "user" | "ai"; content: string; }
 
@@ -230,7 +230,7 @@ export default function ExplorePage() {
             <div className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-blue-500" />
               <h2 className="font-semibold text-gray-800">上传学习资料</h2>
-              <span className="text-sm text-gray-500">支持图片、PDF、DOCX、文本</span>
+              <span className="text-sm text-gray-500">支持图片、PDF、Office 文档、表格、文本</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Loader2 className={`w-4 h-4 ${isProcessing ? "animate-spin text-blue-500" : "text-gray-400"}`} />
@@ -256,8 +256,8 @@ export default function ExplorePage() {
                   <p className="text-sm text-gray-700 font-medium break-all">{uploadedFile?.name}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     {uploadedFile?.type === "application/pdf" 
-                      ? "PDF 将由后端优先走 LLM 解析，必要时回退为本地提取文本再分析"
-                      : "图片将先走后端 OCR，再走后端 LLM 解析"}
+                      ? "PDF 将直接交给后端 GLM 解析"
+                      : "图片将直接交给后端 GLM 解析"}
                   </p>
                 </div>
               ) : uploadedFile ? (
@@ -279,10 +279,10 @@ export default function ExplorePage() {
               <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                 <h3 className="font-medium text-gray-800 mb-2">处理链路说明</h3>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li><strong>PDF</strong>：后端优先走 PDF LLM 分析，失败时自动回退为本地抽取文本再分析</li>
-                  <li><strong>图片</strong>：后端 EasyOCR 识别后再进入后端 LLM</li>
-                  <li><strong>DOCX</strong>：后端 python-docx 提取文本后统一分析</li>
-                  <li><strong>文本</strong>：后端直接进入 LLM 管线统一解析</li>
+                  <li><strong>PDF</strong>：后端直接调用 GLM 文件解析与分析</li>
+                  <li><strong>图片</strong>：后端直接调用 GLM 图片解析与分析</li>
+                  <li><strong>DOCX</strong>：后端直接调用 GLM 文件解析与分析</li>
+                  <li><strong>文本</strong>：后端统一进入 GLM 解析管线</li>
                 </ul>
               </div>
 
@@ -337,7 +337,7 @@ export default function ExplorePage() {
               </div>
               {backendResult?.ocr_engine && (
                 <span className="text-xs text-gray-500">
-                  OCR: {backendResult.ocr_engine}
+                  Engine: {backendResult.ocr_engine}
                   {backendResult?.ocr_char_count ? ` · ${backendResult.ocr_char_count} 字` : ""}
                 </span>
               )}
@@ -451,7 +451,7 @@ export default function ExplorePage() {
                 </div>
 
                 <div className="p-4 bg-white/70 rounded-xl border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">OCR 文本</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">解析文本</h3>
                   <textarea
                     value={backendResult.raw_text}
                     readOnly

@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const DEFAULT_BASE_URL = "https://api.deepseek.com";
-const DEFAULT_MODEL = "deepseek-v4-flash";
+const DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4";
+const DEFAULT_MODEL = "glm-4.7-flash";
 
 /**
  * @typedef {{ role: string, content: string }} DeepSeekMessage
@@ -34,7 +34,12 @@ export function resolveDeepSeekConfig(env = process.env, options = {}) {
     clean(fileEnv.DEEPSEEK_MODEL) ||
     DEFAULT_MODEL;
 
-  return { apiKey, baseUrl, model };
+  return {
+    apiKey,
+    baseUrl,
+    model,
+    chatCompletionsUrl: buildChatCompletionsUrl(baseUrl),
+  };
 }
 
 /**
@@ -66,7 +71,7 @@ export async function callDeepSeekJson(options = {}) {
   };
   if (responseFormat) body.response_format = { type: "json_object" };
 
-  const response = await fetchImpl(`${config.baseUrl}/v1/chat/completions`, {
+  const response = await fetchImpl(config.chatCompletionsUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -117,6 +122,14 @@ function clean(value) {
 
 function normalizeBaseUrl(value) {
   return clean(value).replace(/\/+$/, "").replace(/\/v1$/i, "");
+}
+
+export function buildChatCompletionsUrl(baseUrl) {
+  const normalized = normalizeBaseUrl(baseUrl);
+  if (/\/api\/paas\/v4$/i.test(normalized)) {
+    return `${normalized}/chat/completions`;
+  }
+  return `${normalized}/v1/chat/completions`;
 }
 
 function readFrontendEnvFile() {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
+import { buildChatCompletionsUrl, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 import { extractUploadedFileTextFromBuffer } from "@/lib/defense-file-text.mjs";
 
 export async function POST(request: NextRequest) {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 - 建议内容2
 - 建议内容3`;
 
-      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+      const response = await fetch(buildChatCompletionsUrl(baseUrl), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -160,7 +160,7 @@ ${pdfText.length > 6000 ? pdfText.substring(0, 6000) + "..." : pdfText}
 请直接分析PDF内容并按上述格式输出。`;
 
       console.log("[Analyze API] PDF处理 - 调用DeepSeek API");
-      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+      const response = await fetch(buildChatCompletionsUrl(baseUrl), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -246,7 +246,7 @@ ${content.length > 5000 ? content.substring(0, 5000) + "..." : content}
 7. 必须输出【核心知识点】【重点概念】【学习建议】三个部分，每个部分都不能为空`;
 
       console.log("[Analyze API] 文本处理 - 调用DeepSeek API");
-      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+      const response = await fetch(buildChatCompletionsUrl(baseUrl), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

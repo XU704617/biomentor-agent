@@ -100,7 +100,12 @@ class QuestionService:
             return self._template_generate(knowledge_points, evidence_text, question_types, count, difficulty, course_id)
 
         try:
-            return self._llm_generate(knowledge_points, evidence_text, question_types, count, difficulty, course_id)
+            generated = self._llm_generate(knowledge_points, evidence_text, question_types, count, difficulty, course_id)
+            if generated:
+                return generated
+            if strict:
+                raise RuntimeError("LLM returned no usable questions")
+            return self._template_generate(knowledge_points, evidence_text, question_types, count, difficulty, course_id)
         except Exception:
             if strict:
                 raise

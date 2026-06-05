@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { industryCases } from "@/data/industryCases";
-import { resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
+import { buildChatCompletionsUrl, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 interface MatchCase {
   id: string;
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
     const timeout = setTimeout(() => controller.abort(), 30000);
 
     try {
-      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+      const response = await fetch(buildChatCompletionsUrl(baseUrl), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

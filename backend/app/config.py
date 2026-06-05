@@ -42,17 +42,20 @@ class Settings(BaseSettings):
 
     # ---- LLM / Embedding ----
     OPENAI_API_KEY: str = ""
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
-    LLM_MODEL: str = "gpt-4o"
+    LLM_MODEL: str = "glm-4.7-flash"
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 4096
 
     # ---- GLM evidence-grounded generation ----
     GLM_API_KEY: str = ""
     GLM_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
-    GLM_MODEL: str = "glm-4-flash"
+    GLM_MODEL: str = "glm-4.7-flash"
+    GLM_VISION_MODEL: str = "glm-4.6v-flash"
+    GLM_FILE_PARSER_TOOL: str = "prime-sync"
     GLM_TIMEOUT_SECONDS: int = 30
+    GLM_FILE_PARSER_TIMEOUT_SECONDS: int = 180
 
     # ---- RAG ----
     RAG_TOP_K: int = 5
@@ -84,6 +87,16 @@ class Settings(BaseSettings):
     def model_post_init(self, _context) -> None:
         os.makedirs(self.UPLOAD_DIR, exist_ok=True)
         os.makedirs(self.CHROMA_PERSIST_DIR, exist_ok=True)
+
+    def resolved_llm_api_key(self) -> str:
+        return self.GLM_API_KEY.strip()
+
+    def resolved_llm_base_url(self) -> str:
+        value = (self.GLM_BASE_URL or self.OPENAI_BASE_URL or "").strip().rstrip("/")
+        return value or "https://open.bigmodel.cn/api/paas/v4"
+
+    def resolved_llm_model(self) -> str:
+        return (self.GLM_MODEL or self.LLM_MODEL or "glm-4.7-flash").strip()
 
 
 @lru_cache

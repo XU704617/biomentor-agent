@@ -1,16 +1,13 @@
 """
-LLM Service — OpenAI-compatible API client with structured output, retry, streaming.
+LLM service built around GLM's OpenAI-compatible chat completions API.
 
-Supports: OpenAI, DeepSeek, and other compatible providers.
-Handles provider differences:
-- DeepSeek: json_object mode (no json_schema strict), no embeddings API
-- OpenAI: full json_schema + embeddings support
-- GLM/ZhipuAI: used for embeddings when primary LLM lacks support
+The code keeps the previous call shape for the rest of the backend, but
+internally resolves all runtime settings to GLM first. File understanding now
+goes through GLM's file parser instead of local OCR/PDF extraction.
 """
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import re
@@ -22,6 +19,7 @@ import httpx
 from openai import OpenAI
 
 from app.config import get_settings
+from app.services.glm_file_parser import GLMFileParserService
 
 
 @dataclass
@@ -37,8 +35,7 @@ class LLMResponse:
 
 
 class LLMService:
-
-    def __init__(self):
+    def __init__(self) -> None:
         self._clients: list[tuple[str, OpenAI]] | None = None
         self._http_clients: list[httpx.Client] = []
 
@@ -51,11 +48,15 @@ class LLMService:
         if self._clients is None:
             self._clients = []
             self._http_clients = []
+            api_key = self.settings.resolved_llm_api_key()
+            base_url = self.settings.resolved_llm_base_url()
+            timeout_seconds = self.settings.AGENT_TIMEOUT_SECONDS
+
             for proxy_url in self._resolve_proxy_urls():
                 label = proxy_url or "direct"
                 http_client_kwargs: dict[str, Any] = {
                     "trust_env": False,
-                    "timeout": self.settings.AGENT_TIMEOUT_SECONDS,
+                    "timeout": timeout_seconds,
                 }
                 if proxy_url:
                     http_client_kwargs["proxy"] = proxy_url
@@ -65,9 +66,9 @@ class LLMService:
                     (
                         label,
                         OpenAI(
-                            api_key=self.settings.OPENAI_API_KEY or "sk-placeholder",
-                            base_url=self.settings.OPENAI_BASE_URL,
-                            timeout=self.settings.AGENT_TIMEOUT_SECONDS,
+                            api_key=api_key or "sk-placeholder",
+                            base_url=base_url,
+                            timeout=timeout_seconds,
                             max_retries=0,
                             http_client=http_client,
                         ),
@@ -77,13 +78,15 @@ class LLMService:
 
     @property
     def available(self) -> bool:
-        return bool(self.settings.OPENAI_API_KEY)
+        return bool(self.settings.resolved_llm_api_key())
+
+    @property
+    def is_glm(self) -> bool:
+        return "bigmodel" in self.settings.resolved_llm_base_url().lower()
 
     @property
     def is_deepseek(self) -> bool:
-        return "deepseek" in (self.settings.OPENAI_BASE_URL or "").lower()
-
-    # ── Chat Completion ──────────────────────────────────────────
+        return False
 
     def chat(
         self,
@@ -94,75 +97,48 @@ class LLMService:
         response_schema: dict | None = None,
         retries: int | None = None,
     ) -> LLMResponse:
-        model = model or self.settings.LLM_MODEL
+        model = model or self.settings.resolved_llm_model()
         temperature = temperature if temperature is not None else self.settings.LLM_TEMPERATURE
         max_tokens = max_tokens or self.settings.LLM_MAX_TOKENS
         max_retries = retries if retries is not None else self.settings.AGENT_MAX_RETRIES
 
         if not self.available:
-            return self._fallback_response(messages)
+            return self._fallback_response()
 
-        # Inject JSON output instructions for providers without strict mode.
-        # Use natural language to describe expected fields, NOT a raw JSON schema,
-        # otherwise DeepSeek may echo the schema back instead of filling it.
+        request_messages = [dict(message) for message in messages]
         if response_schema:
-            props = response_schema.get("properties", {})
-            required = response_schema.get("required", [])
-            field_descs = []
-            for name, prop in props.items():
-                ptype = prop.get("type", "string")
-                is_array = "array of " if ptype == "array" else ""
-                item_type = ""
-                if ptype == "array" and "items" in prop:
-                    item_type = prop["items"].get("type", "string")
-                desc = f'- "{name}": {is_array}{item_type or ptype}'
-                if name in required:
-                    desc += " (必填)"
-                field_descs.append(desc)
-
-            schema_prompt = (
-                "\n\n你必须输出一个纯 JSON 对象，不要包含 markdown 代码块标记。"
-                "JSON 必须包含以下字段：\n" + "\n".join(field_descs) +
-                "\n\n直接输出 JSON，不要输出任何其他内容。"
-            )
-            if messages and messages[0]["role"] == "system":
-                messages[0]["content"] += schema_prompt
-            else:
-                messages.insert(0, {"role": "system", "content": schema_prompt.strip()})
-
-        start = time.time()
+            request_messages = self._inject_json_instructions(request_messages, response_schema)
 
         kwargs: dict[str, Any] = {
             "model": model,
-            "messages": messages,
+            "messages": request_messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
-
-        # DeepSeek: use json_object mode; OpenAI: use json_schema strict
         if response_schema:
-            if self.is_deepseek:
-                kwargs["response_format"] = {"type": "json_object"}
-            else:
-                kwargs["response_format"] = {
+            kwargs["response_format"] = (
+                {"type": "json_object"}
+                if self.is_glm
+                else {
                     "type": "json_schema",
-                    "json_schema": {"name": "response", "strict": True, "schema": response_schema},
+                    "json_schema": {
+                        "name": "response",
+                        "strict": True,
+                        "schema": response_schema,
+                    },
                 }
+            )
 
         last_error: Exception | None = None
+        start = time.time()
         for attempt in range(max_retries + 1):
             for client_label, client in self.clients:
                 try:
                     completion = client.chat.completions.create(**kwargs)
                     elapsed = int((time.time() - start) * 1000)
-
                     choice = completion.choices[0]
                     content = choice.message.content or ""
-
-                    parsed = None
-                    if response_schema:
-                        parsed = self._extract_json(content)
-
+                    parsed = self._extract_json(content) if response_schema else None
                     return LLMResponse(
                         content=content,
                         parsed=parsed,
@@ -173,17 +149,14 @@ class LLMService:
                         duration_ms=elapsed,
                         finish_reason=choice.finish_reason or "stop",
                     )
-
-                except Exception as e:
-                    last_error = RuntimeError(f"[{client_label}] {e}")
+                except Exception as exc:
+                    last_error = RuntimeError(f"[{client_label}] {exc}")
                     continue
 
             if attempt < max_retries:
                 time.sleep(2 ** attempt)
 
         raise RuntimeError(f"LLM call failed after {max_retries + 1} attempts: {last_error}")
-
-    # ── Streaming ─────────────────────────────────────────────────
 
     def chat_stream(
         self,
@@ -192,12 +165,12 @@ class LLMService:
         temperature: float | None = None,
         max_tokens: int | None = None,
     ):
-        model = model or self.settings.LLM_MODEL
+        model = model or self.settings.resolved_llm_model()
         temperature = temperature if temperature is not None else self.settings.LLM_TEMPERATURE
         max_tokens = max_tokens or self.settings.LLM_MAX_TOKENS
 
         if not self.available:
-            yield "AI 服务暂未配置。请设置 OPENAI_API_KEY。"
+            yield "AI 服务暂未配置。请设置 GLM API Key。"
             return
 
         try:
@@ -205,36 +178,30 @@ class LLMService:
             for _client_label, client in self.clients:
                 try:
                     stream = client.chat.completions.create(
-                        model=model, messages=messages,
-                        temperature=temperature, max_tokens=max_tokens, stream=True,
+                        model=model,
+                        messages=messages,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        stream=True,
                     )
                     for chunk in stream:
                         delta = chunk.choices[0].delta
                         if delta.content:
                             yield delta.content
                     return
-                except Exception as e:
-                    last_error = e
+                except Exception as exc:
+                    last_error = exc
                     continue
             if last_error is not None:
                 raise last_error
-        except Exception as e:
-            yield f"\n[错误: {e}]"
-
-    # ── Embeddings ────────────────────────────────────────────────
+        except Exception as exc:
+            yield f"\n[错误: {exc}]"
 
     def embed(self, texts: list[str], model: str | None = None) -> list[list[float]]:
-        """DeepSeek does not provide an Embedding API.
-
-        Returns empty list to signal callers to use ChromaDB's built-in
-        embedding function (all-MiniLM-L6-v2, runs locally via ONNX).
-        """
         return []
 
     def embed_single(self, text: str, model: str | None = None) -> list[float]:
         return self.embed([text], model)[0]
-
-    # ── Convenience Methods ───────────────────────────────────────
 
     def generate_json(
         self,
@@ -244,11 +211,15 @@ class LLMService:
         model: str | None = None,
         temperature: float = 0.2,
     ) -> dict[str, Any]:
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
-        response = self.chat(messages=messages, model=model, temperature=temperature, response_schema=schema)
+        response = self.chat(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            model=model,
+            temperature=temperature,
+            response_schema=schema,
+        )
         return response.parsed or {}
 
     def generate_text(
@@ -259,11 +230,15 @@ class LLMService:
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> LLMResponse:
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
-        return self.chat(messages=messages, model=model, temperature=temperature, max_tokens=max_tokens)
+        return self.chat(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
 
     def generate_json_from_file(
         self,
@@ -276,104 +251,154 @@ class LLMService:
         temperature: float = 0.2,
         max_output_tokens: int | None = None,
     ) -> dict[str, Any]:
-        model = model or self.settings.LLM_MODEL
-        max_output_tokens = max_output_tokens or self.settings.LLM_MAX_TOKENS
-        max_retries = self.settings.AGENT_MAX_RETRIES
-
         if not self.available:
             return {}
 
-        props = schema.get("properties", {})
-        required = schema.get("required", [])
-        field_descs = []
-        for name, prop in props.items():
-            ptype = prop.get("type", "string")
-            is_array = "array of " if ptype == "array" else ""
-            item_type = ""
-            if ptype == "array" and "items" in prop:
-                item_type = prop["items"].get("type", "string")
-            desc = f'- "{name}": {is_array}{item_type or ptype}'
-            if name in required:
-                desc += " (必填)"
-            field_descs.append(desc)
+        parsed_file = GLMFileParserService().parse_bytes(
+            file_bytes=file_bytes,
+            mime_type=self._guess_mime_type(filename),
+            filename=filename,
+        )
+        extracted_text = parsed_file.text.strip()
+        if not extracted_text:
+            raise RuntimeError("GLM file parser returned empty text")
 
-        instructions = (
-            f"{system_prompt}\n\n"
-            "你必须输出一个纯 JSON 对象，不要包含 markdown 代码块标记。\n"
-            "JSON 必须包含以下字段：\n"
-            + "\n".join(field_descs)
-            + "\n\n直接输出 JSON，不要输出任何其他内容。"
+        prompt = (
+            f"{user_prompt}\n\n"
+            f"文件名：{filename or 'uploaded-file'}\n"
+            "以下是通过 GLM 文件解析得到的文本内容，请基于它完成结构化分析：\n\n"
+            f"{extracted_text[:16000]}"
+        )
+        return self.generate_json(
+            system_prompt=system_prompt,
+            user_prompt=prompt,
+            schema=schema,
+            model=model or self.settings.resolved_llm_model(),
+            temperature=temperature,
         )
 
-        file_b64 = base64.b64encode(file_bytes).decode("ascii")
-        input_payload = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": user_prompt},
-                    {
-                        "type": "input_file",
-                        "filename": filename or "document.pdf",
-                        "file_data": file_b64,
-                        "detail": "high",
-                    },
-                ],
-            }
-        ]
+    def _inject_json_instructions(
+        self,
+        messages: list[dict[str, str]],
+        schema: dict,
+    ) -> list[dict[str, str]]:
+        props = schema.get("properties", {})
+        required = set(schema.get("required", []))
+        field_descs: list[str] = []
+        for name, prop in props.items():
+            ptype = prop.get("type", "string")
+            suffix = ""
+            if ptype == "array":
+                item_type = prop.get("items", {}).get("type", "string")
+                suffix = f"array<{item_type}>"
+            else:
+                suffix = ptype
+            required_marker = " (required)" if name in required else ""
+            field_descs.append(f'- "{name}": {suffix}{required_marker}')
 
-        last_error: Exception | None = None
-        for attempt in range(max_retries + 1):
-            start = time.time()
-            for client_label, client in self.clients:
-                try:
-                    response = client.responses.create(
-                        model=model,
-                        instructions=instructions,
-                        input=input_payload,
-                        temperature=temperature,
-                        max_output_tokens=max_output_tokens,
-                    )
-                    _elapsed = int((time.time() - start) * 1000)
-                    parsed = self._extract_json(response.output_text or "")
-                    if parsed:
-                        return parsed
-                    last_error = RuntimeError(f"[{client_label}] empty or invalid JSON from file response")
-                except Exception as e:
-                    last_error = RuntimeError(f"[{client_label}] {e}")
-                    continue
+        schema_prompt = (
+            "\n\n你必须输出一个纯 JSON 对象，不要包含 markdown 代码块。\n"
+            "JSON 必须包含以下字段：\n"
+            + "\n".join(field_descs)
+            + "\n\n只输出 JSON，不要输出其他解释。"
+        )
 
-            if attempt < max_retries:
-                time.sleep(2 ** attempt)
-
-        raise RuntimeError(f"LLM file call failed after {max_retries + 1} attempts: {last_error}")
-
-    # ── Helpers ───────────────────────────────────────────────────
+        request_messages = [dict(message) for message in messages]
+        if request_messages and request_messages[0].get("role") == "system":
+            request_messages[0]["content"] = request_messages[0].get("content", "") + schema_prompt
+        else:
+            request_messages.insert(0, {"role": "system", "content": schema_prompt.strip()})
+        return request_messages
 
     def _extract_json(self, text: str) -> dict[str, Any]:
         try:
-            return json.loads(text)
+            parsed = json.loads(text)
+            return parsed if isinstance(parsed, dict) else {}
         except json.JSONDecodeError:
             pass
-        match = re.search(r'```(?:json)?\s*([\s\S]*?)```', text)
+
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
         if match:
             try:
-                return json.loads(match.group(1))
+                parsed = json.loads(match.group(1))
+                return parsed if isinstance(parsed, dict) else {}
             except json.JSONDecodeError:
                 pass
-        match = re.search(r'\{[\s\S]*\}', text)
+
+        match = re.search(r"\{[\s\S]*\}", text)
         if match:
             try:
-                return json.loads(match.group(0))
+                parsed = json.loads(match.group(0))
+                return parsed if isinstance(parsed, dict) else {}
             except json.JSONDecodeError:
                 pass
         return {}
 
-    def _fallback_response(self, messages: list[dict[str, str]]) -> LLMResponse:
+    def _fallback_response(self) -> LLMResponse:
+        fallback = {"message": "AI 服务未配置", "fallback": True}
         return LLMResponse(
-            content=json.dumps({"message": "AI 服务未配置", "fallback": True}, ensure_ascii=False),
-            parsed={"message": "AI 服务未配置", "fallback": True},
-            model="fallback", tokens_total=0,
+            content=json.dumps(fallback, ensure_ascii=False),
+            parsed=fallback,
+            model="fallback",
         )
+
+    def _guess_mime_type(self, filename: str) -> str:
+        lower = (filename or "").lower()
+        if lower.endswith(".pdf"):
+            return "application/pdf"
+        if lower.endswith(".doc"):
+            return "application/msword"
+        if lower.endswith(".docx"):
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        if lower.endswith(".ppt"):
+            return "application/vnd.ms-powerpoint"
+        if lower.endswith(".pptx"):
+            return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        if lower.endswith(".xls"):
+            return "application/vnd.ms-excel"
+        if lower.endswith(".xlsx"):
+            return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        if lower.endswith(".csv"):
+            return "text/csv"
+        if lower.endswith(".html") or lower.endswith(".htm"):
+            return "text/html"
+        if lower.endswith(".md"):
+            return "text/markdown"
+        if lower.endswith(".txt"):
+            return "text/plain"
+        if lower.endswith(".wps"):
+            return "application/vnd.ms-works"
+        if lower.endswith(".png"):
+            return "image/png"
+        if lower.endswith(".jpg") or lower.endswith(".jpeg"):
+            return "image/jpeg"
+        if lower.endswith(".webp"):
+            return "image/webp"
+        if lower.endswith(".bmp"):
+            return "image/bmp"
+        if lower.endswith(".gif"):
+            return "image/gif"
+        if lower.endswith(".heic"):
+            return "image/heic"
+        if lower.endswith(".heif"):
+            return "image/heif"
+        if lower.endswith(".eps"):
+            return "application/postscript"
+        if lower.endswith(".icns"):
+            return "image/x-icon"
+        if lower.endswith(".im"):
+            return "application/octet-stream"
+        if lower.endswith(".pcx"):
+            return "image/x-pcx"
+        if lower.endswith(".ppm"):
+            return "image/x-portable-pixmap"
+        if lower.endswith(".tif") or lower.endswith(".tiff"):
+            return "image/tiff"
+        if lower.endswith(".xbm"):
+            return "image/x-xbitmap"
+        if lower.endswith(".jp2"):
+            return "image/jp2"
+        return "application/octet-stream"
 
     def _resolve_proxy_urls(self) -> list[str | None]:
         candidates: list[str | None] = []

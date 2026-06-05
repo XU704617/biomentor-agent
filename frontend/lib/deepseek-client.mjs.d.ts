@@ -7,6 +7,7 @@ export type DeepSeekConfig = {
   apiKey: string;
   baseUrl: string;
   model: string;
+  chatCompletionsUrl: string;
 };
 
 export type CallDeepSeekJsonOptions = {
@@ -20,6 +21,7 @@ export type CallDeepSeekJsonOptions = {
 };
 
 export function resolveDeepSeekConfig(env?: NodeJS.ProcessEnv | Record<string, string | undefined>): DeepSeekConfig;
+export function buildChatCompletionsUrl(baseUrl: string): string;
 
 export function callDeepSeekJson(options: CallDeepSeekJsonOptions): Promise<{
   raw: string;

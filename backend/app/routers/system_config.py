@@ -23,14 +23,14 @@ class LLMConfigView(BaseModel):
 
 class LLMConfigUpdate(BaseModel):
     api_key: str
-    base_url: str = "https://api.deepseek.com/v1"
-    model: str = "deepseek-v4-flash"
+    base_url: str = "https://open.bigmodel.cn/api/paas/v4"
+    model: str = "glm-4.7-flash"
 
 
 class LLMTestRequest(BaseModel):
     api_key: str
-    base_url: str = "https://api.deepseek.com/v1"
-    model: str = "deepseek-v4-flash"
+    base_url: str = "https://open.bigmodel.cn/api/paas/v4"
+    model: str = "glm-4.7-flash"
 
 
 class LLMTestResponse(BaseModel):
@@ -47,14 +47,8 @@ class LLMTestResponse(BaseModel):
 def _normalize_base_urls(base_url: str) -> tuple[str, str]:
     clean = (base_url or "").strip().rstrip("/")
     if not clean:
-        clean = "https://api.deepseek.com/v1"
-    if clean.endswith("/v1"):
-        api_root = clean[:-3]
-        openai_base = clean
-    else:
-        api_root = clean
-        openai_base = f"{clean}/v1"
-    return api_root, openai_base
+        clean = "https://open.bigmodel.cn/api/paas/v4"
+    return clean, clean
 
 
 def _env_path() -> Path:
@@ -109,10 +103,10 @@ def _write_frontend_env(api_key: str, base_url: str, model: str) -> None:
 def get_llm_config() -> LLMConfigView:
     settings = get_settings()
     return LLMConfigView(
-        api_key_set=bool(settings.OPENAI_API_KEY),
-        api_key=settings.OPENAI_API_KEY or "",
-        base_url=settings.OPENAI_BASE_URL,
-        model=settings.LLM_MODEL,
+        api_key_set=bool(settings.resolved_llm_api_key()),
+        api_key=settings.resolved_llm_api_key(),
+        base_url=settings.resolved_llm_base_url(),
+        model=settings.resolved_llm_model(),
     )
 
 
@@ -132,16 +126,19 @@ def save_llm_config(payload: LLMConfigUpdate) -> LLMConfigView:
     lines = _write_env_value(lines, "OPENAI_API_KEY", api_key)
     lines = _write_env_value(lines, "OPENAI_BASE_URL", base_url)
     lines = _write_env_value(lines, "LLM_MODEL", model)
+    lines = _write_env_value(lines, "GLM_API_KEY", api_key)
+    lines = _write_env_value(lines, "GLM_BASE_URL", base_url)
+    lines = _write_env_value(lines, "GLM_MODEL", model)
     _env_path().write_text("\n".join(lines) + "\n", encoding="utf-8")
     _write_frontend_env(api_key, base_url, model)
     _reload_runtime_config()
 
     settings = get_settings()
     return LLMConfigView(
-        api_key_set=bool(settings.OPENAI_API_KEY),
-        api_key=settings.OPENAI_API_KEY or "",
-        base_url=settings.OPENAI_BASE_URL,
-        model=settings.LLM_MODEL,
+        api_key_set=bool(settings.resolved_llm_api_key()),
+        api_key=settings.resolved_llm_api_key(),
+        base_url=settings.resolved_llm_base_url(),
+        model=settings.resolved_llm_model(),
     )
 
 

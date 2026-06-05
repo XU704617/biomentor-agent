@@ -36,9 +36,9 @@ class GLMAIProvider:
 
     def __init__(self) -> None:
         settings = get_settings()
-        self.api_key = settings.GLM_API_KEY.strip()
-        self.base_url = settings.GLM_BASE_URL.strip().rstrip("/")
-        self.model = settings.GLM_MODEL.strip() or "glm-4-flash"
+        self.api_key = settings.resolved_llm_api_key()
+        self.base_url = settings.resolved_llm_base_url().rstrip("/")
+        self.model = settings.resolved_llm_model() or "glm-4.7-flash"
         self.timeout = settings.GLM_TIMEOUT_SECONDS
 
     async def generate_json(

@@ -26,7 +26,7 @@ import {
   toQuizQuestions,
 } from "@/lib/photoLearningPipeline";
 
-const ACCEPTED_TYPES = "image/*,application/pdf,.docx,text/plain,.md";
+const ACCEPTED_TYPES = "image/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,text/plain,.md,.html";
 
 function getQuestionTypeLabel(type: string): string {
   if (type === "choice") return "选择题";
@@ -44,9 +44,23 @@ function getFileKind(file: File | null): "image" | "pdf" | "document" | "unknown
   if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) return "pdf";
   if (
     file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    file.type === "application/vnd.ms-powerpoint" ||
+    file.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+    file.type === "application/vnd.ms-excel" ||
+    file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    file.type === "text/csv" ||
+    file.type === "text/html" ||
     file.type === "text/plain" ||
     file.type === "text/markdown" ||
+    lowerName.endsWith(".doc") ||
     lowerName.endsWith(".docx") ||
+    lowerName.endsWith(".ppt") ||
+    lowerName.endsWith(".pptx") ||
+    lowerName.endsWith(".xls") ||
+    lowerName.endsWith(".xlsx") ||
+    lowerName.endsWith(".csv") ||
+    lowerName.endsWith(".html") ||
+    lowerName.endsWith(".htm") ||
     lowerName.endsWith(".txt") ||
     lowerName.endsWith(".md")
   ) {
@@ -56,9 +70,9 @@ function getFileKind(file: File | null): "image" | "pdf" | "document" | "unknown
 }
 
 function getReadyStatus(kind: "image" | "pdf" | "document" | "unknown"): string {
-  if (kind === "image") return "图片已就绪，将先做 OCR 再做 LLM 解析";
-  if (kind === "pdf") return "PDF 已就绪，将直接走 PDF LLM 识别";
-  if (kind === "document") return "文档已就绪，将直接走文档解析";
+  if (kind === "image") return "图片已就绪，将直接走 GLM 图片解析";
+  if (kind === "pdf") return "PDF 已就绪，将直接走 GLM 文档解析";
+  if (kind === "document") return "文档已就绪，将直接走 GLM 文档解析";
   return "文件已就绪，等待开始解析";
 }
 
@@ -161,7 +175,7 @@ export default function PhotoLearningPage() {
 
     setIsRecognizing(true);
     setError(null);
-    setStatusText("正在调用后端真实 OCR");
+      setStatusText("正在调用后端 GLM 图片解析");
 
     try {
       const form = new FormData();
@@ -185,7 +199,7 @@ export default function PhotoLearningPage() {
 
       setOcrText(payload.text);
       setOcrEngine(payload.engine);
-      setStatusText(`OCR 完成，识别到 ${payload.char_count} 字`);
+      setStatusText(`GLM 解析完成，提取到 ${payload.char_count} 字`);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "OCR 失败";
       setError(message);
@@ -200,7 +214,7 @@ export default function PhotoLearningPage() {
 
     setIsAnalyzing(true);
     setError(null);
-    setStatusText("正在调用后端真实 LLM 解析 OCR 文本");
+      setStatusText("正在调用后端 GLM 分析解析文本");
 
     try {
       const response = await fetch(`${PHOTO_PIPELINE_BACKEND}/api/photo-learning/analyze`, {
@@ -221,7 +235,7 @@ export default function PhotoLearningPage() {
         processing_engine: payload.processing_engine || ocrEngine || payload.ocr_engine,
         source_kind: payload.source_kind || "image",
       });
-      setStatusText("OCR 后端 LLM 解析完成");
+      setStatusText("后端 GLM 解析完成");
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "LLM 解析失败";
       setError(message);
@@ -249,13 +263,13 @@ export default function PhotoLearningPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-electric/8 text-accent-electric text-[11px] font-semibold font-body mb-5">
             <ScanLine className="w-3 h-3" />
-            真实后端：PDF 优先走 LLM，只有图片走 OCR
+            真实后端：图片/PDF/文档统一走 GLM
           </div>
           <h1 className="font-display font-extrabold text-brand-ink leading-[1.1] tracking-[-0.03em] mb-3" style={{ fontSize: "clamp(28px, 4vw, 48px)" }}>
             拍照学练
           </h1>
           <p className="text-brand-muted text-base md:text-lg font-body max-w-2xl mx-auto">
-            教材图片、PDF、DOCX 和文本都走真实后端。PDF 优先走后端 LLM 分析，图片先做 OCR，再统一输出关键词、知识匹配、学习建议和测验题目。
+            教材图片、PDF、DOCX 和文本都走真实后端 GLM。系统统一输出关键词、知识匹配、学习建议和测验题目。
           </p>
         </div>
 
@@ -267,7 +281,7 @@ export default function PhotoLearningPage() {
               </div>
               <div>
                 <h2 className="font-display font-bold text-sm text-brand-ink">上传教材图片或文档</h2>
-                <p className="text-xs text-brand-muted font-body">支持 JPG、PNG、PDF、DOCX、TXT、MD</p>
+                <p className="text-xs text-brand-muted font-body">支持图片、PDF、DOC/PPT/XLS、DOCX/PPTX/XLSX、TXT、MD、CSV、HTML</p>
               </div>
             </div>
 
@@ -304,12 +318,12 @@ export default function PhotoLearningPage() {
                   ? uploadedKind === "pdf"
                     ? "PDF 识别中"
                     : uploadedKind === "image"
-                      ? "OCR 识别中"
+                      ? "GLM 解析中"
                       : "文档解析中"
                   : uploadedKind === "pdf"
                     ? "开始 PDF LLM 识别"
                     : uploadedKind === "image"
-                      ? "开始图片 OCR"
+                      ? "开始图片解析"
                       : "开始文档解析"}
               </button>
               {uploadedKind === "image" && (
@@ -337,11 +351,11 @@ export default function PhotoLearningPage() {
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-accent-amber" />
                   <h2 className="font-display font-bold text-sm text-brand-ink">
-                    {uploadedKind === "image" ? "OCR 文本" : "内容摘录"}
+                  {uploadedKind === "image" ? "图片解析文本" : "内容摘录"}
                   </h2>
                 </div>
                 <span className="text-xs text-brand-faint font-body">
-                  {ocrText.length} 字符{ocrEngine ? ` · ${ocrEngine}` : ""}
+                    {ocrText.length} 字符{ocrEngine ? ` · ${ocrEngine}` : ""}
                 </span>
               </div>
               <textarea

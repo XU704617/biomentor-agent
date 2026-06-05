@@ -104,4 +104,4 @@ async def tutor_chat_stream(payload: dict, db: Session = Depends(get_db)):
 @router.get("/health")
 def tutor_health():
     llm = get_llm()
-    return {"status": "ok", "llm_available": llm.available, "model": llm.settings.LLM_MODEL}
+    return {"status": "ok", "llm_available": llm.available, "model": llm.settings.resolved_llm_model()}

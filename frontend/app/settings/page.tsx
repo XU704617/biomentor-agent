@@ -20,8 +20,8 @@ type TestResponse = {
   error: string;
 };
 
-const defaultBaseUrl = "https://api.deepseek.com/v1";
-const defaultModel = "deepseek-v4-flash";
+const defaultBaseUrl = "https://open.bigmodel.cn/api/paas/v4";
+const defaultModel = "glm-4.7-flash";
 
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState("");
