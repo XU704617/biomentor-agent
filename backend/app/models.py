@@ -102,6 +102,7 @@ class SourceType(str, enum.Enum):
     patent = "专利文献"
     clinical_trial = "临床试验"
     regulatory = "监管文件"
+    product_page = "产品页"
 
 
 class NodeType(str, enum.Enum):
