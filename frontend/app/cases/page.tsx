@@ -251,13 +251,6 @@ export default function CasesPage() {
                 精选案例优先展示，可通过搜索和筛选查看完整案例库。
               </p>
 
-              <div className="rounded-xl bg-gradient-to-r from-amber-50/60 to-orange-50/40 border border-amber-200/40 p-4 mb-5">
-                <p className="text-xs text-amber-800 font-body mb-1">
-                  <span className="font-semibold">精选案例推荐：</span>
-                  <span className="text-amber-700/80 ml-1">标注「精选案例」的案例适合作为展示与科研训练入口，覆盖 mRNA 疫苗、CAR-T、CRISPR、细胞凋亡、PD-1 等核心技术，文献与案例详情较完整，适合优先讲解。</span>
-                </p>
-              </div>
-
               <div className="flex items-center justify-between mb-5">
                 <p className="text-xs text-brand-faint font-body">
                   共 <span className="font-semibold text-brand-ink">{sortedCases.length}</span> 个产业案例{selectedCategory && ` · ${selectedCategory}`}{searchQuery && ` · 搜索"${searchQuery}"`}{!isSearching && displayedCases.length < sortedCases.length && ` · 显示 ${displayedCases.length} 个精选`}

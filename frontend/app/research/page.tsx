@@ -524,10 +524,13 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
         <div className="rounded-xl bg-amber-50/40 border border-amber-100/50 p-4">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <p className="text-sm font-semibold text-brand-ink">暂未找到更多公开文献</p>
+            <p className="text-sm font-semibold text-brand-ink">当前关键词可继续优化</p>
           </div>
           <p className="text-xs text-brand-muted leading-relaxed">
-            暂未找到更多公开文献，可先使用本地精选文献。
+            当前关键词暂未检索到更多公开文献，可尝试调整关键词，或继续使用本地精选文献完成训练。
+          </p>
+          <p className="text-[11px] text-brand-faint mt-2 leading-relaxed">
+            培养细胞食品方向可尝试：cultivated meat safety、cell-cultured chicken、cultured meat production、food safety assessment。
           </p>
         </div>
       )}
@@ -535,7 +538,12 @@ function LiteratureSearchSection({ defaultQuery }: { defaultQuery: string }) {
       {!loading && !error && searched && isEmpty && (
         <div className="py-8 text-center">
           <BookOpen className="w-8 h-8 text-brand-faint/30 mx-auto mb-2" />
-          <p className="text-sm text-brand-muted font-body">暂未找到更多公开文献，请调整关键词后重试。</p>
+          <p className="text-sm text-brand-muted font-body">
+            当前关键词暂未检索到更多公开文献，可尝试调整关键词，或继续使用本地精选文献完成训练。
+          </p>
+          <p className="text-[11px] text-brand-faint mt-2 font-body">
+            培养细胞食品方向可尝试 cultivated meat safety、cell-cultured chicken、cultured meat production、food safety assessment。
+          </p>
         </div>
       )}
 
@@ -911,7 +919,7 @@ function DefaultResearchPage() {
                   <div className="rounded-xl bg-purple-50/40 p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Lightbulb className="w-3.5 h-3.5 text-accent-amber" />
-                      <h4 className="text-sm font-bold text-brand-ink">AI 科研导师建议</h4>
+                      <h4 className="text-sm font-bold text-brand-ink">研究建议</h4>
                     </div>
                     <p className="text-[13px] text-brand-muted font-body leading-relaxed whitespace-pre-wrap">
                       {displayTrainingText(result.mentor_advice) || "暂无建议"}
@@ -1294,7 +1302,7 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
                   <div className="rounded-xl bg-purple-50/40 p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Lightbulb className="w-3.5 h-3.5 text-accent-amber" />
-                      <h4 className="text-sm font-bold text-brand-ink">AI 科研导师建议</h4>
+                      <h4 className="text-sm font-bold text-brand-ink">研究建议</h4>
                     </div>
                     <p className="text-[13px] text-brand-muted font-body leading-relaxed whitespace-pre-wrap">
                       {displayTrainingText(result.mentor_advice) || "暂无建议"}

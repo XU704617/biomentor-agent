@@ -82,7 +82,8 @@ test("industry question aliases and showcase wording are product ready", () => {
     assert.match(answerRoute, expected);
   }
 
-  assert.match(casesPage, /精选案例推荐/);
+  assert.doesNotMatch(casesPage, /精选案例推荐/);
+  assert.doesNotMatch(casesPage, /精选案例：以下案例适合作为展示与科研训练入口/);
   assert.match(caseCard, /精选案例/);
   assert.doesNotMatch(casesPage, /优先体验|推荐演示案例/);
   assert.doesNotMatch(caseCard, /优先体验/);
