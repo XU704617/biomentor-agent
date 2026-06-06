@@ -62,8 +62,8 @@ class Settings(BaseSettings):
     RAG_SIMILARITY_THRESHOLD: float = 0.65
 
     # ---- Agent ----
-    AGENT_MAX_RETRIES: int = 2
-    AGENT_TIMEOUT_SECONDS: int = 120
+    AGENT_MAX_RETRIES: int = 1
+    AGENT_TIMEOUT_SECONDS: int = 45
 
     # ---- Assessment ----
     QUESTION_AUTO_PUBLISH: bool = False
