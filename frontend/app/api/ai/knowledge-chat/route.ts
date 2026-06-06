@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   buildKnowledgePromptMessages,
-  createLocalKnowledgeAnswer,
   normalizeKnowledgeAiResponse,
 } from "@/lib/knowledge-ai-types.mjs";
 import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
@@ -15,35 +14,31 @@ export async function POST(request: NextRequest) {
     const { apiKey } = resolveDeepSeekConfig();
 
     if (!apiKey) {
-      return NextResponse.json({
-        success: true,
-        data: createLocalKnowledgeAnswer(safeRequest),
-      });
+      return NextResponse.json({ success: false, message: "GLM API Key 未配置。" }, { status: 502 });
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
-    const result = await callDeepSeekJson({
-      messages: buildKnowledgePromptMessages(safeRequest),
-      temperature: safeRequest.mode === "research" ? 0.45 : 0.55,
-      maxTokens: 1200,
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+    try {
+      const result = await callDeepSeekJson({
+        messages: buildKnowledgePromptMessages(safeRequest),
+        temperature: safeRequest.mode === "research" ? 0.45 : 0.55,
+        maxTokens: 1200,
+        responseFormat: true,
+        signal: controller.signal,
+      });
 
-    return NextResponse.json({
-      success: true,
-      data: normalizeKnowledgeAiResponse(result.raw, safeRequest),
-    });
-  } catch {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "这个节点的解释暂时没有生成成功，你可以稍后重试。",
-      },
-      { status: 200 },
-    );
+      return NextResponse.json({
+        success: true,
+        data: normalizeKnowledgeAiResponse(result.raw),
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "知识图谱 AI 生成失败";
+    return NextResponse.json({ success: false, message }, { status: 502 });
   }
 }
 

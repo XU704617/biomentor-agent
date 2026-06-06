@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import {
-  buildDefenseBriefFromText,
-  normalizeDefenseBrief,
-} from "@/lib/defense-flow.mjs";
+import { buildDefenseBriefFromText, normalizeDefenseBrief } from "@/lib/defense-flow.mjs";
 import { extractUploadedFileTextFromBuffer } from "@/lib/defense-file-text.mjs";
 import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 export const runtime = "nodejs";
-
-type BriefFallback = Record<string, unknown>;
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,34 +13,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "没有读取到可用于答辩的文本内容。" }, { status: 400 });
     }
 
-    const localBrief = buildDefenseBriefFromText(payload) as BriefFallback;
-    localBrief._warning = "LLM 不可用时返回本地提取的结构化摘要，非 AI 深度分析。";
-
     const { apiKey } = resolveDeepSeekConfig();
     if (!apiKey) {
-      return NextResponse.json({ success: true, data: localBrief });
+      return NextResponse.json({ success: false, message: "LLM API Key 未配置。" }, { status: 502 });
     }
 
-    const aiBrief = await generateBriefWithDeepSeek({ ...payload, fallback: localBrief });
+    const aiBrief = await generateBriefWithGlm(payload);
     return NextResponse.json({ success: true, data: aiBrief });
   } catch (error) {
-    console.error("[defense/brief]", error instanceof Error ? error.message : error);
-    return NextResponse.json({ success: false, message: "资料包生成失败，请稍后重试。" }, { status: 200 });
+    const message = error instanceof Error ? error.message : "答辩资料生成失败";
+    return NextResponse.json({ success: false, message }, { status: 502 });
   }
 }
 
-async function generateBriefWithDeepSeek({
+async function generateBriefWithGlm({
   text,
   sourceType,
   sourceLabel,
   href,
-  fallback,
 }: {
   text: string;
   sourceType: string;
   sourceLabel: string;
   href: string;
-  fallback: BriefFallback;
 }) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
@@ -88,12 +78,42 @@ async function generateBriefWithDeepSeek({
       signal: controller.signal,
     });
 
-    return normalizeDefenseBrief(result.parsed, { sourceType, sourceLabel, text, href });
-  } catch {
-    return fallback;
+    const parsed = unwrapBriefPayload(
+      result.parsed && typeof result.parsed === "object"
+        ? (result.parsed as Record<string, unknown>)
+        : null,
+    );
+    if (!parsed) {
+      return buildDefenseBriefFromText({ text, sourceType, sourceLabel, href });
+    }
+
+    const hasCoreField = Boolean(
+      String(parsed.title || "").trim() ||
+      String(parsed.background || "").trim() ||
+      String(parsed.researchQuestion || "").trim(),
+    );
+    if (!hasCoreField) {
+      return buildDefenseBriefFromText({ text, sourceType, sourceLabel, href });
+    }
+
+    return normalizeDefenseBrief(parsed, { sourceType, sourceLabel, text, href });
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function unwrapBriefPayload(parsed: Record<string, unknown> | null) {
+  if (!parsed) return null;
+
+  const nested = [parsed.answer, parsed.brief, parsed.data].find(
+    (item) => item && typeof item === "object",
+  ) as Record<string, unknown> | undefined;
+
+  if (!nested) return parsed;
+  return {
+    ...parsed,
+    ...nested,
+  };
 }
 
 async function parseRequest(request: NextRequest) {

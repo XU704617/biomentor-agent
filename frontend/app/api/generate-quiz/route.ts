@@ -1,137 +1,117 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildChatCompletionsUrl, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
+
+import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const content = body.content || "";
+    const content = String(body.content || "").trim();
 
     if (!content) {
       return NextResponse.json({ success: false, error: "请提供教材内容" }, { status: 400 });
     }
 
-    const { apiKey, baseUrl, model } = resolveDeepSeekConfig();
+    const { apiKey } = resolveDeepSeekConfig();
     if (!apiKey) {
-      return NextResponse.json({ success: false, error: "AI 服务未配置" }, { status: 503 });
+      return NextResponse.json({ success: false, error: "GLM API Key 未配置" }, { status: 503 });
     }
 
-    let contextText = content;
-    
-    if (content && content.startsWith("data:image/")) {
-      contextText = "用户上传了一张图片，图片内容待分析";
-    } else if (content && content.startsWith("data:application/pdf;base64,")) {
-      contextText = "用户上传了一个PDF文件，文件内容待分析";
-    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
-    const prompt = `基于以下教材内容生成10道练习题，包含选择题、判断题、填空题：
-
-${contextText.length > 3000 ? contextText.substring(0, 3000) + "..." : contextText}
-
-请按照以下JSON格式输出，不要包含任何额外文字：
-{
-  "questions": [
-    {
-      "id": 1,
-      "type": "choice",
-      "question": "问题内容",
-      "options": ["选项A", "选项B", "选项C", "选项D"],
-      "correctAnswer": "正确选项（如：A. 选项内容）",
-      "explanation": "答案解析"
-    },
-    {
-      "id": 2,
-      "type": "judge",
-      "question": "判断题内容",
-      "correctAnswer": "true或false",
-      "explanation": "答案解析"
-    },
-    {
-      "id": 3,
-      "type": "fill",
-      "question": "填空题内容，空格用____表示",
-      "correctAnswer": "正确答案",
-      "explanation": "答案解析"
-    }
-  ]
-}`;
-
-    const response = await fetch(buildChatCompletionsUrl(baseUrl), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
+    try {
+      const result = await callDeepSeekJson({
         messages: [
           {
             role: "system",
-            content: "你是一个专业的生物医学知识导师，擅长基于教材内容生成高质量的练习题。输出必须是纯JSON格式，不能包含任何额外文字。",
+            content: [
+              "你是生物医学课程出题助手。",
+              "请基于用户给出的学习内容生成练习题。",
+              "严禁使用学习内容之外的事实、年份、机构、实验结果或背景知识。",
+              "如果材料只提供了少量事实，题目也只能围绕这些事实展开。",
+              "只返回合法 JSON，对象字段固定为 questions。",
+              "questions 必须是数组，包含 8-10 题，并覆盖 choice、judge、fill 至少三种类型。",
+              "每题必须包含 id, type, question, correctAnswer, explanation。",
+              "choice 题必须额外包含 options，且 options 长度必须为 4。",
+            ].join("\n"),
           },
           {
             role: "user",
-            content: prompt,
+            content: JSON.stringify(
+              {
+                content: content.slice(0, 6000),
+                outputFormat: {
+                  questions: [
+                    {
+                      id: 1,
+                      type: "choice | judge | fill",
+                      question: "题干",
+                      options: ["A", "B", "C", "D"],
+                      correctAnswer: "正确答案",
+                      explanation: "简短解析",
+                    },
+                  ],
+                },
+                instruction: "题目和解析只能依据上面的 content 生成，不要扩展到 content 之外。",
+              },
+              null,
+              2,
+            ),
           },
         ],
-        max_tokens: 3000,
-        temperature: 0.7,
-      }),
-    });
+        temperature: 0.2,
+        maxTokens: 2200,
+        responseFormat: true,
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`DeepSeek API error: ${errorData.error?.message || response.status}`);
-    }
-
-    const result = await response.json();
-    const aiResponse = result.choices[0].message.content;
-
-    let quizData;
-    try {
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        quizData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("无法解析JSON");
+      const parsed = result.parsed;
+      const questions = normalizeQuestions(parsed?.questions);
+      if (questions.length < 5) {
+        throw new Error("GLM 生成的题目数量不足");
       }
-    } catch {
-      quizData = {
-        questions: [
-          {
-            id: 1,
-            type: "choice",
-            question: "根据上传的教材内容，以下哪个是核心概念？",
-            options: ["选项A", "选项B", "选项C", "选项D"],
-            correctAnswer: "选项A",
-            explanation: "请参考上传教材内容进行解答。",
-          },
-          {
-            id: 2,
-            type: "judge",
-            question: "根据教材内容判断此陈述是否正确",
-            correctAnswer: "true",
-            explanation: "请参考上传教材内容进行解答。",
-          },
-          {
-            id: 3,
-            type: "fill",
-            question: "根据教材内容，____是重要的知识点。",
-            correctAnswer: "答案",
-            explanation: "请参考上传教材内容进行解答。",
-          },
-        ],
-      };
-    }
 
-    return NextResponse.json({
-      success: true,
-      data: quizData,
-    });
+      return NextResponse.json({
+        success: true,
+        data: { questions },
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch (error) {
-    console.error("Generate Quiz API error:", error);
-    return NextResponse.json(
-      { success: false, error: (error as Error).message },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "生成题目失败";
+    return NextResponse.json({ success: false, error: message }, { status: 502 });
   }
+}
+
+function normalizeQuestions(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  let nextId = 1;
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const type = String(item.type || "").trim().toLowerCase();
+      const normalizedType =
+        type === "choice" || type === "judge" || type === "fill" ? type : "";
+      const question = String(item.question || "").trim();
+      const correctAnswer = String(item.correctAnswer || item.answer || "").trim();
+      const explanation = String(item.explanation || "").trim();
+      const options = Array.isArray(item.options)
+        ? item.options.map((option: unknown) => String(option).trim()).filter(Boolean).slice(0, 4)
+        : [];
+
+      if (!normalizedType || !question || !correctAnswer || !explanation) return null;
+      if (normalizedType === "choice" && options.length !== 4) return null;
+
+      return {
+        id: nextId++,
+        type: normalizedType,
+        question,
+        ...(normalizedType === "choice" ? { options } : {}),
+        correctAnswer,
+        explanation,
+      };
+    })
+    .filter(Boolean);
 }

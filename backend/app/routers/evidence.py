@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.schemas import (
     EvidenceSearchRequest,
@@ -36,10 +36,13 @@ async def evidence_search(body: EvidenceSearchRequest):
 @router.post("/note", response_model=EvidenceNoteResponse)
 async def evidence_note(body: EvidenceNoteRequest):
     service = EvidenceService()
-    result = await service.generate_note(
-        task_title=body.task_title,
-        task_description=body.task_description,
-        selected_literature=[item.model_dump() for item in body.selected_literature],
-        case_title=body.case_title,
-    )
+    try:
+        result = await service.generate_note(
+            task_title=body.task_title,
+            task_description=body.task_description,
+            selected_literature=[item.model_dump() for item in body.selected_literature],
+            case_title=body.case_title,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(502, str(exc)) from exc
     return EvidenceNoteResponse(**result)

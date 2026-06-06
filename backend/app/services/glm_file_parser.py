@@ -129,8 +129,16 @@ class GLMFileParserService:
             raise RuntimeError(f"GLM file parser request failed: {exc}") from exc
 
         payload = response.json()
+        if str(payload.get("status", "")).strip().lower() == "failed":
+            message = str(payload.get("message", "") or payload.get("detail", "")).strip()
+            if message:
+                raise RuntimeError(f"GLM file parser failed: {message}")
+
         text = str(payload.get("content", "") or "").strip()
         if not text:
+            message = str(payload.get("message", "") or payload.get("detail", "")).strip()
+            if message:
+                raise RuntimeError(f"GLM file parser returned empty content: {message}")
             raise RuntimeError("GLM file parser returned empty content")
 
         return ParsedFileResult(

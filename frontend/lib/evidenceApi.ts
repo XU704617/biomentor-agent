@@ -233,11 +233,11 @@ export async function searchEvidenceForTask(
     const data = await response.json();
 
     if (!response.ok) {
-      return localResult;
+      throw new Error(data?.error || data?.detail || `证据检索失败 (${response.status})`);
     }
 
-    if (data?.error || data?.source === "not_configured") {
-      return localResult;
+    if (data?.error) {
+      throw new Error(String(data.error));
     }
 
     const externalResults = Array.isArray(data?.results) ? data.results : [];
@@ -253,7 +253,7 @@ export async function searchEvidenceForTask(
     };
   } catch (error) {
     clearTimeout(timeout);
-    return localResult;
+    throw error instanceof Error ? error : new Error("证据检索失败");
   }
 }
 
@@ -284,17 +284,21 @@ export async function createEvidenceNote(
     const data = await response.json();
 
     if (!response.ok) {
-      return createLocalEvidenceNote(input);
+      throw new Error(data?.error || data?.detail || `证据笔记生成失败 (${response.status})`);
+    }
+
+    if (data?.error) {
+      throw new Error(String(data.error));
     }
 
     const normalized = normalizeEvidenceNoteResponse(data, input);
-    if (normalized?.error || !normalized?.note || normalized?.selected_count === 0) {
-      return createLocalEvidenceNote(input);
+    if (!normalized?.note || normalized?.selected_count === 0) {
+      throw new Error("证据笔记返回为空");
     }
 
     return normalized;
   } catch (error) {
     clearTimeout(timeout);
-    return createLocalEvidenceNote(input);
+    throw error instanceof Error ? error : new Error("证据笔记生成失败");
   }
 }

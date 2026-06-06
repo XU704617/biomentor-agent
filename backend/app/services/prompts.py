@@ -1,43 +1,31 @@
 """
-Prompt Registry — all LLM prompt templates for BioMentor Agent.
+Prompt registry for BioMentor Agent.
 
-Each prompt has:
-- system: system-level instruction
-- user_template: user message template with {placeholders}
-- output_schema: JSON schema for structured output (optional)
+This file keeps the production prompts readable and UTF-8 clean so the
+backend does not feed mojibake into GLM.
 """
 
-# ── Question Generation ─────────────────────────────────────────
+# Question generation
 
-QUESTION_GENERATION_SYSTEM = """你是一位生物制造领域的资深教育专家和出题专家。你需要根据提供的知识点和参考资料，生成高质量的测评题目。
+QUESTION_GENERATION_SYSTEM = """你是一名生命科学教育出题助手。
 
-出题原则：
-1. 题目必须准确反映知识点，不能有科学性错误
-2. 选择题选项必须互斥且覆盖常见误解
-3. 判断题要有明确的正误依据
-4. 简答题和论述题要有清晰的评分标准
-5. 科研拓展题要引导学生思考前沿问题
-6. 产业联系题要连接基础知识与产业应用
-7. 每道题都必须提供详细的解析，解释为什么正确答案是对的，错误选项/判断错在哪里
-8. 必须标注题目对应的知识点、Bloom认知层级和难度"""
+请基于给定知识点和参考材料生成高质量中文题目。
+要求：
+1. 题目必须严格依据材料，不要编造材料中没有的事实。
+2. 选择题必须提供 4 个选项，且只有 1 个最优答案。
+3. 每道题都必须给出准确答案和清晰解析。
+4. 输出必须是一个合法 JSON 对象，不要输出 Markdown。"""
 
 QUESTION_GENERATION_USER = """请根据以下信息生成 {count} 道题目。
 
 知识点：{knowledge_points}
-参考资料：{evidence}
-题目类型：{question_types}
+参考材料：{evidence}
+题型：{question_types}
 难度：{difficulty}
 
-请生成JSON格式的题目列表。每道题包含：
-- type: 题型 (choice/truefalse/short_answer/essay/research/industry)
-- stem: 题干
-- options: 选项列表（仅选择题需要，每个选项包含 label 和 text）
-- answer: 正确答案
-- explanation: 详细解析
-- bloom_level: Bloom认知层级 (remember/understand/apply/analyze/evaluate/create)
-- difficulty: 难度 (easy/medium/hard)
-- knowledge_points: 关联知识点列表
-- rubric: 评分标准（仅主观题需要，每项包含 dimension, max_score, description）"""
+返回 JSON，字段为：
+- questions: 数组
+- 每道题包含 type, stem, options, answer, explanation, bloom_level, difficulty, knowledge_points, rubric"""
 
 QUESTION_GENERATION_SCHEMA = {
     "type": "object",
@@ -47,15 +35,44 @@ QUESTION_GENERATION_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "type": {"type": "string", "enum": ["choice", "truefalse", "short_answer", "essay", "research", "industry"]},
+                    "type": {
+                        "type": "string",
+                        "enum": ["choice", "truefalse", "short_answer", "essay", "research", "industry"],
+                    },
                     "stem": {"type": "string"},
-                    "options": {"type": "array", "items": {"type": "object", "properties": {"label": {"type": "string"}, "text": {"type": "string"}}, "required": ["label", "text"], "additionalProperties": False}},
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "label": {"type": "string"},
+                                "text": {"type": "string"},
+                            },
+                            "required": ["label", "text"],
+                            "additionalProperties": False,
+                        },
+                    },
                     "answer": {"type": "string"},
                     "explanation": {"type": "string"},
-                    "bloom_level": {"type": "string", "enum": ["remember", "understand", "apply", "analyze", "evaluate", "create"]},
+                    "bloom_level": {
+                        "type": "string",
+                        "enum": ["remember", "understand", "apply", "analyze", "evaluate", "create"],
+                    },
                     "difficulty": {"type": "string", "enum": ["easy", "medium", "hard"]},
                     "knowledge_points": {"type": "array", "items": {"type": "string"}},
-                    "rubric": {"type": "array", "items": {"type": "object", "properties": {"dimension": {"type": "string"}, "max_score": {"type": "number"}, "description": {"type": "string"}}, "required": ["dimension", "max_score", "description"], "additionalProperties": False}},
+                    "rubric": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "dimension": {"type": "string"},
+                                "max_score": {"type": "number"},
+                                "description": {"type": "string"},
+                            },
+                            "required": ["dimension", "max_score", "description"],
+                            "additionalProperties": False,
+                        },
+                    },
                 },
                 "required": ["type", "stem", "answer", "explanation", "difficulty"],
                 "additionalProperties": False,
@@ -66,26 +83,18 @@ QUESTION_GENERATION_SCHEMA = {
     "additionalProperties": False,
 }
 
-# ── Grading ──────────────────────────────────────────────────────
+# Grading
 
-GRADING_SYSTEM = """你是一位严格的生物制造课程评分专家。请根据评分标准(Rubric)对学生的答案进行分项评分。
+GRADING_SYSTEM = """你是一名生命科学课程评分助手。
+请严格按照评分标准评分，给出分项得分、总分、缺失点和反馈。
+输出必须是合法 JSON，不要输出 Markdown。"""
 
-评分原则：
-1. 严格按照rubric的每个维度进行独立评分
-2. 关注科学性准确度，而非文字长度
-3. 识别学生的常见误解并指出
-4. 给出建设性的改进建议
-5. 如果学生答案完全偏离主题，给出低分并引导方向
-6. 给出评分的置信度（0-1），如果答案模糊或有歧义，降低置信度"""
-
-GRADING_USER = """请对以下学生答案进行评分。
-
-题目：{question_stem}
+GRADING_USER = """题目：{question_stem}
 参考答案：{reference_answer}
 评分标准：{rubric}
 学生答案：{student_answer}
 
-请给出分项评分和综合反馈。"""
+请返回结构化评分结果。"""
 
 GRADING_SCHEMA = {
     "type": "object",
@@ -115,96 +124,108 @@ GRADING_SCHEMA = {
     "additionalProperties": False,
 }
 
-# ── RAG Answer Synthesis ─────────────────────────────────────────
+# RAG answer synthesis
 
-RAG_SYNTHESIS_SYSTEM = """你是一位生物制造领域的AI导师。请根据提供的参考资料回答学生的问题。
-
-回答原则：
-1. 答案必须基于提供的参考资料，不要编造信息
-2. 如果参考资料不足以回答，诚实说明并建议查阅方向
-3. 使用通俗易懂的语言，适当解释专业术语
-4. 结构化回答：先给出核心答案，再展开解释，最后总结
-5. 标注信息来源（引用资料编号）
-6. 如果合适，提出相关的后续问题引导学生深入思考"""
+RAG_SYNTHESIS_SYSTEM = """你是一名生命科学学习助手。
+请只基于提供的参考材料回答，不要编造来源。
+如果材料不足以支持结论，请明确说明证据不足。"""
 
 RAG_SYNTHESIS_USER = """学生问题：{query}
 
-参考资料：
+参考材料：
 {context}
 
-请根据以上资料回答学生的问题。"""
+请基于这些材料回答学生问题。"""
 
-# ── Photo Learning / OCR Analysis ─────────────────────────────────
+# Photo learning / material analysis
 
-PHOTO_ANALYSIS_SYSTEM = """你是一位生物学教育专家。请分析学生上传的课本或笔记内容，提取关键概念并生成学习指导。
+PHOTO_ANALYSIS_SYSTEM = """You are a life-science learning assistant.
 
-你需要：
-1. 识别内容中的核心生物学概念和关键词
-2. 判断内容属于生物学的哪个分支领域
-3. 生成一个简洁的学习摘要
-4. 如果内容涉及重要概念，生成1-2道思考题"""
+Return exactly one JSON object in Simplified Chinese.
+Do not output markdown.
+Do not output placeholders, examples, or fallback text.
+Base every field on the uploaded material only.
 
-PHOTO_ANALYSIS_USER = """学生上传内容：
-{text}
+Requirements:
+1. Put the core recognized text into `transcribed_text`. Keep it concise but real.
+2. Extract 4 to 10 concrete keywords from the material.
+3. Identify the most relevant domain or subfield.
+4. Write one concise factual summary.
+5. Give 3 to 4 actionable learning suggestions.
+6. Generate 5 questions:
+   - 2 choice
+   - 1 truefalse
+   - 1 short_answer
+   - 1 research or industry
+7. Every question must include a real answer and explanation grounded in the material.
+8. Choice questions must contain 4 options with labels A/B/C/D."""
 
-请分析这段内容。"""
+PHOTO_ANALYSIS_USER = """Analyze the following uploaded learning material and return the required JSON in Simplified Chinese.
+
+Material:
+{text}"""
 
 PHOTO_ANALYSIS_SCHEMA = {
     "type": "object",
     "properties": {
+        "transcribed_text": {"type": "string"},
         "keywords": {"type": "array", "items": {"type": "string"}},
         "domain": {"type": "string"},
-        "subdomain": {"type": "string"},
         "summary": {"type": "string"},
-        "source_excerpt": {"type": "string"},
-        "key_concepts": {"type": "array", "items": {"type": "string"}},
         "learning_suggestions": {"type": "array", "items": {"type": "string"}},
         "questions": {
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": ["choice", "truefalse", "short_answer", "research", "industry"],
+                    },
                     "question": {"type": "string"},
-                    "hint": {"type": "string"},
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "label": {"type": "string"},
+                                "text": {"type": "string"},
+                            },
+                            "required": ["label", "text"],
+                            "additionalProperties": False,
+                        },
+                    },
+                    "answer": {"type": "string"},
+                    "explanation": {"type": "string"},
                 },
-                "required": ["question"],
+                "required": ["type", "question", "answer", "explanation"],
                 "additionalProperties": False,
             },
         },
     },
-    "required": ["keywords", "domain", "summary"],
+    "required": ["transcribed_text", "keywords", "domain", "summary", "learning_suggestions", "questions"],
     "additionalProperties": False,
 }
 
-# ── Case Q&A / Socratic Tutoring ─────────────────────────────────
+# Case tutor
 
-CASE_TUTOR_SYSTEM = """你是一位采用苏格拉底式教学法的AI导师，专门针对生物制造产业案例进行辅导。
-
-教学原则：
-1. 不要直接给出完整答案，而是通过提问引导学生自己思考
-2. 根据学生的回答水平调整提示的详细程度
-3. 鼓励学生从多个角度分析问题（技术、商业、伦理、监管）
-4. 将案例与基础生物学知识连接起来
-5. 当学生表现出理解时，提出更深层次的问题"""
+CASE_TUTOR_SYSTEM = """你是一名产业案例学习导师。
+请围绕案例背景、机制、证据和应用边界进行引导式回答，不要编造来源。"""
 
 CASE_TUTOR_USER = """产业案例：{case_title}
 案例背景：{case_background}
 核心问题：{case_problem}
 相关知识：{knowledge_points}
 
-学生的问题或回答：{student_input}
+学生输入：{student_input}
 
-请以苏格拉底式的方式回应。"""
+请用启发式方式回答。"""
 
-# ── Diagnosis / Error Analysis ───────────────────────────────────
+# Diagnosis
 
-DIAGNOSIS_SYSTEM = """你是一位学习诊断专家。请分析学生的答题数据，给出诊断和建议。
-
-分析维度：
-1. 知识点掌握情况：哪些概念掌握好，哪些薄弱
-2. 错误类型分析：概念混淆、计算错误、理解偏差、表达不清等
-3. 学习策略建议：针对性的复习方向和学习方法
-4. 能力画像：概念理解、机制分析、应用能力、文献理解、研究设计、知识迁移"""
+DIAGNOSIS_SYSTEM = """你是一名学习诊断助手。
+请分析学生答题记录，识别薄弱点、错误模式、能力画像和建议。
+输出必须是合法 JSON。"""
 
 DIAGNOSIS_USER = """学生答题数据：
 {attempt_data}
@@ -212,32 +233,80 @@ DIAGNOSIS_USER = """学生答题数据：
 知识体系：
 {knowledge_structure}
 
-请给出诊断分析。"""
+请返回结构化诊断。"""
 
 DIAGNOSIS_SCHEMA = {
     "type": "object",
     "properties": {
-        "weak_points": {"type": "array", "items": {"type": "object", "properties": {"concept": {"type": "string"}, "level": {"type": "number"}, "reason": {"type": "string"}}, "required": ["concept", "level"], "additionalProperties": False}},
-        "strengths": {"type": "array", "items": {"type": "object", "properties": {"concept": {"type": "string"}, "level": {"type": "number"}}, "required": ["concept", "level"], "additionalProperties": False}},
-        "error_patterns": {"type": "array", "items": {"type": "object", "properties": {"type": {"type": "string"}, "description": {"type": "string"}, "frequency": {"type": "string"}}, "required": ["type", "description"], "additionalProperties": False}},
-        "ability_profile": {"type": "object", "properties": {"concept_mastery": {"type": "number"}, "mechanism_understanding": {"type": "number"}, "application_ability": {"type": "number"}, "literature_comprehension": {"type": "number"}, "research_design": {"type": "number"}, "knowledge_transfer": {"type": "number"}}, "required": ["concept_mastery", "mechanism_understanding", "application_ability", "literature_comprehension", "research_design", "knowledge_transfer"], "additionalProperties": False},
+        "weak_points": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "concept": {"type": "string"},
+                    "level": {"type": "number"},
+                    "reason": {"type": "string"},
+                },
+                "required": ["concept", "level"],
+                "additionalProperties": False,
+            },
+        },
+        "strengths": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "concept": {"type": "string"},
+                    "level": {"type": "number"},
+                },
+                "required": ["concept", "level"],
+                "additionalProperties": False,
+            },
+        },
+        "error_patterns": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {"type": "string"},
+                    "description": {"type": "string"},
+                    "frequency": {"type": "string"},
+                },
+                "required": ["type", "description"],
+                "additionalProperties": False,
+            },
+        },
+        "ability_profile": {
+            "type": "object",
+            "properties": {
+                "concept_mastery": {"type": "number"},
+                "mechanism_understanding": {"type": "number"},
+                "application_ability": {"type": "number"},
+                "literature_comprehension": {"type": "number"},
+                "research_design": {"type": "number"},
+                "knowledge_transfer": {"type": "number"},
+            },
+            "required": [
+                "concept_mastery",
+                "mechanism_understanding",
+                "application_ability",
+                "literature_comprehension",
+                "research_design",
+                "knowledge_transfer",
+            ],
+            "additionalProperties": False,
+        },
         "recommendations": {"type": "array", "items": {"type": "string"}},
     },
     "required": ["weak_points", "strengths", "error_patterns", "ability_profile", "recommendations"],
     "additionalProperties": False,
 }
 
-# ── Paper Analysis ───────────────────────────────────────────────
+# Paper analysis
 
-PAPER_ANALYSIS_SYSTEM = """你是一位生物学研究方法论专家。请分析学术论文并生成教学指导。
-
-分析要点：
-1. 研究动机和核心问题
-2. 方法的创新点和关键步骤
-3. 主要发现和数据支撑
-4. 研究的局限性和未来方向
-5. 教学价值：如何用于课堂教学
-6. 对学生科研训练的启示"""
+PAPER_ANALYSIS_SYSTEM = """你是一名论文教学分析助手。
+请基于论文元数据和摘要内容生成适合教学与答辩准备的结构化分析。
+输出必须是合法 JSON。"""
 
 PAPER_ANALYSIS_USER = """论文标题：{title}
 摘要：{abstract}
@@ -245,7 +314,7 @@ PAPER_ANALYSIS_USER = """论文标题：{title}
 发现：{findings}
 方向：{direction}
 
-请为这篇论文生成学习指导和答辩要点。"""
+请返回结构化学习分析。"""
 
 PAPER_ANALYSIS_SCHEMA = {
     "type": "object",
@@ -263,24 +332,18 @@ PAPER_ANALYSIS_SCHEMA = {
     "additionalProperties": False,
 }
 
-# ── Learning Path Generation ─────────────────────────────────────
+# Learning path
 
-LEARNING_PATH_SYSTEM = """你是一位自适应学习系统设计师。请根据学生的知识诊断结果设计个性化学习路径。
+LEARNING_PATH_SYSTEM = """你是一名个性化学习路径设计助手。
+请基于诊断结果设计分步骤的学习计划。
+输出必须是合法 JSON。"""
 
-设计原则：
-1. 优先强化最薄弱的知识点
-2. 按认知层次递进：先理解基础概念，再应用和分析，最后综合和创造
-3. 每个步骤都要有明确的学习目标和验证方式
-4. 穿插不同类型的活动：阅读、练习、实验、讨论、案例
-5. 预估每个步骤需要的时间"""
-
-LEARNING_PATH_USER = """学生诊断结果：
-薄弱知识点：{weak_points}
+LEARNING_PATH_USER = """薄弱知识点：{weak_points}
 已掌握知识：{strengths}
 错误类型：{error_patterns}
 能力画像：{ability_profile}
 
-请设计一个个性化学习路径。"""
+请返回结构化学习路径。"""
 
 LEARNING_PATH_SCHEMA = {
     "type": "object",
@@ -295,7 +358,10 @@ LEARNING_PATH_SCHEMA = {
                 "properties": {
                     "order": {"type": "integer"},
                     "title": {"type": "string"},
-                    "type": {"type": "string", "enum": ["review", "practice", "explore", "experiment", "case_study", "discussion", "assessment"]},
+                    "type": {
+                        "type": "string",
+                        "enum": ["review", "practice", "explore", "experiment", "case_study", "discussion", "assessment"],
+                    },
                     "description": {"type": "string"},
                     "learning_objective": {"type": "string"},
                     "estimated_minutes": {"type": "integer"},
@@ -311,29 +377,48 @@ LEARNING_PATH_SCHEMA = {
     "additionalProperties": False,
 }
 
-# ── Material Summarization ───────────────────────────────────────
+# Material summary
 
-MATERIAL_SUMMARY_SYSTEM = """你是一位生物学教材分析专家。请对上传的教学资料进行结构化分析。
-
-你需要：
-1. 提取资料的核心主题和子主题
-2. 识别关键概念和定义
-3. 标注知识点之间的逻辑关系
-4. 评估资料的难度和适合的学习阶段
-5. 建议如何与其他教学资源整合"""
+MATERIAL_SUMMARY_SYSTEM = """你是一名教材与学习材料分析助手。
+请提炼核心概念、知识关系、难度和教学建议。
+输出必须是合法 JSON。"""
 
 MATERIAL_SUMMARY_USER = """资料内容：
 {content}
 
-请分析这份教学资料。"""
+请返回结构化分析。"""
 
 MATERIAL_SUMMARY_SCHEMA = {
     "type": "object",
     "properties": {
         "title": {"type": "string"},
         "subject_area": {"type": "string"},
-        "key_concepts": {"type": "array", "items": {"type": "object", "properties": {"name": {"type": "string"}, "definition": {"type": "string"}, "importance": {"type": "string", "enum": ["核心", "重要", "了解"]}}, "required": ["name", "definition"], "additionalProperties": False}},
-        "knowledge_relations": {"type": "array", "items": {"type": "object", "properties": {"from": {"type": "string"}, "to": {"type": "string"}, "type": {"type": "string", "enum": ["前置知识", "因果关系", "并列关系", "应用关系"]}}, "required": ["from", "to", "type"], "additionalProperties": False}},
+        "key_concepts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "definition": {"type": "string"},
+                    "importance": {"type": "string", "enum": ["核心", "重要", "了解"]},
+                },
+                "required": ["name", "definition"],
+                "additionalProperties": False,
+            },
+        },
+        "knowledge_relations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "from": {"type": "string"},
+                    "to": {"type": "string"},
+                    "type": {"type": "string", "enum": ["前置知识", "因果关系", "并列关系", "应用关系"]},
+                },
+                "required": ["from", "to", "type"],
+                "additionalProperties": False,
+            },
+        },
         "difficulty_level": {"type": "string", "enum": ["入门", "基础", "进阶", "高级"]},
         "suggested_prerequisites": {"type": "array", "items": {"type": "string"}},
         "teaching_suggestions": {"type": "array", "items": {"type": "string"}},
@@ -342,47 +427,30 @@ MATERIAL_SUMMARY_SCHEMA = {
     "additionalProperties": False,
 }
 
-# ── AI Tutor Chat ─────────────────────────────────────────────────
+# General tutor
 
-TUTOR_SYSTEM = """你是 BioMentor Agent，一位面向生命科学领域的AI学习导师。你的角色是为学生提供准确、有教育意义的生物学指导。
+TUTOR_SYSTEM = """你是 BioMentor Agent 的生命科学学习导师。
 
-核心能力：
-1. 解释生物学概念，从基础到前沿
-2. 回答关于基因编辑、合成生物学、蛋白质工程、mRNA技术、单细胞组学等问题
-3. 引导科研思维和实验设计
-4. 连接基础知识和产业应用
-5. 推荐学习资源和路径
+要求：
+1. 优先保证科学准确性。
+2. 解释要清楚、结构化、适合学生理解。
+3. 如果依据不足，要明确说明不确定性。
+4. 不要暴露 API、模型、调试信息或系统内部实现。
+5. 可以使用 Markdown 组织回答。"""
 
-行为准则：
-1. 准确性优先：不确定的信息要明确标注
-2. 教育性：不仅给答案，还要解释为什么
-3. 鼓励思考：适当使用苏格拉底式提问
-4. 个性化：根据学生的理解水平调整解释深度
-5. 安全性：涉及伦理问题时给出平衡的观点
+# Recommendation
 
-回复格式：使用 Markdown，适当使用标题、列表和加粗来组织信息。"""
+RECOMMENDATION_SYSTEM = """你是一名学习推荐助手。
+请基于学生学习状态，生成知识复习、练习、案例、论文或工具方面的推荐。
+输出必须是合法 JSON。"""
 
-# ── Recommendation Generation ────────────────────────────────────
-
-RECOMMENDATION_SYSTEM = """你是一位教育推荐系统专家。请根据学生的学习数据生成个性化推荐。
-
-推荐类型包括：
-1. 知识复习：推荐需要强化的知识点
-2. 练习题目：推荐针对性的练习题
-3. 案例学习：推荐相关的产业案例
-4. 文献阅读：推荐拓展视野的科研论文
-5. 工具使用：推荐合适的生物信息学工具
-
-每条推荐必须包含：推荐类型、具体内容、推荐理由、优先级。"""
-
-RECOMMENDATION_USER = """学生学习数据：
-薄弱知识点：{weak_points}
+RECOMMENDATION_USER = """薄弱知识点：{weak_points}
 已掌握知识：{strengths}
-最近的错误类型：{error_patterns}
+近期错误类型：{error_patterns}
 能力画像：{ability_profile}
 已学习内容：{learned_topics}
 
-请生成个性化推荐。"""
+请返回结构化推荐。"""
 
 RECOMMENDATION_SCHEMA = {
     "type": "object",

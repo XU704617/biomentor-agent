@@ -1,8 +1,10 @@
 """
 Backend file extraction service backed entirely by GLM.
 
-Despite the legacy name, this service no longer uses local OCR/PDF/DOCX
-libraries. Supported uploads are sent to GLM's synchronous file parser.
+Routing rules:
+- images / PDFs -> GLM layout parsing
+- office/text files -> GLM file parser
+No local OCR is used.
 """
 
 from __future__ import annotations
@@ -10,21 +12,23 @@ from __future__ import annotations
 from typing import Any
 
 from app.services.glm_file_parser import GLMFileParserService
+from app.services.glm_vision_parser import GLMVisionParserService
 
 
 class OcrService:
     def __init__(self) -> None:
-        self._parser = GLMFileParserService()
+        self._vision_parser = GLMVisionParserService()
+        self._file_parser = GLMFileParserService()
 
     def extract(self, file_bytes: bytes, mime_type: str, filename: str = "") -> dict[str, Any]:
         try:
-            parsed = self._parser.parse_bytes(file_bytes, mime_type, filename)
+            parsed = self._select_parser(mime_type, filename).parse_bytes(file_bytes, mime_type, filename)
         except Exception as exc:
             return {
                 "success": False,
                 "error": str(exc),
                 "text": "",
-                "engine": "glm-file-parser",
+                "engine": "glm",
                 "filename": filename,
                 "char_count": 0,
             }
@@ -39,5 +43,14 @@ class OcrService:
             "engine": parsed.engine,
             "filename": filename,
             "char_count": len(text),
-            "parsing_result_url": parsed.parsing_result_url,
+            "parsing_result_url": getattr(parsed, "parsing_result_url", ""),
+            "page_count": getattr(parsed, "page_count", 0),
         }
+
+    def _select_parser(self, mime_type: str, filename: str):
+        lower = (filename or "").lower()
+        if (mime_type or "").startswith("image/") or lower.endswith(
+            (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".pdf")
+        ) or mime_type == "application/pdf":
+            return self._vision_parser
+        return self._file_parser

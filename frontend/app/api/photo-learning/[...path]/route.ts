@@ -13,7 +13,7 @@ const BACKEND_BASE = (
 
 function buildTargetUrl(request: NextRequest, path: string[]) {
   const cleanPath = path.join("/").replace(/^\/+/, "");
-  const target = new URL(`${BACKEND_BASE}/${cleanPath}`);
+  const target = new URL(`${BACKEND_BASE}/api/photo-learning/${cleanPath}`);
   target.search = request.nextUrl.search;
   return target;
 }

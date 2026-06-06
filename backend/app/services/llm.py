@@ -1,9 +1,10 @@
 """
 LLM service built around GLM's OpenAI-compatible chat completions API.
 
-The code keeps the previous call shape for the rest of the backend, but
-internally resolves all runtime settings to GLM first. File understanding now
-goes through GLM's file parser instead of local OCR/PDF extraction.
+User-facing behavior is strict:
+- no fake success payloads
+- no local template pretending the model worked
+- return real GLM output or raise a real error
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ import httpx
 from openai import OpenAI
 
 from app.config import get_settings
-from app.services.glm_file_parser import GLMFileParserService
+from app.services.ocr import OcrService
 
 
 @dataclass
@@ -44,10 +45,23 @@ class LLMService:
         return get_settings()
 
     @property
+    def available(self) -> bool:
+        return bool(self.settings.resolved_llm_api_key())
+
+    @property
+    def is_glm(self) -> bool:
+        return "bigmodel" in self.settings.resolved_llm_base_url().lower()
+
+    @property
+    def is_deepseek(self) -> bool:
+        return False
+
+    @property
     def clients(self) -> list[tuple[str, OpenAI]]:
         if self._clients is None:
             self._clients = []
             self._http_clients = []
+
             api_key = self.settings.resolved_llm_api_key()
             base_url = self.settings.resolved_llm_base_url()
             timeout_seconds = self.settings.AGENT_TIMEOUT_SECONDS
@@ -60,13 +74,14 @@ class LLMService:
                 }
                 if proxy_url:
                     http_client_kwargs["proxy"] = proxy_url
+
                 http_client = httpx.Client(**http_client_kwargs)
                 self._http_clients.append(http_client)
                 self._clients.append(
                     (
                         label,
                         OpenAI(
-                            api_key=api_key or "sk-placeholder",
+                            api_key=api_key,
                             base_url=base_url,
                             timeout=timeout_seconds,
                             max_retries=0,
@@ -74,36 +89,26 @@ class LLMService:
                         ),
                     )
                 )
+
         return self._clients
-
-    @property
-    def available(self) -> bool:
-        return bool(self.settings.resolved_llm_api_key())
-
-    @property
-    def is_glm(self) -> bool:
-        return "bigmodel" in self.settings.resolved_llm_base_url().lower()
-
-    @property
-    def is_deepseek(self) -> bool:
-        return False
 
     def chat(
         self,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
         response_schema: dict | None = None,
         retries: int | None = None,
+        extra_body: dict[str, Any] | None = None,
     ) -> LLMResponse:
+        if not self.available:
+            raise RuntimeError("LLM service unavailable: GLM API key is not configured")
+
         model = model or self.settings.resolved_llm_model()
         temperature = temperature if temperature is not None else self.settings.LLM_TEMPERATURE
         max_tokens = max_tokens or self.settings.LLM_MAX_TOKENS
         max_retries = retries if retries is not None else self.settings.AGENT_MAX_RETRIES
-
-        if not self.available:
-            return self._fallback_response()
 
         request_messages = [dict(message) for message in messages]
         if response_schema:
@@ -115,6 +120,8 @@ class LLMService:
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
+        if extra_body:
+            kwargs["extra_body"] = extra_body
         if response_schema:
             kwargs["response_format"] = (
                 {"type": "json_object"}
@@ -154,24 +161,24 @@ class LLMService:
                     continue
 
             if attempt < max_retries:
-                time.sleep(2 ** attempt)
+                time.sleep(self._retry_delay(last_error, attempt))
 
         raise RuntimeError(f"LLM call failed after {max_retries + 1} attempts: {last_error}")
 
     def chat_stream(
         self,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
     ):
+        if not self.available:
+            yield "LLM service unavailable: GLM API key is not configured."
+            return
+
         model = model or self.settings.resolved_llm_model()
         temperature = temperature if temperature is not None else self.settings.LLM_TEMPERATURE
         max_tokens = max_tokens or self.settings.LLM_MAX_TOKENS
-
-        if not self.available:
-            yield "AI 服务暂未配置。请设置 GLM API Key。"
-            return
 
         try:
             last_error: Exception | None = None
@@ -195,7 +202,7 @@ class LLMService:
             if last_error is not None:
                 raise last_error
         except Exception as exc:
-            yield f"\n[错误: {exc}]"
+            yield f"\n[error: {exc}]"
 
     def embed(self, texts: list[str], model: str | None = None) -> list[list[float]]:
         return []
@@ -210,6 +217,7 @@ class LLMService:
         schema: dict,
         model: str | None = None,
         temperature: float = 0.2,
+        max_tokens: int | None = None,
     ) -> dict[str, Any]:
         response = self.chat(
             messages=[
@@ -218,9 +226,24 @@ class LLMService:
             ],
             model=model,
             temperature=temperature,
+            max_tokens=max_tokens,
             response_schema=schema,
         )
-        return response.parsed or {}
+        if response.parsed:
+            return response.parsed
+
+        repaired = self._retry_json_generation(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            schema=schema,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        if repaired:
+            return repaired
+
+        raise RuntimeError("LLM returned empty or invalid JSON")
 
     def generate_text(
         self,
@@ -251,22 +274,26 @@ class LLMService:
         temperature: float = 0.2,
         max_output_tokens: int | None = None,
     ) -> dict[str, Any]:
+        del max_output_tokens
         if not self.available:
-            return {}
+            raise RuntimeError("LLM service unavailable: GLM API key is not configured")
 
-        parsed_file = GLMFileParserService().parse_bytes(
+        extracted = OcrService().extract(
             file_bytes=file_bytes,
             mime_type=self._guess_mime_type(filename),
             filename=filename,
         )
-        extracted_text = parsed_file.text.strip()
+        if not extracted.get("success"):
+            raise RuntimeError(str(extracted.get("error", "File extraction failed")))
+
+        extracted_text = str(extracted.get("text", "")).strip()
         if not extracted_text:
-            raise RuntimeError("GLM file parser returned empty text")
+            raise RuntimeError("GLM parser returned empty text")
 
         prompt = (
             f"{user_prompt}\n\n"
             f"文件名：{filename or 'uploaded-file'}\n"
-            "以下是通过 GLM 文件解析得到的文本内容，请基于它完成结构化分析：\n\n"
+            "以下是通过 GLM 解析得到的文本内容，请基于它完成结构化分析：\n\n"
             f"{extracted_text[:16000]}"
         )
         return self.generate_json(
@@ -277,17 +304,13 @@ class LLMService:
             temperature=temperature,
         )
 
-    def _inject_json_instructions(
-        self,
-        messages: list[dict[str, str]],
-        schema: dict,
-    ) -> list[dict[str, str]]:
+    def _inject_json_instructions(self, messages: list[dict[str, Any]], schema: dict) -> list[dict[str, Any]]:
         props = schema.get("properties", {})
         required = set(schema.get("required", []))
         field_descs: list[str] = []
+
         for name, prop in props.items():
             ptype = prop.get("type", "string")
-            suffix = ""
             if ptype == "array":
                 item_type = prop.get("items", {}).get("type", "string")
                 suffix = f"array<{item_type}>"
@@ -297,7 +320,7 @@ class LLMService:
             field_descs.append(f'- "{name}": {suffix}{required_marker}')
 
         schema_prompt = (
-            "\n\n你必须输出一个纯 JSON 对象，不要包含 markdown 代码块。\n"
+            "\n\n你必须输出一个纯 JSON 对象，不要包含 Markdown 代码块。\n"
             "JSON 必须包含以下字段：\n"
             + "\n".join(field_descs)
             + "\n\n只输出 JSON，不要输出其他解释。"
@@ -332,15 +355,36 @@ class LLMService:
                 return parsed if isinstance(parsed, dict) else {}
             except json.JSONDecodeError:
                 pass
+
         return {}
 
-    def _fallback_response(self) -> LLMResponse:
-        fallback = {"message": "AI 服务未配置", "fallback": True}
-        return LLMResponse(
-            content=json.dumps(fallback, ensure_ascii=False),
-            parsed=fallback,
-            model="fallback",
+    def _retry_json_generation(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        schema: dict,
+        model: str | None,
+        temperature: float,
+        max_tokens: int | None,
+    ) -> dict[str, Any]:
+        fallback_messages = self._inject_json_instructions(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            schema,
         )
+
+        response = self.chat(
+            messages=fallback_messages,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response_schema=None,
+            retries=0,
+        )
+        return self._extract_json(response.content)
 
     def _guess_mime_type(self, filename: str) -> str:
         lower = (filename or "").lower()
@@ -386,8 +430,6 @@ class LLMService:
             return "application/postscript"
         if lower.endswith(".icns"):
             return "image/x-icon"
-        if lower.endswith(".im"):
-            return "application/octet-stream"
         if lower.endswith(".pcx"):
             return "image/x-pcx"
         if lower.endswith(".ppm"):
@@ -399,6 +441,12 @@ class LLMService:
         if lower.endswith(".jp2"):
             return "image/jp2"
         return "application/octet-stream"
+
+    def _retry_delay(self, error: Exception | None, attempt: int) -> int:
+        text = str(error or "")
+        if "429" in text or "速率限制" in text or "rate limit" in text.lower():
+            return min(10 * (attempt + 1), 30)
+        return 2**attempt
 
     def _resolve_proxy_urls(self) -> list[str | None]:
         candidates: list[str | None] = []

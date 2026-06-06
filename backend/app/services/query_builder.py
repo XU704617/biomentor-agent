@@ -87,6 +87,15 @@ def _extract_keywords_list(data: dict | None, *keys: str) -> list[str]:
     return []
 
 
+def _format_search_phrase(token: str) -> str:
+    value = str(token or "").strip()
+    if not value:
+        return ""
+    if " " in value and not value.startswith('"') and not value.endswith('"'):
+        return f'"{value}"'
+    return value
+
+
 def build_literature_search_query(
     query: str | None = None,
     task_title: str | None = None,
@@ -116,7 +125,7 @@ def build_literature_search_query(
     all_keywords = task_kw + case_kw
     if all_keywords:
         deduped = _dedupe_preserve_order(all_keywords)
-        return " ".join(deduped)
+        return " ".join(_format_search_phrase(item) for item in deduped if _format_search_phrase(item))
 
     parts: list[str] = []
 

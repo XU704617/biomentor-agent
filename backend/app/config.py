@@ -44,14 +44,14 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
-    LLM_MODEL: str = "glm-4.7-flash"
+    LLM_MODEL: str = "glm-4-flash"
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 4096
 
     # ---- GLM evidence-grounded generation ----
     GLM_API_KEY: str = ""
     GLM_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
-    GLM_MODEL: str = "glm-4.7-flash"
+    GLM_MODEL: str = "glm-4-flash"
     GLM_VISION_MODEL: str = "glm-4.6v-flash"
     GLM_FILE_PARSER_TOOL: str = "prime-sync"
     GLM_TIMEOUT_SECONDS: int = 30
@@ -96,7 +96,7 @@ class Settings(BaseSettings):
         return value or "https://open.bigmodel.cn/api/paas/v4"
 
     def resolved_llm_model(self) -> str:
-        return (self.GLM_MODEL or self.LLM_MODEL or "glm-4.7-flash").strip()
+        return (self.GLM_MODEL or self.LLM_MODEL or "glm-4-flash").strip()
 
 
 @lru_cache

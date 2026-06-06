@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateLocalResearchTask } from "@/lib/researchApi";
 
 const FASTAPI_BACKEND =
   process.env.FASTAPI_BACKEND_URL ||
@@ -21,7 +20,7 @@ export async function POST(request: NextRequest) {
     const caseKey = typeof body.case_key === "string" && body.case_key.trim() ? body.case_key.trim() : null;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
     try {
       const response = await fetch(`${FASTAPI_BACKEND}/api/research/generate-task`, {
@@ -38,18 +37,22 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        return NextResponse.json(generateLocalResearchTask(topic, caseKey, mode));
+        const text = await response.text().catch(() => "");
+        return NextResponse.json(
+          { error: text || "Research task generation failed" },
+          { status: response.status || 502 },
+        );
       }
 
       const data = await response.json();
       return NextResponse.json(data);
     } catch (fetchError) {
       clearTimeout(timeout);
-      console.error("[research/generate-task] 转发失败:", fetchError instanceof Error ? fetchError.message : fetchError);
-      return NextResponse.json(generateLocalResearchTask(topic, caseKey, mode));
+      const message = fetchError instanceof Error ? fetchError.message : "Research task request failed";
+      return NextResponse.json({ error: message }, { status: 502 });
     }
   } catch (err) {
-    console.error("[research/generate-task] 未预期错误:", err instanceof Error ? err.message : err);
-    return NextResponse.json({ error: "内部服务错误" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
