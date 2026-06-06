@@ -339,7 +339,7 @@ class PhotoLearningService:
                 existing_questions=questions,
                 target_count=5,
             )
-        if len(questions) < 3:
+        if len(questions) == 0:
             raise RuntimeError("GLM analysis did not return enough usable questions")
 
         domain = str(llm_result.get("domain", "")).strip() or self._infer_domain(all_keywords, concepts)
@@ -508,6 +508,39 @@ class PhotoLearningService:
         if len(merged) >= target_count or not self.llm.available:
             return merged[:target_count]
 
+        for _ in range(2):
+            if len(merged) >= target_count:
+                return merged[:target_count]
+            generated = self._generate_question_repair_batch(
+                text=text,
+                llm_result=llm_result,
+                existing_questions=merged,
+                target_count=target_count,
+            )
+            merged = self._merge_questions(merged, generated)
+
+        if len(merged) >= 3:
+            return merged[:target_count]
+
+        regenerated = self._generate_question_regeneration_batch(
+            text=text,
+            llm_result=llm_result,
+        )
+        merged = self._merge_questions(merged, regenerated)
+        return merged[:target_count]
+
+    def _generate_question_repair_batch(
+        self,
+        *,
+        text: str,
+        llm_result: dict[str, Any],
+        existing_questions: list[dict[str, Any]],
+        target_count: int,
+    ) -> list[dict[str, Any]]:
+        merged = self._merge_questions(existing_questions, [])
+        if len(merged) >= target_count or not self.llm.available:
+            return []
+
         existing_counts: dict[str, int] = {}
         for item in merged:
             question_type = str(item.get("type") or "").strip()
@@ -552,10 +585,45 @@ class PhotoLearningService:
                 max_tokens=1200,
             )
         except Exception:
-            return merged[:target_count]
+            return []
 
-        repaired_questions = self._normalize_questions(repaired.get("questions"))
-        return self._merge_questions(merged, repaired_questions)[:target_count]
+        return self._normalize_questions(repaired.get("questions"))
+
+    def _generate_question_regeneration_batch(
+        self,
+        *,
+        text: str,
+        llm_result: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        if not self.llm.available:
+            return []
+
+        system_prompt = (
+            "You are generating a compact learning quiz from life-science study material.\n"
+            "Return exactly one JSON object in Simplified Chinese.\n"
+            "Use only the provided material.\n"
+            "Generate exactly 4 questions: 2 choice, 1 truefalse, 1 short_answer.\n"
+            "Every question must include a grounded answer and a concise explanation.\n"
+            "Choice questions must contain exactly 4 options with labels A/B/C/D."
+        )
+        user_prompt = (
+            "请根据以下学习材料重新生成一组高质量练习题，并严格输出 JSON。\n\n"
+            f"材料摘要：{str(llm_result.get('summary') or '').strip()}\n"
+            f"关键词：{', '.join(self._normalize_string_list(llm_result.get('keywords'))[:8])}\n"
+            f"原始材料：{text[:4000]}"
+        )
+        try:
+            regenerated = self.llm.generate_json(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                schema=PHOTO_QUESTION_REPAIR_SCHEMA,
+                temperature=0.1,
+                max_tokens=1200,
+            )
+        except Exception:
+            return []
+
+        return self._normalize_questions(regenerated.get("questions"))
 
     def _merge_questions(
         self,
