@@ -50,11 +50,11 @@ def _normalize_base_urls(base_url: str) -> tuple[str, str]:
         clean = "https://api.deepseek.com/v1"
     if clean.endswith("/v1"):
         api_root = clean[:-3]
-        openai_base = clean
+        chat_base = clean
     else:
         api_root = clean
-        openai_base = f"{clean}/v1"
-    return api_root, openai_base
+        chat_base = f"{clean}/v1"
+    return api_root, chat_base
 
 
 def _env_path() -> Path:
@@ -93,7 +93,7 @@ def _reload_runtime_config() -> None:
 
 
 def _write_frontend_env(api_key: str, base_url: str, model: str) -> None:
-    api_root, _openai_base = _normalize_base_urls(base_url)
+    api_root, _chat_base = _normalize_base_urls(base_url)
     path = _frontend_env_path()
     lines: list[str] = []
     if path.exists():
@@ -111,9 +111,9 @@ def _write_frontend_env(api_key: str, base_url: str, model: str) -> None:
 def get_llm_config() -> LLMConfigView:
     settings = get_settings()
     return LLMConfigView(
-        api_key_set=bool(settings.OPENAI_API_KEY),
-        api_key=settings.OPENAI_API_KEY or "",
-        base_url=settings.OPENAI_BASE_URL,
+        api_key_set=bool(settings.DEEPSEEK_API_KEY),
+        api_key="",
+        base_url=settings.DEEPSEEK_BASE_URL,
         model=settings.LLM_MODEL,
     )
 
@@ -131,8 +131,8 @@ def save_llm_config(payload: LLMConfigUpdate) -> LLMConfigView:
         raise HTTPException(status_code=400, detail="Model is required")
 
     lines = _read_env_lines()
-    lines = _write_env_value(lines, "OPENAI_API_KEY", api_key)
-    lines = _write_env_value(lines, "OPENAI_BASE_URL", base_url)
+    lines = _write_env_value(lines, "DEEPSEEK_API_KEY", api_key)
+    lines = _write_env_value(lines, "DEEPSEEK_BASE_URL", base_url)
     lines = _write_env_value(lines, "LLM_MODEL", model)
     _env_path().write_text("\n".join(lines) + "\n", encoding="utf-8")
     _write_frontend_env(api_key, base_url, model)
@@ -140,9 +140,9 @@ def save_llm_config(payload: LLMConfigUpdate) -> LLMConfigView:
 
     settings = get_settings()
     return LLMConfigView(
-        api_key_set=bool(settings.OPENAI_API_KEY),
-        api_key=settings.OPENAI_API_KEY or "",
-        base_url=settings.OPENAI_BASE_URL,
+        api_key_set=bool(settings.DEEPSEEK_API_KEY),
+        api_key="",
+        base_url=settings.DEEPSEEK_BASE_URL,
         model=settings.LLM_MODEL,
     )
 
@@ -159,7 +159,7 @@ def test_llm_config(payload: LLMTestRequest) -> LLMTestResponse:
     if not model:
         raise HTTPException(status_code=400, detail="Model is required")
 
-    api_root, openai_base = _normalize_base_urls(base_url)
+    api_root, chat_base = _normalize_base_urls(base_url)
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Accept": "application/json",
@@ -183,7 +183,7 @@ def test_llm_config(payload: LLMTestRequest) -> LLMTestResponse:
 
         try:
             chat_res = client.post(
-                f"{openai_base}/chat/completions",
+                f"{chat_base}/chat/completions",
                 headers=headers,
                 json={
                     "model": model,

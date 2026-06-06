@@ -1,16 +1,9 @@
 """
-LLM Service — OpenAI-compatible API client with structured output, retry, streaming.
-
-Supports: OpenAI, DeepSeek, and other compatible providers.
-Handles provider differences:
-- DeepSeek: json_object mode (no json_schema strict), no embeddings API
-- OpenAI: full json_schema + embeddings support
-- GLM/ZhipuAI: used for embeddings when primary LLM lacks support
+LLM Service - DeepSeek chat client with structured output, retry, and streaming.
 """
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import re
@@ -19,7 +12,6 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
-from openai import OpenAI
 
 from app.config import get_settings
 
@@ -39,7 +31,7 @@ class LLMResponse:
 class LLMService:
 
     def __init__(self):
-        self._clients: list[tuple[str, OpenAI]] | None = None
+        self._clients: list[tuple[str, httpx.Client]] | None = None
         self._http_clients: list[httpx.Client] = []
 
     @property
@@ -47,7 +39,7 @@ class LLMService:
         return get_settings()
 
     @property
-    def clients(self) -> list[tuple[str, OpenAI]]:
+    def clients(self) -> list[tuple[str, httpx.Client]]:
         if self._clients is None:
             self._clients = []
             self._http_clients = []
@@ -61,27 +53,16 @@ class LLMService:
                     http_client_kwargs["proxy"] = proxy_url
                 http_client = httpx.Client(**http_client_kwargs)
                 self._http_clients.append(http_client)
-                self._clients.append(
-                    (
-                        label,
-                        OpenAI(
-                            api_key=self.settings.OPENAI_API_KEY or "sk-placeholder",
-                            base_url=self.settings.OPENAI_BASE_URL,
-                            timeout=self.settings.AGENT_TIMEOUT_SECONDS,
-                            max_retries=0,
-                            http_client=http_client,
-                        ),
-                    )
-                )
+                self._clients.append((label, http_client))
         return self._clients
 
     @property
     def available(self) -> bool:
-        return bool(self.settings.OPENAI_API_KEY)
+        return bool(self.settings.DEEPSEEK_API_KEY)
 
     @property
     def is_deepseek(self) -> bool:
-        return "deepseek" in (self.settings.OPENAI_BASE_URL or "").lower()
+        return "deepseek" in (self.settings.DEEPSEEK_BASE_URL or "").lower()
 
     # ── Chat Completion ──────────────────────────────────────────
 
@@ -139,25 +120,26 @@ class LLMService:
             "max_tokens": max_tokens,
         }
 
-        # DeepSeek: use json_object mode; OpenAI: use json_schema strict
         if response_schema:
-            if self.is_deepseek:
-                kwargs["response_format"] = {"type": "json_object"}
-            else:
-                kwargs["response_format"] = {
-                    "type": "json_schema",
-                    "json_schema": {"name": "response", "strict": True, "schema": response_schema},
-                }
+            kwargs["response_format"] = {"type": "json_object"}
 
         last_error: Exception | None = None
         for attempt in range(max_retries + 1):
             for client_label, client in self.clients:
                 try:
-                    completion = client.chat.completions.create(**kwargs)
+                    response = client.post(
+                        self._chat_url(),
+                        headers=self._headers(),
+                        json=kwargs,
+                    )
+                    response.raise_for_status()
+                    completion = response.json()
                     elapsed = int((time.time() - start) * 1000)
 
-                    choice = completion.choices[0]
-                    content = choice.message.content or ""
+                    choice = (completion.get("choices") or [{}])[0]
+                    message = choice.get("message") or {}
+                    content = message.get("content") or ""
+                    usage = completion.get("usage") or {}
 
                     parsed = None
                     if response_schema:
@@ -166,12 +148,12 @@ class LLMService:
                     return LLMResponse(
                         content=content,
                         parsed=parsed,
-                        model=completion.model,
-                        tokens_prompt=completion.usage.prompt_tokens if completion.usage else 0,
-                        tokens_completion=completion.usage.completion_tokens if completion.usage else 0,
-                        tokens_total=completion.usage.total_tokens if completion.usage else 0,
+                        model=completion.get("model") or model,
+                        tokens_prompt=usage.get("prompt_tokens") or 0,
+                        tokens_completion=usage.get("completion_tokens") or 0,
+                        tokens_total=usage.get("total_tokens") or 0,
                         duration_ms=elapsed,
-                        finish_reason=choice.finish_reason or "stop",
+                        finish_reason=choice.get("finish_reason") or "stop",
                     )
 
                 except Exception as e:
@@ -197,21 +179,36 @@ class LLMService:
         max_tokens = max_tokens or self.settings.LLM_MAX_TOKENS
 
         if not self.available:
-            yield "AI 服务暂未配置。请设置 OPENAI_API_KEY。"
+            yield "AI 服务暂未配置。请设置 DEEPSEEK_API_KEY。"
             return
 
         try:
             last_error: Exception | None = None
             for _client_label, client in self.clients:
                 try:
-                    stream = client.chat.completions.create(
-                        model=model, messages=messages,
-                        temperature=temperature, max_tokens=max_tokens, stream=True,
-                    )
-                    for chunk in stream:
-                        delta = chunk.choices[0].delta
-                        if delta.content:
-                            yield delta.content
+                    payload = {
+                        "model": model,
+                        "messages": messages,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens,
+                        "stream": True,
+                    }
+                    with client.stream("POST", self._chat_url(), headers=self._headers(), json=payload) as stream:
+                        stream.raise_for_status()
+                        for line in stream.iter_lines():
+                            if not line:
+                                continue
+                            data = line.removeprefix("data: ").strip()
+                            if data == "[DONE]":
+                                return
+                            try:
+                                chunk = json.loads(data)
+                            except json.JSONDecodeError:
+                                continue
+                            choice = (chunk.get("choices") or [{}])[0]
+                            delta = choice.get("delta") or {}
+                            if delta.get("content"):
+                                yield delta["content"]
                     return
                 except Exception as e:
                     last_error = e
@@ -305,36 +302,38 @@ class LLMService:
             + "\n\n直接输出 JSON，不要输出任何其他内容。"
         )
 
-        file_b64 = base64.b64encode(file_bytes).decode("ascii")
-        input_payload = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": user_prompt},
-                    {
-                        "type": "input_file",
-                        "filename": filename or "document.pdf",
-                        "file_data": file_b64,
-                        "detail": "high",
-                    },
-                ],
-            }
-        ]
-
         last_error: Exception | None = None
         for attempt in range(max_retries + 1):
             start = time.time()
             for client_label, client in self.clients:
                 try:
-                    response = client.responses.create(
-                        model=model,
-                        instructions=instructions,
-                        input=input_payload,
-                        temperature=temperature,
-                        max_output_tokens=max_output_tokens,
+                    response = client.post(
+                        self._chat_url(),
+                        headers=self._headers(),
+                        json={
+                            "model": model,
+                            "messages": [
+                                {"role": "system", "content": instructions},
+                                {
+                                    "role": "user",
+                                    "content": (
+                                        f"{user_prompt}\n\n"
+                                        f"附件名称：{filename or 'document.pdf'}\n"
+                                        "当前接口仅接收文本提示；如需解析 PDF/DOCX/PPT，请先提取正文后再提交。"
+                                    ),
+                                },
+                            ],
+                            "temperature": temperature,
+                            "max_tokens": max_output_tokens,
+                            "response_format": {"type": "json_object"},
+                        },
                     )
+                    response.raise_for_status()
+                    data = response.json()
                     _elapsed = int((time.time() - start) * 1000)
-                    parsed = self._extract_json(response.output_text or "")
+                    choice = (data.get("choices") or [{}])[0]
+                    message = choice.get("message") or {}
+                    parsed = self._extract_json(message.get("content") or "")
                     if parsed:
                         return parsed
                     last_error = RuntimeError(f"[{client_label}] empty or invalid JSON from file response")
@@ -367,6 +366,21 @@ class LLMService:
             except json.JSONDecodeError:
                 pass
         return {}
+
+    def _chat_url(self) -> str:
+        base = (self.settings.DEEPSEEK_BASE_URL or "https://api.deepseek.com/v1").strip().rstrip("/")
+        if base.endswith("/chat/completions"):
+            return base
+        if base.endswith("/v1"):
+            return f"{base}/chat/completions"
+        return f"{base}/v1/chat/completions"
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.settings.DEEPSEEK_API_KEY}",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
 
     def _fallback_response(self, messages: list[dict[str, str]]) -> LLMResponse:
         return LLMResponse(

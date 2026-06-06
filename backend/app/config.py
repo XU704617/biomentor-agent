@@ -41,10 +41,10 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 120
 
     # ---- LLM / Embedding ----
-    OPENAI_API_KEY: str = ""
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
-    LLM_MODEL: str = "gpt-4o"
+    DEEPSEEK_API_KEY: str = ""
+    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com/v1"
+    EMBEDDING_MODEL: str = "local-all-MiniLM-L6-v2"
+    LLM_MODEL: str = "deepseek-v4-flash"
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 4096
 

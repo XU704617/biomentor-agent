@@ -1,0 +1,25 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationStyle": "custom",
+        "disableScroll": true,
+        "app-plus": {
+          "bounce": "none",
+          "titleNView": false,
+          "softinputMode": "adjustResize"
+        }
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "BioMentor Agent",
+    "navigationBarBackgroundColor": "#f7fbff",
+    "backgroundColor": "#f7fbff",
+    "app-plus": {
+      "background": "#f7fbff"
+    }
+  }
+}

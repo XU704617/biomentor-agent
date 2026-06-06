@@ -45,7 +45,7 @@ export default function SettingsPage() {
         }
         const data: ConfigView = await res.json();
         setCurrentConfig(data);
-        setApiKey(data.api_key || "");
+        setApiKey("");
         setBaseUrl(data.base_url || defaultBaseUrl);
         setModel(data.model || defaultModel);
       } catch (error) {
@@ -97,7 +97,7 @@ export default function SettingsPage() {
         throw new Error(data.detail || "保存失败");
       }
       setCurrentConfig(data);
-      setApiKey(data.api_key || "");
+      setApiKey("");
       setMessage("配置已保存并立即生效");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "保存失败");
@@ -127,7 +127,7 @@ export default function SettingsPage() {
             ) : (
               <div className="space-y-2 text-sm text-[#111827]">
                 <div>已配置 API Key：{currentConfig?.api_key_set ? "是" : "否"}</div>
-                <div className="break-all">当前 API Key：{currentConfig?.api_key || "未配置"}</div>
+                <div>密钥明文不会在页面回显</div>
                 <div>当前 Base URL：{currentConfig?.base_url || "-"}</div>
                 <div>当前模型：{currentConfig?.model || "-"}</div>
               </div>

@@ -11,4 +11,4 @@
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: CORS_ORIGINS
-        value: '["https://frontend-eta-nine-7rvsekcz80.vercel.app","http://localhost:3000","http://localhost:3010"]'
+        value: '["http://106.14.194.186:10086","http://localhost:3000","http://localhost:3010"]'

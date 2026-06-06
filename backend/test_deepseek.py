@@ -10,7 +10,7 @@ os.environ["SEED_DEMO_DATA"] = "false"
 from app.services.llm import get_llm
 
 llm = get_llm()
-print(f"Provider: {'DeepSeek' if llm.is_deepseek else 'OpenAI/Other'}")
+print(f"Provider: {'DeepSeek' if llm.is_deepseek else 'Compatible API'}")
 print(f"Available: {llm.available}")
 
 # Test 1: Simple chat

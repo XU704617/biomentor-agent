@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Usage:
-#   FRONTEND_URL=https://your-frontend.vercel.app bash scripts/check_deployed_frontend.sh
+#   FRONTEND_URL=https://your-frontend.example.com bash scripts/check_deployed_frontend.sh
 #
 # Checks:
 #   1. FRONTEND_URL is set
@@ -28,7 +28,7 @@ _info() { echo -e "${CYAN}[INFO]${NC} $*"; }
 
 if [ -z "${FRONTEND_URL:-}" ]; then
   echo "ERROR: FRONTEND_URL is not set."
-  echo "Usage: FRONTEND_URL=https://your-frontend.vercel.app bash $0"
+  echo "Usage: FRONTEND_URL=https://your-frontend.example.com bash $0"
   exit 1
 fi
 
@@ -97,7 +97,7 @@ if [ "${health_ok:-1}" -ne 0 ]; then
   fi
 
   if [ "$backend_looks_local" = "True" ]; then
-    _warn "backend URL looks local (${backend_host}) — not suitable for Vercel deployment"
+    _warn "backend URL looks local (${backend_host}) — not suitable for public deployment"
   fi
 
   _info "backend host: ${backend_host:-none}"
@@ -180,7 +180,7 @@ printf "  %-25s %s\n" "backend reachable:" "$([ "${backend_reachable:-False}" = 
 printf "  %-25s %s\n" "industry cases count:" "${cases_count:-N/A}"
 printf "  %-25s %s\n" "literature search:" "$([ "${lit_status:-fail}" = "ok" ] && echo -e "${GREEN}ok${NC}" || echo -e "${RED}fail/warn${NC}")"
 printf "  %-25s %s\n" "backend host:" "${backend_host:-N/A}"
-printf "  %-25s %s\n" "backend URL looks local:" "$([ "${backend_looks_local:-False}" = "True" ] && echo -e "${YELLOW}yes (not suitable for Vercel)${NC}" || echo "no")"
+printf "  %-25s %s\n" "backend URL looks local:" "$([ "${backend_looks_local:-False}" = "True" ] && echo -e "${YELLOW}yes (not suitable for public deployment)${NC}" || echo "no")"
 
 echo ""
 if [ "$failures" -gt 0 ]; then
