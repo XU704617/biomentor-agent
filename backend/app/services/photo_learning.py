@@ -48,6 +48,43 @@ KEYWORD_DICT = [
     "transcriptomics",
 ]
 
+PHOTO_QUESTION_REPAIR_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "questions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": ["choice", "truefalse", "short_answer", "research", "industry"],
+                    },
+                    "question": {"type": "string"},
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "label": {"type": "string"},
+                                "text": {"type": "string"},
+                            },
+                            "required": ["label", "text"],
+                            "additionalProperties": False,
+                        },
+                    },
+                    "answer": {"type": "string"},
+                    "explanation": {"type": "string"},
+                },
+                "required": ["type", "question", "answer", "explanation"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["questions"],
+    "additionalProperties": False,
+}
+
 
 class PhotoLearningService:
     def __init__(self, db: Session):
@@ -294,6 +331,13 @@ class PhotoLearningService:
 
         concepts, papers = self._match_knowledge(all_keywords[:8])
         questions = self._normalize_questions(llm_result.get("questions"))
+        if len(questions) < 5:
+            questions = self._repair_questions(
+                text=text,
+                llm_result=llm_result,
+                existing_questions=questions,
+                target_count=5,
+            )
         if len(questions) < 3:
             raise RuntimeError("GLM analysis did not return enough usable questions")
 
@@ -358,34 +402,35 @@ class PhotoLearningService:
             if not isinstance(item, dict):
                 continue
 
-            question_type = str(item.get("type", "")).strip()
-            if question_type == "research_industry":
-                question_type = "research"
-            question_text = str(item.get("question", "")).strip()
-            answer = str(item.get("answer", "")).strip()
-            explanation = str(item.get("explanation", "")).strip()
+            question_type = self._normalize_question_type(item.get("type"))
+            question_text = str(
+                item.get("question")
+                or item.get("stem")
+                or item.get("prompt")
+                or item.get("title")
+                or ""
+            ).strip()
+            answer = str(
+                item.get("answer")
+                or item.get("correct_answer")
+                or item.get("reference_answer")
+                or item.get("expected_answer")
+                or ""
+            ).strip()
+            explanation = str(
+                item.get("explanation")
+                or item.get("analysis")
+                or item.get("reason")
+                or item.get("rationale")
+                or ""
+            ).strip()
             if question_type not in {"choice", "truefalse", "short_answer", "research", "industry"}:
                 continue
             if not question_text or not answer or not explanation:
                 continue
 
-            options: list[dict[str, str]] = []
+            options = self._normalize_question_options(item.get("options"))
             if question_type == "choice":
-                raw_options = item.get("options", [])
-                if isinstance(raw_options, dict):
-                    for label, text in list(raw_options.items())[:4]:
-                        clean_label = str(label).strip()
-                        clean_text = str(text).strip()
-                        if clean_label and clean_text:
-                            options.append({"label": clean_label, "text": clean_text})
-                elif isinstance(raw_options, list):
-                    for opt in raw_options[:4]:
-                        if not isinstance(opt, dict):
-                            continue
-                        label = str(opt.get("label", "")).strip()
-                        text = str(opt.get("text", "")).strip()
-                        if label and text:
-                            options.append({"label": label, "text": text})
                 if len(options) != 4:
                     continue
 
@@ -403,6 +448,131 @@ class PhotoLearningService:
             )
 
         return normalized
+
+    def _normalize_question_type(self, value: Any) -> str:
+        text = str(value or "").strip().lower()
+        aliases = {
+            "research_industry": "research",
+            "single_choice": "choice",
+            "multiple_choice": "choice",
+            "mcq": "choice",
+            "select": "choice",
+            "judge": "truefalse",
+            "true_false": "truefalse",
+            "true-false": "truefalse",
+            "boolean": "truefalse",
+            "tf": "truefalse",
+            "short": "short_answer",
+            "shortanswer": "short_answer",
+            "short-answer": "short_answer",
+            "qa": "short_answer",
+            "open": "research",
+        }
+        return aliases.get(text, text)
+
+    def _normalize_question_options(self, value: Any) -> list[dict[str, str]]:
+        options: list[dict[str, str]] = []
+        if isinstance(value, dict):
+            for label, text in list(value.items())[:4]:
+                clean_label = str(label).strip()
+                clean_text = str(text).strip()
+                if clean_label and clean_text:
+                    options.append({"label": clean_label, "text": clean_text})
+            return options
+
+        if isinstance(value, list):
+            for idx, opt in enumerate(value[:4]):
+                if isinstance(opt, dict):
+                    label = str(opt.get("label") or opt.get("key") or opt.get("name") or "").strip()
+                    text = str(opt.get("text") or opt.get("content") or opt.get("value") or opt.get("option") or "").strip()
+                    if not label and text:
+                        label = chr(ord("A") + idx)
+                    if label and text:
+                        options.append({"label": label, "text": text})
+                    continue
+                clean_text = str(opt).strip()
+                if clean_text:
+                    options.append({"label": chr(ord("A") + idx), "text": clean_text})
+        return options
+
+    def _repair_questions(
+        self,
+        *,
+        text: str,
+        llm_result: dict[str, Any],
+        existing_questions: list[dict[str, Any]],
+        target_count: int,
+    ) -> list[dict[str, Any]]:
+        merged = self._merge_questions(existing_questions, [])
+        if len(merged) >= target_count or not self.llm.available:
+            return merged[:target_count]
+
+        existing_counts: dict[str, int] = {}
+        for item in merged:
+            question_type = str(item.get("type") or "").strip()
+            existing_counts[question_type] = existing_counts.get(question_type, 0) + 1
+
+        desired_order = ["choice", "choice", "truefalse", "short_answer", "research"]
+        missing_types: list[str] = []
+        target_counts = {"choice": 0, "truefalse": 0, "short_answer": 0, "research": 0}
+        for question_type in desired_order:
+            target_counts[question_type] += 1
+        for question_type, expected_count in target_counts.items():
+            current_count = existing_counts.get(question_type, 0)
+            if current_count < expected_count:
+                missing_types.extend([question_type] * (expected_count - current_count))
+
+        if not missing_types:
+            missing_types = ["research"] * max(0, target_count - len(merged))
+
+        system_prompt = (
+            "You are repairing an existing life-science learning quiz.\n"
+            "Return exactly one JSON object in Simplified Chinese.\n"
+            "Use only the provided material.\n"
+            "Do not repeat existing questions.\n"
+            "Every question must include a grounded answer and a concise explanation.\n"
+            "Choice questions must contain exactly 4 options with labels A/B/C/D."
+        )
+        user_prompt = (
+            "请基于以下学习材料补充缺失题目，并严格输出 JSON。\n\n"
+            f"材料摘要：{str(llm_result.get('summary') or '').strip()}\n"
+            f"关键词：{', '.join(self._normalize_string_list(llm_result.get('keywords'))[:8])}\n"
+            f"已有题目：{json.dumps([item.get('question') for item in merged], ensure_ascii=False)}\n"
+            f"需要补充的题型：{json.dumps(missing_types[: max(1, target_count - len(merged))], ensure_ascii=False)}\n"
+            f"原始材料：{text[:4000]}"
+        )
+
+        try:
+            repaired = self.llm.generate_json(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                schema=PHOTO_QUESTION_REPAIR_SCHEMA,
+                temperature=0.1,
+                max_tokens=1200,
+            )
+        except Exception:
+            return merged[:target_count]
+
+        repaired_questions = self._normalize_questions(repaired.get("questions"))
+        return self._merge_questions(merged, repaired_questions)[:target_count]
+
+    def _merge_questions(
+        self,
+        primary: list[dict[str, Any]],
+        secondary: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        merged: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for item in [*primary, *secondary]:
+            question = str(item.get("question") or "").strip()
+            if not question:
+                continue
+            key = question.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(item)
+        return merged
 
     def _dict_extract(self, text: str) -> list[str]:
         lower_text = text.lower()
