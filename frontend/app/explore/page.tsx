@@ -230,7 +230,7 @@ export default function ExplorePage() {
             <div className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-blue-500" />
               <h2 className="font-semibold text-gray-800">上传学习资料</h2>
-              <span className="text-sm text-gray-500">支持图片、PDF、Office 文档、表格、文本</span>
+              <span className="text-sm text-gray-500">支持PDF、Office 文档、文本</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Loader2 className={`w-4 h-4 ${isProcessing ? "animate-spin text-blue-500" : "text-gray-400"}`} />
