@@ -139,40 +139,55 @@ RAG_SYNTHESIS_USER = """学生问题：{query}
 
 # Photo learning / material analysis
 
-PHOTO_ANALYSIS_SYSTEM = """You are a life-science learning assistant.
+PHOTO_ANALYSIS_SYSTEM = """你是一位专业的{subject}大学课程导师，擅长深入分析专业教材内容，提取核心知识点，提供专业学习建议。请使用专业、严谨的学术语言。
 
-Return exactly one JSON object in Simplified Chinese.
-Do not output markdown.
-Do not output placeholders, examples, or fallback text.
-Base every field on the uploaded material only.
+返回格式要求：
+1. 必须返回一个合法的JSON对象
+2. 不要输出markdown格式
+3. 所有内容基于上传的材料
 
-Requirements:
-1. Put the core recognized text into `transcribed_text`. Keep it concise but real.
-2. Extract 4 to 10 concrete keywords from the material.
-3. Identify the most relevant domain or subfield.
-4. Write one concise factual summary.
-5. Give 3 to 4 actionable learning suggestions.
-6. Generate 5 questions:
-   - 2 choice
-   - 1 truefalse
-   - 1 short_answer
-   - 1 research or industry
-7. Every question must include a real answer and explanation grounded in the material.
-8. Choice questions must contain 4 options with labels A/B/C/D."""
+JSON字段说明：
+- knowledge_points: 从内容中提炼5-10个独立的核心知识点数组，每个知识点包含name（名称）和description（详细解释，50-150字）
+- keywords: 提取内容中最关键的8-12个专业术语和核心概念，用数组形式返回
+- learning_suggestions: 3-4条学习建议数组，每条建议包含error_point（错误知识点）、error_reason（错误原因分析）、training_method（针对性训练方法）
+- questions: 10道题目（6道选择题、2道判断题、2道简答题），每道题包含type（题型）、stem（题目内容）、options（选项，仅选择题需要）、answer（答案）、explanation（解析）"""
 
-PHOTO_ANALYSIS_USER = """Analyze the following uploaded learning material and return the required JSON in Simplified Chinese.
+PHOTO_ANALYSIS_USER = """请分析以下PDF学习材料，文件名为：{fileName}。
 
-Material:
-{text}"""
+材料内容：
+{pdfText}
+
+请按照指定的JSON格式返回分析结果。"""
 
 PHOTO_ANALYSIS_SCHEMA = {
     "type": "object",
     "properties": {
-        "transcribed_text": {"type": "string"},
+        "knowledge_points": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "description": {"type": "string"}
+                },
+                "required": ["name", "description"],
+                "additionalProperties": False
+            }
+        },
         "keywords": {"type": "array", "items": {"type": "string"}},
-        "domain": {"type": "string"},
-        "summary": {"type": "string"},
-        "learning_suggestions": {"type": "array", "items": {"type": "string"}},
+        "learning_suggestions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "error_point": {"type": "string"},
+                    "error_reason": {"type": "string"},
+                    "training_method": {"type": "string"}
+                },
+                "required": ["error_point", "error_reason", "training_method"],
+                "additionalProperties": False
+            }
+        },
         "questions": {
             "type": "array",
             "items": {
@@ -180,9 +195,9 @@ PHOTO_ANALYSIS_SCHEMA = {
                 "properties": {
                     "type": {
                         "type": "string",
-                        "enum": ["choice", "truefalse", "short_answer", "research", "industry"],
+                        "enum": ["choice", "truefalse", "short_answer"],
                     },
-                    "question": {"type": "string"},
+                    "stem": {"type": "string"},
                     "options": {
                         "type": "array",
                         "items": {
@@ -198,12 +213,12 @@ PHOTO_ANALYSIS_SCHEMA = {
                     "answer": {"type": "string"},
                     "explanation": {"type": "string"},
                 },
-                "required": ["type", "question", "answer", "explanation"],
+                "required": ["type", "stem", "answer", "explanation"],
                 "additionalProperties": False,
             },
         },
     },
-    "required": ["transcribed_text", "keywords", "domain", "summary", "learning_suggestions", "questions"],
+    "required": ["knowledge_points", "keywords", "learning_suggestions", "questions"],
     "additionalProperties": False,
 }
 
