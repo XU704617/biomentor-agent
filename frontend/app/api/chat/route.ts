@@ -1,71 +1,70 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
+
+import { callDeepSeekJson, resolveDeepSeekConfig } from "@/lib/deepseek-client.mjs";
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const message = String(body.message || "").trim();
+    const context = String(body.context || "").trim();
 
-    const { apiKey, baseUrl, model } = resolveDeepSeekConfig();
+    if (!message) {
+      return NextResponse.json({ success: false, error: "请提供问题" }, { status: 400 });
+    }
+
+    const { apiKey } = resolveDeepSeekConfig();
     if (!apiKey) {
-      throw new Error("DEEPSEEK_API_KEY 环境变量未配置");
+      return NextResponse.json({ success: false, error: "GLM API Key 未配置" }, { status: 503 });
     }
 
-    let contextText = context || "暂无教材内容";
-    
-    if (context && context.startsWith("data:image/")) {
-      contextText = "用户上传了一张图片，图片内容待分析";
-    } else if (context && context.startsWith("data:application/pdf;base64,")) {
-      contextText = "用户上传了一个PDF文件，文件内容待分析";
-    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
-    const prompt = `基于以下教材内容回答问题：
-
-${contextText.length > 3000 ? contextText.substring(0, 3000) + "..." : contextText}
-
-问题：${message}
-
-请给出详细的回答。`;
-
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
+    try {
+      const result = await callDeepSeekJson({
         messages: [
           {
             role: "system",
-            content: "你是一个专业的生物医学知识导师，擅长解答学生的问题。",
+            content: [
+              "你是生物医学学习助手。",
+              "请基于用户提供的上下文直接回答问题。",
+              "不要编造文献、实验结果、年份、机构或外部检索事实。",
+              "只能使用当前上下文材料；如果上下文不足，要明确说明当前材料不足。",
+            ].join("\n"),
           },
           {
             role: "user",
-            content: prompt,
+            content: [
+              `问题：${message}`,
+              "",
+              "上下文：",
+              context ? context.slice(0, 6000) : "当前没有提供上下文材料。",
+              "",
+              "请用中文直接回答，先给核心结论，再补充 2-4 句解释。",
+              "严禁使用上下文之外的事实。",
+            ].join("\n"),
           },
         ],
-        max_tokens: 1500,
-        temperature: 0.7,
-      }),
-    });
+        temperature: 0.2,
+        maxTokens: 1200,
+        responseFormat: false,
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`DeepSeek API error: ${errorData.error?.message || response.status}`);
+      const answer = String(result.raw || "").replace(/\*\*/g, "").trim();
+      if (!answer) {
+        throw new Error("GLM 未返回可展示的回答");
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: answer,
+      });
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const result = await response.json();
-    const aiResponse = result.choices[0].message.content.replace(/\*\*/g, "");
-
-    return NextResponse.json({
-      success: true,
-      message: aiResponse,
-    });
   } catch (error) {
-    console.error("Chat API error:", error);
-    return NextResponse.json(
-      { success: false, error: (error as Error).message },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "问答失败";
+    return NextResponse.json({ success: false, error: message }, { status: 502 });
   }
 }

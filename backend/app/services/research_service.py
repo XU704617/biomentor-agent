@@ -6,6 +6,7 @@ Uses existing LLMService and IndustryCase data to generate scaffolded research t
 from __future__ import annotations
 
 import json
+import asyncio
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.models import IndustryCase
 from app.services.llm import get_llm
 from app.schemas import TaskItem, TaskStep, ResearchTaskGenerateResponse
+from app.services.grounded_generation_service import GroundedGenerationService
 
 
 RESEARCH_TASK_SYSTEM = """你是一位资深的生物制造领域科研导师，擅长为研究生和科研人员设计结构化的科研训练任务。
@@ -56,9 +58,23 @@ class ResearchService:
         self.llm = get_llm()
 
     def generate_task(self, topic: str, case_key: str | None = None, mode: str = "independent") -> ResearchTaskGenerateResponse:
-        if case_key and mode == "case_driven":
-            return self._case_driven_task(topic, case_key)
-        return self._independent_task(topic)
+        def local_builder() -> ResearchTaskGenerateResponse:
+            if case_key and mode == "case_driven":
+                return self._case_driven_task(topic, case_key)
+            return self._independent_task(topic)
+
+        payload = asyncio.run(
+            GroundedGenerationService(self.db).generate_research_tasks(
+                topic=topic,
+                case_key=case_key,
+                mode=mode,
+                local_builder=lambda: local_builder().model_dump(),
+            )
+        )
+        response = self._response_from_grounded_payload(topic, case_key, mode, payload, local_builder)
+        if getattr(response, "source_mode", "") != "ai_grounded":
+            raise RuntimeError(getattr(response, "debug_hint", "") or "Research task generation did not use a real AI response")
+        return response
 
     def _case_driven_task(self, topic: str, case_key: str) -> ResearchTaskGenerateResponse:
         case = self.db.query(IndustryCase).filter(IndustryCase.case_key == case_key).first()
@@ -89,7 +105,7 @@ class ResearchService:
         }]
 
         if not self.llm.available:
-            return self._build_fallback_task(topic, case.case_key, "case_driven", kp_list, kw_list, matched_cases, case_context)
+            return self._build_fallback_task(topic, case.case_key, "case_driven", kp_list, kw_list, matched_cases, case_context, case)
 
         try:
             return self._llm_generate(
@@ -102,7 +118,7 @@ class ResearchService:
                 matched_cases,
             )
         except Exception:
-            return self._build_fallback_task(topic, case.case_key, "case_driven", kp_list, kw_list, matched_cases, case_context)
+            return self._build_fallback_task(topic, case.case_key, "case_driven", kp_list, kw_list, matched_cases, case_context, case)
 
     def _independent_task(self, topic: str) -> ResearchTaskGenerateResponse:
         matched_cases, kp_list, kw_list = self._match_local_cases(topic)
@@ -282,16 +298,81 @@ class ResearchService:
 
         return matched, kp_list[:10], kw_list[:8]
 
+    def _case_task_copy(self, topic: str, case: IndustryCase | None) -> dict[str, str]:
+        text = " ".join([
+            topic or "",
+            getattr(case, "case_key", "") if case else "",
+            getattr(case, "title", "") if case else "",
+            getattr(case, "subtitle", "") if case else "",
+            getattr(case, "industry_direction", "") if case else "",
+            getattr(case, "core_problem", "") if case else "",
+            getattr(case, "research_foundation", "") if case else "",
+            getattr(case, "display_focus", "") if case else "",
+            " ".join(getattr(case, "recommended_keywords", []) or []) if case else "",
+            " ".join(getattr(case, "knowledge_points", []) or []) if case else "",
+        ]).lower()
+
+        if any(token in text for token in ["case-036", "培养细胞食品", "cultured meat", "upside", "培养动物细胞"]):
+            return {
+                "literature_title": "培养细胞食品生产流程梳理",
+                "experiment_title": "食品安全性评价路径分析",
+                "mechanism_title": "规模化生产与质量控制方案",
+                "evidence_title": "产业化边界与监管证据分析",
+                "literature_goal": "梳理培养动物细胞制成食品原料的生产流程、关键质量节点和公开安全评价资料。",
+                "experiment_goal": "围绕细胞来源、培养基、生产过程、成品检测和对照材料设计高层评价路径。",
+                "mechanism_goal": "解释细胞扩增、分化、收获和质量控制如何影响产品一致性与产业化可行性。",
+                "evidence_goal": "比较公开资料中的安全性、生产规模、成本和监管边界，整理仍不能确认的问题。",
+            }
+
+        if any(token in text for token in ["case-035", "alphafold", "蛋白结构预测", "结构预测"]):
+            return {
+                "literature_title": "AlphaFold DB 结构预测证据解读",
+                "experiment_title": "蛋白结构预测实验验证设计",
+                "mechanism_title": "模型置信度与结构功能关系分析",
+                "evidence_title": "蛋白工程应用边界评估",
+                "literature_goal": "梳理 AlphaFold DB、蛋白结构预测和模型置信度指标在科研中的使用方式。",
+                "experiment_goal": "设计用于验证预测结构的高层实验框架，比较预测结果与实验结构或功能数据。",
+                "mechanism_goal": "解释结构域、活性位点、置信度和蛋白功能之间的关系与不确定性。",
+                "evidence_goal": "评估结构预测在蛋白工程、药物发现和功能注释中的适用边界。",
+            }
+
+        if any(token in text for token in ["case-004", "mrna", "lnp", "脂质纳米", "内体逃逸", "递送"]):
+            return {
+                "literature_title": "mRNA/LNP 递送机制文献梳理",
+                "experiment_title": "LNP 递送效率与安全性评价设计",
+                "mechanism_title": "内体逃逸与免疫反应机制解释",
+                "evidence_title": "mRNA 疫苗递送证据边界分析",
+                "literature_goal": "梳理 mRNA 稳定性、LNP 组成、细胞摄取、内体逃逸和免疫反应相关证据。",
+                "experiment_goal": "围绕递送效率、表达水平、安全性和免疫反应设计高层评价框架。",
+                "mechanism_goal": "解释 LNP 如何保护 mRNA、促进细胞摄取并影响抗原表达和免疫激活。",
+                "evidence_goal": "区分递送机制证据、产品效果证据和安全性证据的适用边界。",
+            }
+
+        subject = getattr(case, "title", None) if case else None
+        subject = subject or topic
+        return {
+            "literature_title": f"{subject}证据梳理",
+            "experiment_title": f"{subject}评价方案设计",
+            "mechanism_title": f"{subject}机制解释",
+            "evidence_title": f"{subject}产业转化边界分析",
+            "literature_goal": f"系统检索和分析与「{topic}」相关的核心文献，梳理研究现状与知识空白。",
+            "experiment_goal": f"围绕「{topic}」设计高层验证方案，明确假设、对照、指标和风险边界。",
+            "mechanism_goal": f"深入分析「{topic}」涉及的分子机制、技术原理或生产过程。",
+            "evidence_goal": f"系统评估「{topic}」相关研究证据质量，并梳理从机制理解到产业应用的转化路径。",
+        }
+
     def _build_fallback_task(self, topic: str, case_key: str | None, mode: str,
                              kp_list: list[str], kw_list: list[str],
                              matched_cases: list[dict[str, str]],
-                             case_context: str = "") -> ResearchTaskGenerateResponse:
+                             case_context: str = "",
+                             case_detail: IndustryCase | None = None) -> ResearchTaskGenerateResponse:
         default_kp = kp_list if kp_list else ["分子生物学基础", "细胞信号通路", "实验设计方法", "数据分析统计",
                                                 "文献检索技巧", "科研伦理", "生物信息学工具", "产业转化路径"]
         default_kw = kw_list if kw_list else ["生物制造", "实验设计", "文献调研", "数据分析",
                                                "机制研究", "产业应用", "科研方法", "证据评估"]
 
         has_match = "当前平台知识库暂无直接匹配案例" not in case_context
+        task_copy = self._case_task_copy(topic, case_detail)
 
         return ResearchTaskGenerateResponse(
             topic=topic,
@@ -304,8 +385,8 @@ class ResearchService:
             tasks=[
                 TaskItem(
                     type="literature_review",
-                    title="文献调研",
-                    goal=f"系统检索和分析与「{topic}」相关的核心文献，梳理研究现状与知识空白",
+                    title=task_copy["literature_title"],
+                    goal=task_copy["literature_goal"],
                     steps=[
                         TaskStep(title="确定检索策略",
                                  description=f"围绕「{topic}」拆解核心概念，构建检索式，选择PubMed、CNKI等数据库",
@@ -326,8 +407,8 @@ class ResearchService:
                 ),
                 TaskItem(
                     type="experiment_design",
-                    title="实验设计",
-                    goal=f"围绕「{topic}」设计严谨的验证性实验方案",
+                    title=task_copy["experiment_title"],
+                    goal=task_copy["experiment_goal"],
                     steps=[
                         TaskStep(title="明确实验假设",
                                  description="基于文献调研，提炼可验证的科学假设",
@@ -348,8 +429,8 @@ class ResearchService:
                 ),
                 TaskItem(
                     type="mechanism_explanation",
-                    title="机制解释",
-                    goal=f"深入分析「{topic}」涉及的分子机制和原理",
+                    title=task_copy["mechanism_title"],
+                    goal=task_copy["mechanism_goal"],
                     steps=[
                         TaskStep(title="梳理已知机制",
                                  description="整理文献中已报道的分子机制和信号通路",
@@ -367,8 +448,8 @@ class ResearchService:
                 ),
                 TaskItem(
                     type="evidence_judgement",
-                    title="研究引导 / 产业转化分析",
-                    goal=f"系统评估「{topic}」相关研究的证据质量，并梳理从机制理解到产业应用的转化路径",
+                    title=task_copy["evidence_title"],
+                    goal=task_copy["evidence_goal"],
                     steps=[
                         TaskStep(title="证据分级评估",
                                  description="对已有研究按证据等级分类，评估偏倚风险",
@@ -390,4 +471,69 @@ class ResearchService:
             seminar_topic=topic if "研讨" in topic else f"「{topic}」的研究进展与方法论探讨",
             source_scope="测试提示：当前为本地训练框架生成",
             disclaimer="本训练框架仅供学习参考，具体研究设计请结合实际条件、原始文献和导师指导。",
+            source_mode="local_fallback",
+            evidence_mode="local_only",
+            debug_hint="测试提示：当前为本地训练框架生成",
+            limitations="生成内容用于科研训练，不等同于完整实验方案。",
+        )
+
+    def _response_from_grounded_payload(
+        self,
+        topic: str,
+        case_key: str | None,
+        mode: str,
+        payload: dict[str, Any],
+        local_builder,
+    ) -> ResearchTaskGenerateResponse:
+        tasks = []
+        for idx, raw in enumerate(payload.get("tasks") or []):
+            steps = raw.get("steps") or []
+            normalized_steps = []
+            for step_idx, step in enumerate(steps):
+                if isinstance(step, str):
+                    normalized_steps.append(TaskStep(title=f"步骤 {step_idx + 1}", description=step, expected_duration=""))
+                elif isinstance(step, dict):
+                    normalized_steps.append(TaskStep(
+                        title=step.get("title") or f"步骤 {step_idx + 1}",
+                        description=step.get("description") or step.get("content") or "",
+                        expected_duration=step.get("expected_duration") or "",
+                    ))
+            keywords = raw.get("keywords") or raw.get("suggested_keywords") or []
+            tasks.append(TaskItem(
+                type=raw.get("type") or ["literature_review", "experiment_design", "mechanism_explanation", "evidence_judgement"][min(idx, 3)],
+                title=raw.get("title") or "科研训练任务",
+                goal=raw.get("goal") or "",
+                steps=normalized_steps,
+                output_requirement=raw.get("output_requirement") or raw.get("expected_output") or "",
+                suggested_keywords=keywords,
+                example_outline=raw.get("example_outline") or raw.get("expected_output") or "",
+                why_this_task=raw.get("why_this_task") or "",
+                expected_output=raw.get("expected_output") or raw.get("output_requirement") or "",
+                keywords=keywords,
+                evidence_ids=raw.get("evidence_ids") or [],
+                difficulty=raw.get("difficulty") or "中等",
+            ))
+
+        if len(tasks) < 4:
+            return local_builder()
+
+        return ResearchTaskGenerateResponse(
+            topic=topic,
+            case_key=case_key,
+            mode=mode,
+            research_question=payload.get("research_question") or topic,
+            background=payload.get("background") or "",
+            matched_cases=payload.get("matched_cases") or [],
+            related_knowledge_points=payload.get("related_knowledge_points") or [],
+            tasks=tasks[:4],
+            expected_outputs=payload.get("expected_outputs") or [t.expected_output or t.output_requirement for t in tasks[:4]],
+            mentor_advice=payload.get("mentor_advice") or "",
+            seminar_topic=payload.get("seminar_topic") or topic,
+            source_scope=payload.get("debug_hint") or payload.get("source_scope") or "",
+            disclaimer=payload.get("disclaimer") or payload.get("limitations") or "生成内容用于科研训练，不等同于完整实验方案。",
+            source_mode=payload.get("source_mode") or "local_fallback",
+            evidence_mode=payload.get("evidence_mode") or "local_only",
+            debug_hint=payload.get("debug_hint") or "",
+            evidence_items=payload.get("evidence_items") or [],
+            limitations=payload.get("limitations") or "生成内容用于科研训练，不等同于完整实验方案。",
         )

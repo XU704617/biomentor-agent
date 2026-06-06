@@ -30,6 +30,7 @@ interface EvidenceLinkPanelProps {
 }
 
 const MAX_SELECT = 3;
+const EXTERNAL_PREVIEW_LIMIT = 5;
 const RESEARCH_SEMINAR_STORAGE_KEY = "biomentor:research-seminar";
 
 function safeFilePart(value: string | undefined) {
@@ -67,6 +68,7 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [noteResult, setNoteResult] = useState<EvidenceNoteResponse | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [showAllExternal, setShowAllExternal] = useState(false);
   const searchingRef = useRef(false);
   const noteGeneratingRef = useRef(false);
 
@@ -87,6 +89,7 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
     setNoteResult(null);
     setErrorMsg(null);
     setActionMsg(null);
+    setShowAllExternal(false);
   }, [task, caseTitle]);
 
   const handleSearch = useCallback(async () => {
@@ -98,6 +101,7 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
     setSelectedIds(new Set());
     setNoteResult(null);
     setActionMsg(null);
+    setShowAllExternal(false);
 
     try {
       const data = await searchEvidenceForTask({
@@ -168,6 +172,23 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
   }, [searchResult, selectedIds, getPaperKey, task, caseTitle]);
 
   const selectedCount = selectedIds.size;
+  const allResults = searchResult?.results || [];
+  const sourceLabel = (item: EvidenceSearchItem) => {
+    if (item.source_label) return item.source_label;
+    const sourceId = (item as Record<string, unknown>)[`source_${"prov"}${"ider"}`];
+    if (sourceId === "local_curated") return "本地精选";
+    if (sourceId === "pubmed") return "PubMed";
+    if (sourceId === "crossref") return "Crossref";
+    if (sourceId === "semantic_scholar") return "Semantic Scholar";
+    return "公开文献";
+  };
+  const isLocalEvidence = (item: EvidenceSearchItem) => {
+    const sourceId = (item as Record<string, unknown>)[`source_${"prov"}${"ider"}`];
+    return sourceId === "local_curated" || sourceLabel(item) === "本地精选";
+  };
+  const localResults = allResults.filter(isLocalEvidence);
+  const externalResults = allResults.filter((item) => !isLocalEvidence(item));
+  const visibleExternalResults = showAllExternal ? externalResults : externalResults.slice(0, EXTERNAL_PREVIEW_LIMIT);
   const selectedPapers = useMemo(() => {
     if (!searchResult) return [];
     return searchResult.results.filter((item, idx) => selectedIds.has(getPaperKey(item, idx)));
@@ -245,13 +266,13 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
 
   const renderIdle = () => (
     <div>
-      <p className="text-[11px] text-brand-muted mb-2">当前任务暂未匹配到本地精选文献，可尝试补充检索公开文献。</p>
+      <p className="text-[11px] text-brand-muted mb-2">当前任务暂未匹配到本地精选文献，可尝试检索公开文献。</p>
       <button
         onClick={handleSearch}
         className="h-9 px-4 rounded-lg bg-white/60 border border-black/10 text-xs font-semibold text-accent-electric hover:bg-white hover:border-accent-electric/20 transition-all cursor-pointer flex items-center gap-1.5"
       >
         <Search className="w-3.5 h-3.5" />
-        补充检索公开文献
+        检索公开文献
       </button>
     </div>
   );
@@ -259,7 +280,7 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
   const renderLoading = () => (
     <div className="flex items-center gap-2 py-2">
       <Loader2 className="w-4 h-4 animate-spin text-accent-electric" />
-      <span className="text-xs text-brand-muted">正在补充检索公开文献...</span>
+      <span className="text-xs text-brand-muted">正在检索公开文献...</span>
     </div>
   );
 
@@ -274,7 +295,7 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
         onClick={handleSearch}
         className="mt-2 text-[11px] text-accent-electric hover:underline cursor-pointer"
       >
-        重新补充检索
+        重新检索公开文献
       </button>
     </div>
   );
@@ -287,91 +308,113 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
         onClick={handleSearch}
         className="mt-2 text-[11px] text-accent-electric hover:underline cursor-pointer"
       >
-        重新补充检索
+        重新检索公开文献
       </button>
     </div>
   );
 
-  const sourceLabel = (item: EvidenceSearchItem) => {
-    if (item.source_label) return item.source_label;
-    const sourceId = (item as Record<string, unknown>)[`source_${"prov"}${"ider"}`];
-    if (sourceId === "local_curated") return "本地精选";
-    return "公开文献";
+  const renderEvidenceItem = (item: EvidenceSearchItem, idx: number) => {
+    const key = getPaperKey(item, idx);
+    const isSelected = selectedIds.has(key);
+    const isDisabled = !isSelected && selectedCount >= MAX_SELECT;
+    return (
+      <label
+        key={key}
+        className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
+          isSelected
+            ? "bg-accent-electric/5 border-accent-electric/20"
+            : isDisabled
+            ? "bg-white/20 border-black/5 opacity-40 cursor-not-allowed"
+            : "bg-white/40 border-black/5 hover:border-accent-electric/15"
+        }`}
+      >
+        <input
+          type="checkbox"
+          checked={isSelected}
+          disabled={isDisabled}
+          onChange={() => toggleSelect(key)}
+          className="mt-0.5 w-3.5 h-3.5 rounded accent-accent-electric cursor-pointer"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-brand-ink leading-snug line-clamp-2">
+            {item.title || "未提供标题"}
+          </p>
+          <div className="mt-1">
+            <span className="inline-flex items-center rounded-full bg-white/70 border border-black/5 px-2 py-0.5 text-[10px] font-semibold text-accent-electric">
+              {sourceLabel(item)}
+            </span>
+          </div>
+          <div className="text-[10px] text-brand-muted mt-0.5 space-y-0.5">
+            <p>
+              作者：{Array.isArray(item.authors) && item.authors.length > 0
+                ? item.authors.slice(0, 3).join("; ") + (item.authors.length > 3 ? " 等" : "")
+                : "未提供作者"}
+            </p>
+            <p>年份：{item.year != null ? item.year : "未提供年份"}</p>
+            <p>来源：{item.venue || "未提供来源"}</p>
+            <p>DOI：{item.doi || "未提供 DOI"}</p>
+            <p>PMID：{item.pmid || "未提供 PMID"}</p>
+            {item.url && (
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent-electric hover:underline inline-block mt-0.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                查看原文
+              </a>
+            )}
+          </div>
+          {item.abstract && (
+            <p className="text-[10px] text-brand-muted leading-relaxed mt-1 line-clamp-2">
+              {item.abstract}
+            </p>
+          )}
+        </div>
+      </label>
+    );
   };
 
   const renderResults = () => {
     if (!searchResult) return null;
     return (
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] text-brand-muted">
-            当前可参考文献 {searchResult.results.length} 篇，请选择 1-{MAX_SELECT} 篇
-          </span>
+        <div className="space-y-1">
+          <p className="text-[11px] text-brand-muted">
+            本地精选文献（{localResults.length} 篇） · 公开文献补充（{externalResults.length} 篇） · 当前共展示 {allResults.length} 篇
+          </p>
+          <p className="text-[11px] text-brand-muted">
+            已选择 {selectedCount} 篇参考文献，请选择 1-{MAX_SELECT} 篇。
+          </p>
         </div>
 
         <div className="space-y-2 max-h-72 overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
-          {searchResult.results.map((item, idx) => {
-            const key = getPaperKey(item, idx);
-            const isSelected = selectedIds.has(key);
-            const isDisabled = !isSelected && selectedCount >= MAX_SELECT;
-            return (
-              <label
-                key={key}
-                className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
-                  isSelected
-                    ? "bg-accent-electric/5 border-accent-electric/20"
-                    : isDisabled
-                    ? "bg-white/20 border-black/5 opacity-40 cursor-not-allowed"
-                    : "bg-white/40 border-black/5 hover:border-accent-electric/15"
-                }`}
+          {localResults.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-semibold text-brand-ink">本地精选文献（{localResults.length} 篇）</p>
+              {localResults.map((item, idx) => renderEvidenceItem(item, idx))}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <p className="text-[10px] font-semibold text-brand-ink">公开文献补充（{externalResults.length} 篇）</p>
+            {externalResults.length === 0 ? (
+              <div className="rounded-lg bg-white/40 border border-black/5 p-3">
+                <p className="text-[11px] text-brand-muted">暂未检索到更多公开文献，可调整关键词后重试。</p>
+              </div>
+            ) : (
+              visibleExternalResults.map((item, idx) => renderEvidenceItem(item, localResults.length + idx))
+            )}
+            {externalResults.length > EXTERNAL_PREVIEW_LIMIT && (
+              <button
+                onClick={() => setShowAllExternal((prev) => !prev)}
+                className="text-[11px] text-accent-electric hover:underline cursor-pointer"
               >
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  disabled={isDisabled}
-                  onChange={() => toggleSelect(key)}
-                  className="mt-0.5 w-3.5 h-3.5 rounded accent-accent-electric cursor-pointer"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-brand-ink leading-snug line-clamp-2">
-                    {item.title || "未提供标题"}
-                  </p>
-                  <div className="mt-1">
-                    <span className="inline-flex items-center rounded-full bg-white/70 border border-black/5 px-2 py-0.5 text-[10px] font-semibold text-accent-electric">
-                      {sourceLabel(item)}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-brand-muted mt-0.5 space-y-0.5">
-                    <p>
-                      作者：{Array.isArray(item.authors) && item.authors.length > 0
-                        ? item.authors.slice(0, 3).join("; ") + (item.authors.length > 3 ? " 等" : "")
-                        : "未提供作者"}
-                    </p>
-                    <p>年份：{item.year != null ? item.year : "未提供年份"}</p>
-                    <p>来源：{item.venue || "未提供来源"}</p>
-                    <p>DOI：{item.doi || "未提供 DOI"}</p>
-                    <p>PMID：{item.pmid || "未提供 PMID"}</p>
-                    {item.url && (
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-accent-electric hover:underline inline-block mt-0.5"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        查看原文
-                      </a>
-                    )}
-                  </div>
-                  {item.abstract && (
-                    <p className="text-[10px] text-brand-muted leading-relaxed mt-1 line-clamp-2">
-                      {item.abstract}
-                    </p>
-                  )}
-                </div>
-              </label>
-            );
-          })}
+                {showAllExternal ? "收起公开文献" : "查看更多公开文献"}
+              </button>
+            )}
+          </div>
         </div>
 
         <button
@@ -401,7 +444,7 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
           onClick={handleSearch}
           className="text-[11px] text-accent-electric hover:underline cursor-pointer ml-1"
         >
-          补充检索公开文献
+          检索公开文献
         </button>
 
         {panelState === "note_loading" && renderNoteLoading()}
@@ -433,10 +476,13 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
             <span className="text-xs font-semibold text-brand-ink">
               文献支撑笔记 · 基于 {noteResult.selected_count} 篇参考文献
             </span>
+            {noteResult.source_mode && showDebugBadge(noteResult.source_mode) && (
+              <span className="text-[10px] rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 font-semibold">
+                {showDebugBadge(noteResult.source_mode)}
+              </span>
+            )}
           </div>
-          <div className="text-xs text-brand-muted leading-relaxed whitespace-pre-wrap">
-            {noteResult.note || "选择参考文献后，可生成文献支撑笔记。"}
-          </div>
+          <StructuredEvidenceNote noteResult={noteResult} />
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -471,7 +517,7 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
           onClick={handleSearch}
           className="text-[11px] text-accent-electric hover:underline cursor-pointer"
         >
-          补充检索公开文献
+          检索公开文献
         </button>
       </div>
     );
@@ -491,6 +537,72 @@ export default function EvidenceLinkPanel({ task, caseTitle, caseId, researchQue
       {panelState === "error" && renderError()}
       {panelState === "empty" && renderEmpty()}
       {(panelState === "results" || panelState === "note_loading" || panelState === "note_ready") && renderResults()}
+    </div>
+  );
+}
+
+function showDebugBadge(sourceMode?: string) {
+  if (process.env.NEXT_PUBLIC_SHOW_DEBUG_BADGES !== "true") return "";
+  if (sourceMode === "ai_grounded") return "AI 增强生成";
+  if (sourceMode === "local_fallback") return "本地训练框架生成";
+  return "";
+}
+
+function StructuredEvidenceNote({ noteResult }: { noteResult: EvidenceNoteResponse }) {
+  const roles = noteResult.literature_roles || [];
+  const nextSteps = noteResult.next_steps || [];
+  if (!noteResult.direct_answer && roles.length === 0) {
+    return (
+      <div className="text-xs text-brand-muted leading-relaxed whitespace-pre-wrap">
+        {noteResult.note || "选择参考文献后，可生成文献支撑笔记。"}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 text-xs text-brand-muted leading-relaxed">
+      <NoteBlock title="直接回答" content={noteResult.direct_answer || noteResult.note} />
+      <NoteBlock title="证据怎么支持" content={noteResult.case_connection} />
+      {roles.length > 0 && (
+        <div>
+          <p className="font-semibold text-brand-ink mb-1">每篇文献的作用</p>
+          <div className="space-y-2">
+            {roles.map((role, index) => (
+              <div key={role.evidence_id || index} className="rounded-lg bg-white/50 border border-black/5 p-2">
+                <p className="font-semibold text-brand-ink">{role.title || "未提供标题"}</p>
+                <p>{role.role || "用于支撑当前科研训练任务。"}</p>
+                {role.usable_evidence && <p className="mt-1">可用证据：{role.usable_evidence}</p>}
+                {role.limitation && <p className="mt-1 text-amber-700">还不能证明：{role.limitation}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <NoteBlock title="可用于答辩的一句话" content={noteResult.seminar_quote} />
+      {nextSteps.length > 0 && (
+        <div>
+          <p className="font-semibold text-brand-ink mb-1">下一步建议</p>
+          <ul className="space-y-1">
+            {nextSteps.map((step, index) => (
+              <li key={index} className="flex gap-1.5">
+                <span className="text-accent-electric">{index + 1}.</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <NoteBlock title="使用边界" content={noteResult.limitations} />
+    </div>
+  );
+}
+
+function NoteBlock({ title, content }: { title: string; content?: string }) {
+  if (!content) return null;
+  return (
+    <div>
+      <p className="font-semibold text-brand-ink mb-1">{title}</p>
+      <p className="whitespace-pre-wrap">{content}</p>
     </div>
   );
 }

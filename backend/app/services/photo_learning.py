@@ -1,101 +1,153 @@
 """
 Photo learning service for server-side material analysis.
 
-- Images: OCR first, then LLM analysis
-- PDF: prefer file-capable LLM path, fall back to local PDF text extraction + LLM
-- DOCX/TXT/MD: local text extraction + LLM
+Real behavior only:
+- images: GLM visual understanding
+- PDFs / documents / text: GLM extraction or parsing, then GLM analysis
+- no local OCR
+- no template fallback pretending the model succeeded
 """
 
 from __future__ import annotations
 
+import base64
+import json
 import os
 import re
 from typing import Any
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models import KnowledgePoint, ResearchPaper
 from app.services.llm import get_llm
 from app.services.ocr import OcrService
 from app.services.prompts import PHOTO_ANALYSIS_SCHEMA, PHOTO_ANALYSIS_SYSTEM, PHOTO_ANALYSIS_USER
-from app.services.questions import QuestionService
 
 KEYWORD_DICT = [
     "CRISPR",
     "Cas9",
     "Cas12",
     "Prime editing",
-    "碱基编辑",
-    "基因编辑",
-    "细胞凋亡",
-    "caspase",
-    "Bcl-2",
-    "Bax",
-    "p53",
-    "线粒体途径",
-    "mRNA",
-    "LNP",
-    "脂质纳米颗粒",
-    "递送",
-    "mRNA疫苗",
-    "mRNA治疗",
-    "蛋白质结构",
-    "AlphaFold",
-    "定向进化",
-    "蛋白质工程",
-    "单细胞",
-    "TCR",
-    "抗原",
-    "转录组",
-    "知识图谱",
-    "NHEJ",
-    "HDR",
-    "DNA修复",
-    "基因治疗",
-    "免疫治疗",
-    "合成生物学",
-    "代谢工程",
-    "酶催化",
-    "生物催化",
-    "干细胞",
-    "iPSC",
-    "类器官",
-    "NGS",
+    "base editing",
+    "single-cell",
     "RNA-seq",
-    "肿瘤微环境",
+    "LNP",
+    "mRNA",
+    "AlphaFold",
+    "protein design",
+    "organoid",
+    "TCR",
     "CAR-T",
-    "微生物组",
-    "发酵",
+    "spatial transcriptomics",
+    "gene therapy",
+    "synthetic biology",
+    "gene editing",
+    "protein engineering",
+    "single-cell omics",
+    "tumor microenvironment",
+    "transcriptomics",
 ]
+
+PHOTO_QUESTION_REPAIR_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "questions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": ["choice", "truefalse", "short_answer", "research", "industry"],
+                    },
+                    "question": {"type": "string"},
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "label": {"type": "string"},
+                                "text": {"type": "string"},
+                            },
+                            "required": ["label", "text"],
+                            "additionalProperties": False,
+                        },
+                    },
+                    "answer": {"type": "string"},
+                    "explanation": {"type": "string"},
+                },
+                "required": ["type", "question", "answer", "explanation"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["questions"],
+    "additionalProperties": False,
+}
 
 
 class PhotoLearningService:
     def __init__(self, db: Session):
         self.db = db
         self.llm = get_llm()
-        self.question_service = QuestionService(db)
         self.ocr_service = OcrService()
 
     def analyze_uploaded_file(self, file_bytes: bytes, mime_type: str, filename: str = "") -> dict[str, Any]:
         file_kind = self._resolve_file_kind(mime_type, filename)
 
-        if file_kind == "pdf":
-            analysis, engine, char_count = self._analyze_pdf_with_llm(file_bytes, filename)
+        if file_kind == "image":
+            llm_result = self._run_visual_analysis(
+                file_bytes=file_bytes,
+                mime_type=mime_type,
+                filename=filename,
+            )
+            transcribed_text = str(llm_result.get("transcribed_text", "")).strip()
+            if not transcribed_text:
+                raise RuntimeError("GLM visual analysis did not return transcribed text")
+
+            try:
+                analysis = self._build_analysis(transcribed_text, llm_result)
+            except RuntimeError:
+                supplemental = self._run_text_analysis(transcribed_text)
+                merged = dict(llm_result)
+                merged.update(supplemental)
+                merged["transcribed_text"] = transcribed_text
+                analysis = self._build_analysis(transcribed_text, merged)
+
             return self._attach_processing_metadata(
                 analysis,
-                file_kind="pdf",
-                engine=engine,
-                char_count=char_count,
+                file_kind=file_kind,
+                engine=f"glm-vision-analysis:{self.llm.settings.GLM_VISION_MODEL or self.llm.settings.resolved_llm_model()}",
+                char_count=len(transcribed_text),
+                filename=filename,
+            )
+
+        if file_kind == "pdf":
+            llm_result = self._run_pdf_visual_analysis(
+                file_bytes=file_bytes,
+                filename=filename,
+            )
+            transcribed_text = str(llm_result.get("transcribed_text", "")).strip()
+            if not transcribed_text:
+                raise RuntimeError("GLM PDF analysis did not return transcribed text")
+
+            analysis = self._build_analysis(transcribed_text, llm_result)
+            return self._attach_processing_metadata(
+                analysis,
+                file_kind=file_kind,
+                engine=f"glm-pdf-analysis:{self.llm.settings.GLM_VISION_MODEL or self.llm.settings.resolved_llm_model()}",
+                char_count=len(transcribed_text),
                 filename=filename,
             )
 
         extracted = self.ocr_service.extract(file_bytes, mime_type, filename)
         if not extracted.get("success"):
-            raise RuntimeError(str(extracted.get("error", "File extraction failed")))
+            raise RuntimeError(str(extracted.get("error", "GLM extraction failed")))
 
         extracted_text = str(extracted.get("text", "")).strip()
         if not extracted_text:
-            raise RuntimeError("未提取到可分析文本")
+            raise RuntimeError("GLM parser returned empty text")
 
         analysis = self.analyze(extracted_text)
         return self._attach_processing_metadata(
@@ -107,108 +159,203 @@ class PhotoLearningService:
         )
 
     def analyze(self, text: str, image_base64: str | None = None) -> dict[str, Any]:
+        del image_base64
         normalized_text = text.strip()
         if not normalized_text:
-            raise RuntimeError("没有可分析的文本内容")
+            raise RuntimeError("No analyzable text was provided")
 
-        llm_result: dict[str, Any] = {}
-        try:
-            llm_result = self._run_text_analysis(normalized_text)
-        except Exception:
-            llm_result = {}
-
+        llm_result = self._run_text_analysis(normalized_text)
         return self._build_analysis(normalized_text, llm_result)
 
     def _run_text_analysis(self, text: str) -> dict[str, Any]:
         if not self.llm.available:
             raise RuntimeError("LLM service unavailable for photo learning analysis")
 
-        user_prompt = PHOTO_ANALYSIS_USER.format(text=text[:3000])
-        return self.llm.generate_json(
-            system_prompt=PHOTO_ANALYSIS_SYSTEM,
-            user_prompt=user_prompt,
-            schema=PHOTO_ANALYSIS_SCHEMA,
-            temperature=0.3,
-        )
+        last_error: Exception | None = None
+        for limit in (12000, 9000, 7000, 5000):
+            try:
+                result = self.llm.generate_json(
+                    system_prompt=PHOTO_ANALYSIS_SYSTEM,
+                    user_prompt=PHOTO_ANALYSIS_USER.format(text=text[:limit]),
+                    schema=PHOTO_ANALYSIS_SCHEMA,
+                    temperature=0.2,
+                    max_tokens=2200,
+                )
+                if isinstance(result, dict) and result:
+                    return result
+            except Exception as exc:
+                last_error = exc
+                continue
 
-    def _analyze_pdf_with_llm(self, file_bytes: bytes, filename: str) -> tuple[dict[str, Any], str, int]:
+        if last_error is not None:
+            raise RuntimeError(f"GLM analysis failed: {last_error}") from last_error
+        raise RuntimeError("GLM analysis returned empty data")
+
+    def _run_visual_analysis(self, *, file_bytes: bytes, mime_type: str, filename: str) -> dict[str, Any]:
+        if not self.llm.available:
+            raise RuntimeError("LLM service unavailable for visual analysis")
+
+        encoded = base64.b64encode(file_bytes).decode("ascii")
+        content = [
+            {
+                "type": "text",
+                "text": (
+                    "Analyze this uploaded study image. "
+                    "First put the core visible text into `transcribed_text`, then return keywords, domain, "
+                    "summary, learning suggestions, and questions."
+                ),
+            },
+            {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{encoded}"}},
+        ]
+
+        response = self.llm.chat(
+            messages=[
+                {"role": "system", "content": PHOTO_ANALYSIS_SYSTEM},
+                {"role": "user", "content": content},
+            ],
+            model=self.llm.settings.GLM_VISION_MODEL or self.llm.settings.resolved_llm_model(),
+            temperature=0.2,
+            max_tokens=2200,
+            response_schema=PHOTO_ANALYSIS_SCHEMA,
+            retries=1,
+        )
+        if response.parsed:
+            return response.parsed
+
+        repaired = self.llm.chat(
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        f"{PHOTO_ANALYSIS_SYSTEM}\n\n"
+                        "Return one valid JSON object only. Do not output markdown."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": f"Filename: {filename or 'uploaded-file'}. Return JSON only."},
+                        *content,
+                    ],
+                },
+            ],
+            model=self.llm.settings.GLM_VISION_MODEL or self.llm.settings.resolved_llm_model(),
+            temperature=0.2,
+            max_tokens=2200,
+            response_schema=None,
+            retries=0,
+        )
+        parsed = self.llm._extract_json(repaired.content)
+        if parsed:
+            return parsed
+        raise RuntimeError("GLM visual analysis returned empty or invalid JSON")
+
+    def _run_pdf_visual_analysis(self, *, file_bytes: bytes, filename: str) -> dict[str, Any]:
         if not self.llm.available:
             raise RuntimeError("LLM service unavailable for PDF analysis")
 
-        direct_error: Exception | None = None
-
-        try:
-            llm_result = self.llm.generate_json_from_file(
-                system_prompt=PHOTO_ANALYSIS_SYSTEM,
-                user_prompt=(
-                    f"学生上传了一份 PDF 文档（文件名：{filename or 'document.pdf'}）。"
-                    "请直接阅读 PDF 内容并完成分析。"
-                    "如果内容较长，优先提取主题、核心概念、定义、机制、实验流程和结论。"
-                    "请尽量填写 source_excerpt，给出一段适合前端展示的内容摘录。"
+        encoded = base64.b64encode(file_bytes).decode("ascii")
+        pdf_system_prompt = (
+            f"{PHOTO_ANALYSIS_SYSTEM}\n\n"
+            "For PDF inputs:\n"
+            "- keep `transcribed_text` under 500 Chinese characters\n"
+            "- keep `summary` under 180 Chinese characters\n"
+            "- return 4 to 6 keywords\n"
+            "- return exactly 4 questions: 2 choice, 1 truefalse, 1 short_answer\n"
+            "- keep each explanation concise and factual\n"
+            "- do not copy long passages from the PDF"
+        )
+        content = [
+            {"type": "file_url", "file_url": {"url": f"data:application/pdf;base64,{encoded}"}},
+            {
+                "type": "text",
+                "text": (
+                    f"请把这份 PDF 当作学习材料进行分析。文件名：{filename or 'uploaded-file'}。"
+                    "请严格返回结构化 JSON。"
                 ),
-                schema=PHOTO_ANALYSIS_SCHEMA,
-                file_bytes=file_bytes,
-                filename=filename or "document.pdf",
-                temperature=0.2,
-            )
-            raw_text = str(llm_result.get("source_excerpt", "")).strip()
-            if not raw_text:
-                raw_text = f"[PDF direct LLM parsing] {filename or 'document.pdf'}\n\n{llm_result.get('summary', '')}"
-            analysis = self._build_analysis(raw_text, llm_result)
-            return analysis, "pdf-llm", len(raw_text)
-        except Exception as exc:
-            direct_error = exc
+            },
+        ]
 
-        extracted = self.ocr_service.extract(file_bytes, "application/pdf", filename or "document.pdf")
-        if not extracted.get("success"):
-            raise RuntimeError(str(extracted.get("error", "PDF text extraction failed")))
+        response = self.llm.chat(
+            messages=[
+                {"role": "system", "content": pdf_system_prompt},
+                {"role": "user", "content": content},
+            ],
+            model=self.llm.settings.GLM_VISION_MODEL or self.llm.settings.resolved_llm_model(),
+            temperature=0.1,
+            max_tokens=1400,
+            response_schema=PHOTO_ANALYSIS_SCHEMA,
+            retries=0,
+            extra_body={"thinking": {"type": "disabled"}},
+        )
+        if response.parsed:
+            return response.parsed
 
-        extracted_text = str(extracted.get("text", "")).strip()
-        if not extracted_text:
-            message = "PDF 中未提取到可分析文本"
-            if direct_error is not None:
-                message = f"{message}; direct_pdf_llm={direct_error}"
-            raise RuntimeError(message)
-
-        llm_result: dict[str, Any] = {}
-        try:
-            llm_result = self._run_text_analysis(extracted_text)
-        except Exception:
-            llm_result = {}
-
-        analysis = self._build_analysis(extracted_text, llm_result)
-        return analysis, "pdf-text-llm", len(extracted_text)
+        repaired = self.llm.chat(
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        f"{pdf_system_prompt}\n\n"
+                        "Return one valid JSON object only. Do not output markdown."
+                    ),
+                },
+                {"role": "user", "content": content},
+            ],
+            model=self.llm.settings.GLM_VISION_MODEL or self.llm.settings.resolved_llm_model(),
+            temperature=0.1,
+            max_tokens=1400,
+            response_schema=None,
+            retries=0,
+            extra_body={"thinking": {"type": "disabled"}},
+        )
+        parsed = self.llm._extract_json(repaired.content)
+        if parsed:
+            return parsed
+        raise RuntimeError("GLM PDF analysis returned empty or invalid JSON")
 
     def _build_analysis(self, text: str, llm_result: dict[str, Any]) -> dict[str, Any]:
         llm_keywords = self._normalize_string_list(llm_result.get("keywords"))
-        fallback_keywords = self._dict_extract(text)
+        dict_keywords = self._dict_extract(text)
         heuristic_keywords = self._heuristic_extract(text)
-        all_keywords = list(dict.fromkeys(llm_keywords + fallback_keywords + heuristic_keywords))[:12]
+        all_keywords = list(dict.fromkeys(llm_keywords + dict_keywords + heuristic_keywords))[:12]
         if not all_keywords:
-            all_keywords = ["知识点解析"]
+            raise RuntimeError("GLM analysis did not return usable keywords")
+
+        summary = str(llm_result.get("summary") or llm_result.get("overview") or llm_result.get("core_summary") or "").strip()
+        if not summary:
+            raise RuntimeError("GLM analysis did not return a summary")
+
+        learning_suggestions = self._normalize_string_list(
+            llm_result.get("learning_suggestions") or llm_result.get("suggestions")
+        )
 
         concepts, papers = self._match_knowledge(all_keywords[:8])
+        questions = self._normalize_questions(llm_result.get("questions"))
+        if len(questions) < 5:
+            questions = self._repair_questions(
+                text=text,
+                llm_result=llm_result,
+                existing_questions=questions,
+                target_count=5,
+            )
+        if len(questions) == 0:
+            raise RuntimeError("GLM analysis did not return enough usable questions")
 
-        summary = str(llm_result.get("summary", "")).strip()
-        if not summary:
-            summary = self._build_fallback_summary(text, all_keywords, concepts, papers)
-
-        learning_suggestions = self._normalize_string_list(llm_result.get("learning_suggestions"))
-        if not learning_suggestions:
-            learning_suggestions = self._build_learning_suggestions(all_keywords, concepts, papers)
-
-        questions = self._generate_questions(text, all_keywords, concepts, papers)
+        domain = str(llm_result.get("domain", "")).strip() or self._infer_domain(all_keywords, concepts)
+        if not domain:
+            raise RuntimeError("GLM analysis did not return a domain")
 
         return {
             "raw_text": text,
             "extracted_keywords": all_keywords,
-            "domain": str(llm_result.get("domain", "")).strip() or self._infer_domain(all_keywords, concepts),
+            "domain": domain,
             "matched_concepts": concepts[:8],
             "matched_papers": papers[:6],
             "matched_tasks": [],
             "summary": summary,
-            "learning_suggestions": learning_suggestions,
-            "questions": questions,
+            "learning_suggestions": learning_suggestions[:4],
+            "questions": questions[:5],
         }
 
     def _attach_processing_metadata(
@@ -231,7 +378,7 @@ class PhotoLearningService:
 
     def _resolve_file_kind(self, mime_type: str, filename: str) -> str:
         ext = os.path.splitext(filename or "")[1].lower()
-        if (mime_type or "").startswith("image/") or ext in {".png", ".jpg", ".jpeg", ".webp", ".bmp"}:
+        if (mime_type or "").startswith("image/") or ext in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}:
             return "image"
         if mime_type == "application/pdf" or ext == ".pdf":
             return "pdf"
@@ -244,29 +391,284 @@ class PhotoLearningService:
     def _normalize_string_list(self, value: Any) -> list[str]:
         if not isinstance(value, list):
             return []
-        result: list[str] = []
-        for item in value:
-            text = str(item).strip()
-            if text:
-                result.append(text)
-        return result
+        normalized = [str(item).strip() for item in value if str(item).strip()]
+        return list(dict.fromkeys(normalized))
+
+    def _normalize_questions(self, value: Any) -> list[dict[str, Any]]:
+        if not isinstance(value, list):
+            return []
+
+        normalized: list[dict[str, Any]] = []
+        for index, item in enumerate(value):
+            if not isinstance(item, dict):
+                continue
+
+            question_type = self._normalize_question_type(item.get("type"))
+            question_text = str(
+                item.get("question")
+                or item.get("stem")
+                or item.get("prompt")
+                or item.get("title")
+                or ""
+            ).strip()
+            answer = str(
+                item.get("answer")
+                or item.get("correct_answer")
+                or item.get("reference_answer")
+                or item.get("expected_answer")
+                or ""
+            ).strip()
+            explanation = str(
+                item.get("explanation")
+                or item.get("analysis")
+                or item.get("reason")
+                or item.get("rationale")
+                or ""
+            ).strip()
+            if question_type not in {"choice", "truefalse", "short_answer", "research", "industry"}:
+                continue
+            if not question_text or not answer or not explanation:
+                continue
+
+            options = self._normalize_question_options(item.get("options"))
+            if question_type == "choice":
+                if len(options) != 4:
+                    continue
+
+            normalized.append(
+                {
+                    "id": f"glm-{index + 1}",
+                    "type": question_type,
+                    "question": question_text,
+                    "options": options,
+                    "answer": answer,
+                    "explanation": explanation,
+                    "related_concept_ids": [],
+                    "related_paper_ids": [],
+                }
+            )
+
+        return normalized
+
+    def _normalize_question_type(self, value: Any) -> str:
+        text = str(value or "").strip().lower()
+        aliases = {
+            "research_industry": "research",
+            "single_choice": "choice",
+            "multiple_choice": "choice",
+            "mcq": "choice",
+            "select": "choice",
+            "judge": "truefalse",
+            "true_false": "truefalse",
+            "true-false": "truefalse",
+            "boolean": "truefalse",
+            "tf": "truefalse",
+            "short": "short_answer",
+            "shortanswer": "short_answer",
+            "short-answer": "short_answer",
+            "qa": "short_answer",
+            "open": "research",
+        }
+        return aliases.get(text, text)
+
+    def _normalize_question_options(self, value: Any) -> list[dict[str, str]]:
+        options: list[dict[str, str]] = []
+        if isinstance(value, dict):
+            for label, text in list(value.items())[:4]:
+                clean_label = str(label).strip()
+                clean_text = str(text).strip()
+                if clean_label and clean_text:
+                    options.append({"label": clean_label, "text": clean_text})
+            return options
+
+        if isinstance(value, list):
+            for idx, opt in enumerate(value[:4]):
+                if isinstance(opt, dict):
+                    label = str(opt.get("label") or opt.get("key") or opt.get("name") or "").strip()
+                    text = str(opt.get("text") or opt.get("content") or opt.get("value") or opt.get("option") or "").strip()
+                    if not label and text:
+                        label = chr(ord("A") + idx)
+                    if label and text:
+                        options.append({"label": label, "text": text})
+                    continue
+                clean_text = str(opt).strip()
+                if clean_text:
+                    options.append({"label": chr(ord("A") + idx), "text": clean_text})
+        return options
+
+    def _repair_questions(
+        self,
+        *,
+        text: str,
+        llm_result: dict[str, Any],
+        existing_questions: list[dict[str, Any]],
+        target_count: int,
+    ) -> list[dict[str, Any]]:
+        merged = self._merge_questions(existing_questions, [])
+        if len(merged) >= target_count or not self.llm.available:
+            return merged[:target_count]
+
+        for _ in range(2):
+            if len(merged) >= target_count:
+                return merged[:target_count]
+            generated = self._generate_question_repair_batch(
+                text=text,
+                llm_result=llm_result,
+                existing_questions=merged,
+                target_count=target_count,
+            )
+            merged = self._merge_questions(merged, generated)
+
+        if len(merged) >= 3:
+            return merged[:target_count]
+
+        regenerated = self._generate_question_regeneration_batch(
+            text=text,
+            llm_result=llm_result,
+        )
+        merged = self._merge_questions(merged, regenerated)
+        return merged[:target_count]
+
+    def _generate_question_repair_batch(
+        self,
+        *,
+        text: str,
+        llm_result: dict[str, Any],
+        existing_questions: list[dict[str, Any]],
+        target_count: int,
+    ) -> list[dict[str, Any]]:
+        merged = self._merge_questions(existing_questions, [])
+        if len(merged) >= target_count or not self.llm.available:
+            return []
+
+        existing_counts: dict[str, int] = {}
+        for item in merged:
+            question_type = str(item.get("type") or "").strip()
+            existing_counts[question_type] = existing_counts.get(question_type, 0) + 1
+
+        desired_order = ["choice", "choice", "truefalse", "short_answer", "research"]
+        missing_types: list[str] = []
+        target_counts = {"choice": 0, "truefalse": 0, "short_answer": 0, "research": 0}
+        for question_type in desired_order:
+            target_counts[question_type] += 1
+        for question_type, expected_count in target_counts.items():
+            current_count = existing_counts.get(question_type, 0)
+            if current_count < expected_count:
+                missing_types.extend([question_type] * (expected_count - current_count))
+
+        if not missing_types:
+            missing_types = ["research"] * max(0, target_count - len(merged))
+
+        system_prompt = (
+            "You are repairing an existing life-science learning quiz.\n"
+            "Return exactly one JSON object in Simplified Chinese.\n"
+            "Use only the provided material.\n"
+            "Do not repeat existing questions.\n"
+            "Every question must include a grounded answer and a concise explanation.\n"
+            "Choice questions must contain exactly 4 options with labels A/B/C/D."
+        )
+        user_prompt = (
+            "请基于以下学习材料补充缺失题目，并严格输出 JSON。\n\n"
+            f"材料摘要：{str(llm_result.get('summary') or '').strip()}\n"
+            f"关键词：{', '.join(self._normalize_string_list(llm_result.get('keywords'))[:8])}\n"
+            f"已有题目：{json.dumps([item.get('question') for item in merged], ensure_ascii=False)}\n"
+            f"需要补充的题型：{json.dumps(missing_types[: max(1, target_count - len(merged))], ensure_ascii=False)}\n"
+            f"原始材料：{text[:4000]}"
+        )
+
+        try:
+            repaired = self.llm.generate_json(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                schema=PHOTO_QUESTION_REPAIR_SCHEMA,
+                temperature=0.1,
+                max_tokens=1200,
+            )
+        except Exception:
+            return []
+
+        return self._normalize_questions(repaired.get("questions"))
+
+    def _generate_question_regeneration_batch(
+        self,
+        *,
+        text: str,
+        llm_result: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        if not self.llm.available:
+            return []
+
+        system_prompt = (
+            "You are generating a compact learning quiz from life-science study material.\n"
+            "Return exactly one JSON object in Simplified Chinese.\n"
+            "Use only the provided material.\n"
+            "Generate exactly 4 questions: 2 choice, 1 truefalse, 1 short_answer.\n"
+            "Every question must include a grounded answer and a concise explanation.\n"
+            "Choice questions must contain exactly 4 options with labels A/B/C/D."
+        )
+        user_prompt = (
+            "请根据以下学习材料重新生成一组高质量练习题，并严格输出 JSON。\n\n"
+            f"材料摘要：{str(llm_result.get('summary') or '').strip()}\n"
+            f"关键词：{', '.join(self._normalize_string_list(llm_result.get('keywords'))[:8])}\n"
+            f"原始材料：{text[:4000]}"
+        )
+        try:
+            regenerated = self.llm.generate_json(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                schema=PHOTO_QUESTION_REPAIR_SCHEMA,
+                temperature=0.1,
+                max_tokens=1200,
+            )
+        except Exception:
+            return []
+
+        return self._normalize_questions(regenerated.get("questions"))
+
+    def _merge_questions(
+        self,
+        primary: list[dict[str, Any]],
+        secondary: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        merged: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for item in [*primary, *secondary]:
+            question = str(item.get("question") or "").strip()
+            if not question:
+                continue
+            key = question.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(item)
+        return merged
 
     def _dict_extract(self, text: str) -> list[str]:
-        found: set[str] = set()
         lower_text = text.lower()
-        for kw in KEYWORD_DICT:
-            if kw.lower() in lower_text:
-                found.add(kw)
-        return sorted(found, key=lambda item: -len(item))
+        found = [kw for kw in KEYWORD_DICT if kw.lower() in lower_text]
+        return sorted(set(found), key=lambda item: (-len(item), item.lower()))
 
     def _heuristic_extract(self, text: str) -> list[str]:
         candidates = re.findall(r"[A-Za-z][A-Za-z0-9+/\-]{2,}|[\u4e00-\u9fff]{2,10}", text)
         ranked: list[str] = []
         seen: set[str] = set()
-        stop_words = {"学生", "内容", "分析", "知识", "学习", "建议", "问题", "答案", "解析", "文档", "教材", "文献"}
+        stop_words = {
+            "学生",
+            "内容",
+            "分析",
+            "知识",
+            "学习",
+            "建议",
+            "问题",
+            "答案",
+            "解析",
+            "文档",
+            "教材",
+            "文献",
+        }
         for token in candidates:
             clean = token.strip()
-            if not clean or clean in seen or clean in stop_words or clean.isdigit():
+            if not clean or clean.isdigit() or clean in stop_words or clean in seen:
                 continue
             seen.add(clean)
             ranked.append(clean)
@@ -274,14 +676,14 @@ class PhotoLearningService:
                 break
         return ranked
 
-    def _match_knowledge(self, keywords: list[str]) -> tuple[list[dict], list[dict]]:
-        concept_map: dict[int, dict] = {}
-        paper_map: dict[int, dict] = {}
+    def _match_knowledge(self, keywords: list[str]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        concept_map: dict[int, dict[str, Any]] = {}
+        paper_map: dict[int, dict[str, Any]] = {}
 
         for kw in keywords:
             for kp in (
                 self.db.query(KnowledgePoint)
-                .filter(KnowledgePoint.name.contains(kw) | KnowledgePoint.definition.contains(kw))
+                .filter(or_(KnowledgePoint.name.contains(kw), KnowledgePoint.definition.contains(kw)))
                 .limit(5)
                 .all()
             ):
@@ -289,12 +691,19 @@ class PhotoLearningService:
                     "id": kp.id,
                     "name": kp.name,
                     "category": kp.category,
-                    "definition": kp.definition[:200],
+                    "definition": (kp.definition or "")[:200],
                 }
 
             for paper in (
                 self.db.query(ResearchPaper)
-                .filter(ResearchPaper.title.contains(kw) | ResearchPaper.title_zh.contains(kw))
+                .filter(
+                    or_(
+                        ResearchPaper.title.contains(kw),
+                        ResearchPaper.title_zh.contains(kw),
+                        ResearchPaper.abstract.contains(kw),
+                        ResearchPaper.core_problem.contains(kw),
+                    )
+                )
                 .limit(5)
                 .all()
             ):
@@ -303,70 +712,19 @@ class PhotoLearningService:
                     "title": paper.title,
                     "title_zh": paper.title_zh,
                     "direction": paper.direction,
-                    "core_problem": paper.core_problem[:200],
+                    "core_problem": (paper.core_problem or paper.abstract or "")[:200],
                 }
 
         return list(concept_map.values()), list(paper_map.values())
 
-    def _generate_questions(self, text: str, keywords: list[str], concepts: list[dict], papers: list[dict]) -> list[dict]:
-        kp_names = [concept["name"] for concept in concepts[:3]] or keywords[:3]
-        if not kp_names:
-            return []
-
-        questions = self.question_service.generate_questions(
-            knowledge_points=kp_names,
-            evidence_text=text[:1000],
-            question_types=["choice", "choice", "truefalse", "short_answer", "research", "industry"],
-            count=6,
-            difficulty="medium",
-            strict=False,
-        )
-
-        return [
-            {
-                "id": str(question.id),
-                "type": question.type.value,
-                "question": question.stem,
-                "options": question.options if isinstance(question.options, list) else [],
-                "answer": question.answer,
-                "explanation": question.explanation,
-                "related_concept_ids": question.knowledge_point_ids or [],
-                "related_paper_ids": [],
-            }
-            for question in questions
-        ]
-
-    def _infer_domain(self, keywords: list[str], concepts: list[dict]) -> str:
-        joined = " ".join(keywords + [concept.get("category", "") for concept in concepts]).lower()
-        if any(marker in joined for marker in ["crispr", "cas", "gene", "dna", "rna", "基因", "转录", "翻译"]):
-            return "分子生物学"
-        if any(marker in joined for marker in ["细胞", "凋亡", "周期", "信号"]):
-            return "细胞生物学"
-        if any(marker in joined for marker in ["蛋白", "protein", "酶", "alphafold"]):
-            return "蛋白质科学"
+    def _infer_domain(self, keywords: list[str], concepts: list[dict[str, Any]]) -> str:
+        joined = " ".join(keywords + [str(concept.get("category", "")) for concept in concepts]).lower()
+        if any(marker in joined for marker in ["crispr", "cas", "gene", "dna", "rna", "editing", "transcript"]):
+            return "分子生物学 / 基因编辑"
+        if any(marker in joined for marker in ["cell", "organoid", "tcr", "car-t"]):
+            return "细胞生物学 / 细胞治疗"
+        if any(marker in joined for marker in ["protein", "alphafold", "enzyme", "structure"]):
+            return "蛋白质科学 / 结构生物学"
+        if any(marker in joined for marker in ["drug", "therapy", "lnp", "mrna"]):
+            return "生物医药 / 药物递送"
         return "生命科学"
-
-    def _build_learning_suggestions(self, keywords: list[str], concepts: list[dict], papers: list[dict]) -> list[str]:
-        focus = "、".join(keywords[:4]) or "核心概念"
-        suggestions = [
-            f"先围绕 {focus} 建立概念框架，再回到原文定位定义、机制和结论之间的关系。",
-            "把关键术语整理成术语表，区分概念、过程、实验方法和应用场景。",
-            "尝试用一张结构图把核心概念、流程和因果关系串起来。",
-        ]
-        if papers:
-            suggestions.append("对照关联文献继续扩展阅读，比较不同研究问题、方法和发现。")
-        elif concepts:
-            suggestions.append("先复习匹配到的基础知识点，再回看原文中的例子和推理链。")
-        return suggestions[:4]
-
-    def _build_fallback_summary(self, text: str, keywords: list[str], concepts: list[dict], papers: list[dict]) -> str:
-        keyword_text = "、".join(keywords[:6]) or "核心概念"
-        concept_text = "、".join(concept["name"] for concept in concepts[:4]) or "基础生命科学知识"
-        paper_text = "、".join((paper.get("title_zh") or paper.get("title") or "")[:24] for paper in papers[:3] if paper.get("title_zh") or paper.get("title"))
-        summary = f"系统识别到 {keyword_text} 等关键词，内容主要关联 {concept_text}。"
-        if paper_text:
-            summary += f" 还可进一步连接到 {paper_text} 等相关文献。"
-        snippet = text[:180].replace("\n", " ").strip()
-        if snippet:
-            summary += f" 原文片段显示：{snippet}"
-        return summary

@@ -26,7 +26,7 @@ SOURCE_TYPE = {
     "clinical_trial": "临床试验",
     "patent": "专利文献",
     "regulatory": "监管文件",
-    "product_page": "产业报告",
+    "product_page": "产品页",
     "review": "学术文献",
 }
 
@@ -45,6 +45,8 @@ def to_ref_type(url: str, raw_type: str | None) -> str:
         return "FDA"
     if "doi.org" in host or raw == "academic":
         return "DOI"
+    if raw == "product_page":
+        return "ProductPage"
     if raw == "review":
         return "Review"
     return "Other"
@@ -135,12 +137,14 @@ def convert_case(case: dict) -> dict:
         "applicationValue": case.get("application_value") or "",
         "requiredAbilities": case.get("required_abilities") or [],
         "recommendedKeywords": case.get("recommended_keywords") or [],
+        "guideQuestions": case.get("guide_questions") or [],
         "linkedResearchTask": case.get("linked_research_task") or "",
         "evidenceLevel": EVIDENCE_LEVEL.get(case.get("evidence_level"), "发展中"),
         "sourceType": SOURCE_TYPE.get(case.get("source_type"), "产业报告"),
         "background": case.get("background") or "",
         "applicationScenario": case.get("application_scenario") or "",
         "displayFocus": case.get("display_focus") or "",
+        "notes": case.get("analysis_text") or "",
         "migrationPath": migration_path(case),
         "references": refs,
         "sourceUrls": source_urls,

@@ -20,8 +20,8 @@ type TestResponse = {
   error: string;
 };
 
-const defaultBaseUrl = "https://api.deepseek.com/v1";
-const defaultModel = "deepseek-v4-flash";
+const defaultBaseUrl = "https://open.bigmodel.cn/api/paas/v4";
+const defaultModel = "glm-4-flash";
 
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState("");
@@ -40,10 +40,10 @@ export default function SettingsPage() {
       setMessage("");
       try {
         const res = await fetch("/gateway/api/system/llm/config", { cache: "no-store" });
-        if (!res.ok) {
-          throw new Error("读取当前配置失败");
+        const data = await readJsonSafely<ConfigView & { detail?: string }>(res);
+        if (!res.ok || !data) {
+          throw new Error(data?.detail || "读取当前配置失败");
         }
-        const data: ConfigView = await res.json();
         setCurrentConfig(data);
         setApiKey("");
         setBaseUrl(data.base_url || defaultBaseUrl);
@@ -68,9 +68,9 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ api_key: apiKey, base_url: baseUrl, model }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.detail || "测试失败");
+      const data = await readJsonSafely<TestResponse & { detail?: string }>(res);
+      if (!res.ok || !data) {
+        throw new Error(data?.detail || "测试失败");
       }
       setTestResult(data);
       if (!data.ok) {
@@ -92,13 +92,15 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ api_key: apiKey, base_url: baseUrl, model }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.detail || "保存失败");
+      const data = await readJsonSafely<ConfigView & { detail?: string }>(res);
+      if (!res.ok || !data) {
+        throw new Error(data?.detail || "保存失败");
       }
       setCurrentConfig(data);
       setApiKey("");
-      setMessage("配置已保存并立即生效");
+      setBaseUrl(data.base_url || defaultBaseUrl);
+      setModel(data.model || defaultModel);
+      setMessage("配置已保存，并已同步到前后端运行配置");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "保存失败");
     } finally {
@@ -107,6 +109,10 @@ export default function SettingsPage() {
   };
 
   const balanceText = testResult?.balance ? JSON.stringify(testResult.balance, null, 2) : "";
+  const balanceSupported =
+    testResult?.balance && "supported" in testResult.balance
+      ? testResult.balance.supported !== false
+      : true;
 
   return (
     <section className="px-6 md:px-10 py-28 md:py-32 max-w-5xl mx-auto">
@@ -114,7 +120,7 @@ export default function SettingsPage() {
         <p className="section-title">系统设置</p>
         <h1 className="section-heading">LLM API Key 配置与检测</h1>
         <p className="mt-4 text-brand-muted max-w-3xl leading-relaxed">
-          在这里填写 API Key、Base URL 和模型名，然后直接测试余额和连通性。保存后，后端立即使用新配置。
+          在这里填写 API Key、Base URL 和模型名，然后直接测试余额与连通性。保存后只会更新咱们自己的前后端配置，不影响其它服务。
         </p>
       </div>
 
@@ -127,7 +133,7 @@ export default function SettingsPage() {
             ) : (
               <div className="space-y-2 text-sm text-[#111827]">
                 <div>已配置 API Key：{currentConfig?.api_key_set ? "是" : "否"}</div>
-                <div>密钥明文不会在页面回显</div>
+                <div className="break-all">当前 API Key：{currentConfig?.api_key || "未配置"}</div>
                 <div>当前 Base URL：{currentConfig?.base_url || "-"}</div>
                 <div>当前模型：{currentConfig?.model || "-"}</div>
               </div>
@@ -138,7 +144,7 @@ export default function SettingsPage() {
             <div className="space-y-2 text-sm text-brand-muted leading-relaxed">
               <div>余额测试会请求供应商余额接口。</div>
               <div>连通性测试会发一条最小 chat completion 请求。</div>
-              <div>保存后只更新咱们自己的后端配置，不影响其它服务。</div>
+              <div>保存后只更新咱们自己的后端与前端配置，不影响其它服务。</div>
             </div>
           </div>
         </div>
@@ -204,7 +210,7 @@ export default function SettingsPage() {
         {testResult ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="rounded-3xl border border-white/80 bg-white/50 p-5 space-y-2 text-sm">
-              <div>余额接口：{testResult.balance_ok ? "通过" : "失败"}</div>
+              <div>余额接口：{balanceSupported ? (testResult.balance_ok ? "通过" : "失败") : "不支持"}</div>
               <div>连通性：{testResult.chat_ok ? "通过" : "失败"}</div>
               <div>Base URL：{testResult.base_url}</div>
               <div>模型：{testResult.model}</div>
@@ -218,4 +224,16 @@ export default function SettingsPage() {
       </div>
     </section>
   );
+}
+
+async function readJsonSafely<T>(response: Response): Promise<T | null> {
+  const raw = await response.text();
+  if (!raw.trim()) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
 }

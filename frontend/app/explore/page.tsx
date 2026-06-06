@@ -15,7 +15,7 @@ import {
   toQuizQuestions,
 } from "@/lib/photoLearningPipeline";
 
-const ACCEPTED_TYPES = "image/*,application/pdf,.docx,text/plain,.md";
+const ACCEPTED_TYPES = "image/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,text/plain,.md,.html";
 
 interface Message { role: "user" | "ai"; content: string; }
 
@@ -41,7 +41,7 @@ export default function ExplorePage() {
   const [error, setError] = useState<string | null>(null);
   
   const [messages, setMessages] = useState<Message[]>([
-    { role: "ai", content: "你好，我是 BioMentor AI 导师。上传教材文件，系统会智能分析知识点。" },
+    { role: "ai", content: "你好，我是 BioMentor AI 导师。上传学习资料，系统会智能分析知识点，系统会智能分析知识点。" },
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -220,7 +220,7 @@ export default function ExplorePage() {
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">知识探索中心</h1>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            上传教材或文献，统一由真实后端完成提取、解析、知识匹配、学习建议和测验生成。
+            上传学习资料，统一由真实后端完成提取、解析、知识匹配、学习建议和测验生成。
           </p>
         </div>
 
@@ -229,8 +229,8 @@ export default function ExplorePage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-blue-500" />
-              <h2 className="font-semibold text-gray-800">上传教材与文献</h2>
-              <span className="text-sm text-gray-500">支持图片、PDF、DOCX、文本</span>
+              <h2 className="font-semibold text-gray-800">上传学习资料</h2>
+              <span className="text-sm text-gray-500">支持PDF、Office 文档、文本</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Loader2 className={`w-4 h-4 ${isProcessing ? "animate-spin text-blue-500" : "text-gray-400"}`} />
@@ -256,8 +256,8 @@ export default function ExplorePage() {
                   <p className="text-sm text-gray-700 font-medium break-all">{uploadedFile?.name}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     {uploadedFile?.type === "application/pdf" 
-                      ? "PDF 将由后端优先走 LLM 解析，必要时回退为本地提取文本再分析"
-                      : "图片将先走后端 OCR，再走后端 LLM 解析"}
+                      ? "PDF 将直接交给后端 GLM 解析"
+                      : "图片将直接交给后端 GLM 解析"}
                   </p>
                 </div>
               ) : uploadedFile ? (
@@ -269,7 +269,7 @@ export default function ExplorePage() {
               ) : (
                 <div>
                   <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-sm text-gray-700 font-medium">点击或拖拽上传图片、PDF、DOCX 或文本</p>
+                  <p className="text-sm text-gray-700 font-medium">点击或拖拽上传PDF、DOCX 或文本</p>
                   <p className="text-xs text-gray-500 mt-1">所有文件都走真实后端处理</p>
                 </div>
               )}
@@ -279,10 +279,10 @@ export default function ExplorePage() {
               <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                 <h3 className="font-medium text-gray-800 mb-2">处理链路说明</h3>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li><strong>PDF</strong>：后端优先走 PDF LLM 分析，失败时自动回退为本地抽取文本再分析</li>
-                  <li><strong>图片</strong>：后端 EasyOCR 识别后再进入后端 LLM</li>
-                  <li><strong>DOCX</strong>：后端 python-docx 提取文本后统一分析</li>
-                  <li><strong>文本</strong>：后端直接进入 LLM 管线统一解析</li>
+                  <li><strong>PDF</strong>：后端直接调用 GLM 文件解析与分析</li>
+                  <li><strong>图片</strong>：后端直接调用 GLM 图片解析与分析</li>
+                  <li><strong>DOCX</strong>：后端直接调用 GLM 文件解析与分析</li>
+                  <li><strong>文本</strong>：后端统一进入 GLM 解析管线</li>
                 </ul>
               </div>
 
@@ -337,7 +337,7 @@ export default function ExplorePage() {
               </div>
               {backendResult?.ocr_engine && (
                 <span className="text-xs text-gray-500">
-                  OCR: {backendResult.ocr_engine}
+                  Engine: {backendResult.ocr_engine}
                   {backendResult?.ocr_char_count ? ` · ${backendResult.ocr_char_count} 字` : ""}
                 </span>
               )}
@@ -451,7 +451,7 @@ export default function ExplorePage() {
                 </div>
 
                 <div className="p-4 bg-white/70 rounded-xl border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">OCR 文本</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">解析文本</h3>
                   <textarea
                     value={backendResult.raw_text}
                     readOnly
@@ -464,7 +464,7 @@ export default function ExplorePage() {
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <BookOpen className="w-16 h-16 text-gray-300 mb-4" />
                 <p className="text-gray-500 max-w-md">
-                  上传教材文件后，系统将自动分析知识点并生成学习建议。
+                  上传学习资料后，系统将自动分析知识点并生成学习建议。
                   您也可以直接向 AI 导师提问学习问题。
                 </p>
               </div>

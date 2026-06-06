@@ -1,11 +1,5 @@
-const TOOL_LABELS = {
-  protein: "蛋白结构",
-  plasmid: "质粒图谱",
-  sequence: "序列分析",
-  pathway: "代谢通路",
-};
-
-const DEFAULT_DISCLAIMER = "本回答用于课程学习和科研训练，不构成医疗、临床或未经验证的实验操作建议。";
+const DEFAULT_DISCLAIMER =
+  "本回答用于课程学习和科研训练，不构成医疗、临床或未经验证的实验操作建议。";
 
 export function extractToolJson(raw) {
   const trimmed = String(raw || "").trim();
@@ -18,85 +12,46 @@ export function extractToolJson(raw) {
 }
 
 export function createHelpfulToolFallback(tool, request) {
-  const label = TOOL_LABELS[tool] || tool;
-  const context = request?.context || {};
-  const question = String(request?.question || "").trim();
-  const facts = Array.isArray(context.facts) ? context.facts.filter((item) => item?.label && item?.value) : [];
-  const highlights = Array.isArray(context.highlights) ? context.highlights.filter(Boolean) : [];
-  const warnings = Array.isArray(context.warnings) ? context.warnings.filter(Boolean) : [];
-  const factText = facts.length
-    ? `已知信息包括：${facts.map((item) => `${item.label} 为 ${item.value}`).join("；")}。`
-    : "当前工具已经提供了结构化结果，可以先从名称、来源和图谱/结构特征入手理解。";
-  const highlightText = highlights.length
-    ? `学习时重点看 ${highlights.slice(0, 4).join("、")}。`
-    : `学习时可以先观察${label}中的核心组成、关键位置和功能关系。`;
-  const warningText = warnings.length ? `注意：${warnings.slice(0, 2).join("；")}` : "";
-
-  if (request?.mode === "question" && question) {
-    const title = context.title || label;
-    const lower = `${question} ${title} ${highlights.join(" ")}`.toLowerCase();
-    let directAnswer = `你的问题是"${question}"。结合当前${label}结果，可以先围绕"${title}"里的已知事实来判断：${factText}${highlightText}`;
-
-    if (
-      tool === "protein" &&
-      (/ph|pH|酸性|活性/i.test(question)) &&
-      (/pepsin|胃蛋白酶|p00790|pga3/i.test(lower))
-    ) {
-      directAnswer =
-        "胃蛋白酶通常在强酸环境中活性最高，常见教学范围可记为最适 pH 约 1.5-2.5；接近中性时活性会明显下降。它属于酸性天冬氨酸蛋白酶，所以理解活性 pH 时要把胃内酸性环境、活性位点质子化状态和底物蛋白切割联系起来。";
-    } else if (/结构域|domain|活性位点|位点/i.test(question)) {
-      directAnswer = `针对"${question}"，建议先看"${title}"的结构域/功能区域与当前高亮要点。${highlightText}${factText}`;
-    } else if (/实验|设计|验证|引物|克隆|表达/i.test(question)) {
-      directAnswer = `针对实验设计问题，先把当前${label}结果转成可验证变量：对象是"${title}"，关键依据是${facts.length ? facts.map((item) => item.label).join("、") : "当前结构化结果"}。后续应优先设计对照、读出指标和风险检查，避免把工具输出直接当作实验结论。`;
-    }
-
-    return {
-      answer: `⚠️ [LLM不可用] ${warningText ? `${directAnswer}${warningText}` : directAnswer}`,
-      quickQuestions: [
-        `这个回答对应哪些证据？`,
-        `下一步应该用哪个工具验证？`,
-        `它和实验设计有什么关系？`,
-      ],
-      disclaimer: DEFAULT_DISCLAIMER,
-      source: "local_fallback",
-    };
-  }
-
+  const label = tool || "工具";
   return {
-    answer: `⚠️ [LLM不可用] 围绕"${context.title || label}"，可以先按"事实识别 → 结构/组成 → 功能机制 → 应用场景"的顺序理解。${factText}${highlightText}${warningText}`,
-    quickQuestions: [
-      `这个${label}最关键的功能是什么？`,
-      `这些结果应该按什么顺序解读？`,
-      `它和实验设计或科研问题有什么关系？`,
-    ],
+    answer: `${label} 的本地说明仅用于离线展示，不代表真实 GLM 结果。`,
+    quickQuestions: [],
     disclaimer: DEFAULT_DISCLAIMER,
     source: "local_fallback",
   };
 }
 
-export function normalizeToolAiResponse(raw, tool, request) {
-  const fallback = createHelpfulToolFallback(tool, request);
+export function normalizeToolAiResponse(raw) {
   const text = String(raw || "").trim();
-  if (!text) return fallback;
+  if (!text) {
+    throw new Error("Tool AI returned empty content");
+  }
 
   try {
     const parsed = JSON.parse(extractToolJson(text));
-    return {
-      answer: typeof parsed.answer === "string" && parsed.answer.trim() ? parsed.answer.trim() : fallback.answer,
-      quickQuestions: Array.isArray(parsed.quickQuestions)
-        ? parsed.quickQuestions.filter((q) => typeof q === "string" && q.trim()).map((q) => q.trim()).slice(0, 4)
-        : fallback.quickQuestions,
-      disclaimer: typeof parsed.disclaimer === "string" && parsed.disclaimer.trim()
+    const answer = typeof parsed.answer === "string" ? parsed.answer.trim() : "";
+    const quickQuestions = Array.isArray(parsed.quickQuestions)
+      ? parsed.quickQuestions
+          .filter((q) => typeof q === "string" && q.trim())
+          .map((q) => q.trim())
+          .slice(0, 4)
+      : [];
+    const disclaimer =
+      typeof parsed.disclaimer === "string" && parsed.disclaimer.trim()
         ? parsed.disclaimer.trim()
-        : DEFAULT_DISCLAIMER,
-      source: "deepseek",
-    };
-  } catch {
+        : DEFAULT_DISCLAIMER;
+
+    if (!answer) {
+      throw new Error("Tool AI returned incomplete JSON");
+    }
+
     return {
-      answer: text.slice(0, 1200),
-      quickQuestions: fallback.quickQuestions,
-      disclaimer: DEFAULT_DISCLAIMER,
-      source: "deepseek",
+      answer,
+      quickQuestions,
+      disclaimer,
+      source: "glm",
     };
+  } catch (error) {
+    throw error instanceof Error ? error : new Error("Tool AI returned invalid JSON");
   }
 }

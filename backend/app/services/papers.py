@@ -241,7 +241,11 @@ class PaperService:
         storage_path.write_bytes(content)
 
         extracted_text = IngestionService.extract_text_from_pdf(str(storage_path)).strip()
-        if not extracted_text or extracted_text.startswith("[PDF"):
+        if (
+            not extracted_text
+            or extracted_text.startswith("GLM file parser")
+            or extracted_text.startswith("GLM API key")
+        ):
             storage_path.unlink(missing_ok=True)
             raise RuntimeError("Failed to extract readable text from PDF")
 

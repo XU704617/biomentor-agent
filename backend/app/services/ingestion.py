@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os, re, uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -197,15 +198,20 @@ class IngestionService:
 
     @staticmethod
     def extract_text_from_pdf(file_path: str) -> str:
-        try:
-            import fitz; doc = fitz.open(file_path)
-            text = "".join(page.get_text() + "\n" for page in doc)
-            doc.close(); return text
-        except ImportError: return "[PDF解析需要 PyMuPDF]"
+        from app.services.ocr import OcrService
+
+        path = Path(file_path)
+        result = OcrService().extract(path.read_bytes(), "application/pdf", path.name)
+        return str(result.get("text", "") if result.get("success") else result.get("error", ""))
 
     @staticmethod
     def extract_text_from_docx(file_path: str) -> str:
-        try:
-            from docx import Document
-            return "\n".join(p.text for p in Document(file_path).paragraphs)
-        except ImportError: return "[DOCX解析需要 python-docx]"
+        from app.services.ocr import OcrService
+
+        path = Path(file_path)
+        result = OcrService().extract(
+            path.read_bytes(),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            path.name,
+        )
+        return str(result.get("text", "") if result.get("success") else result.get("error", ""))

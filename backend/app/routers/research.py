@@ -6,6 +6,7 @@ from app.schemas import ResearchPaperOut, ResearchPaperCreate
 from app.schemas import ResearchTaskGenerateRequest, ResearchTaskGenerateResponse
 from app.services.papers import PaperService
 from app.services.research_service import ResearchService
+from app.services.grounded_generation_service import GroundedGenerationService
 
 router = APIRouter(prefix="/api/research", tags=["research"])
 
@@ -129,11 +130,31 @@ def generate_task(data: ResearchTaskGenerateRequest, db: Session = Depends(get_d
         raise HTTPException(400, "case_key is required for case_driven mode")
     service = ResearchService(db)
     try:
-        return service.generate_task(data.topic, data.case_key, data.mode)
+        result = service.generate_task(data.topic, data.case_key, data.mode)
+        if getattr(result, "source_mode", "") == "local_fallback":
+            raise HTTPException(502, getattr(result, "debug_hint", "") or "Research task generation did not use a real AI response")
+        return result
     except ValueError as e:
         raise HTTPException(404, str(e))
-    except Exception as e:
-        raise HTTPException(500, f"Task generation failed: {e}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(502, str(exc)) from exc
+
+
+@router.post("/tutor")
+async def research_tutor(body: dict, db: Session = Depends(get_db)):
+    service = GroundedGenerationService(db)
+    try:
+        return await service.answer_tutor(
+            question=str(body.get("question") or ""),
+            case_id=body.get("case_id"),
+            case_title=body.get("case_title"),
+            selected_task=body.get("selected_task") if isinstance(body.get("selected_task"), dict) else None,
+            selected_literature=body.get("selected_literature") if isinstance(body.get("selected_literature"), list) else [],
+        )
+    except RuntimeError as exc:
+        raise HTTPException(502, str(exc)) from exc
 
 
 def _default_steps(name: str, category: str) -> list[str]:

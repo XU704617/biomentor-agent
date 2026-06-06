@@ -16,8 +16,25 @@ const refTypeStyles: Record<string, string> = {
   NCI: "bg-teal-50 text-teal-700 border-teal-200",
   Label: "bg-amber-50 text-amber-700 border-amber-200",
   Review: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  ProductPage: "bg-indigo-50 text-indigo-700 border-indigo-200",
   Other: "bg-gray-50 text-gray-600 border-gray-200",
 };
+
+const refTypeLabels: Record<string, string> = {
+  ProductPage: "产品页",
+};
+
+function hasText(value: string | undefined | null) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function hasItems(items: string[] | undefined | null) {
+  return Array.isArray(items) && items.some((item) => hasText(item));
+}
+
+function cleanItems(items: string[] | undefined | null) {
+  return (items || []).filter((item) => hasText(item));
+}
 
 export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetailModalProps) {
   const c = caseData;
@@ -28,16 +45,18 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
     coreQuestion: c.coreProblem,
     keywords: c.recommendedKeywords.slice(0, 6).join(","),
   });
-  const discussionQuestions = [
-    c.coreProblem,
-    `这个案例需要哪些证据才能支撑「${c.linkedResearchTask || "科研训练"}」？`,
-    `从${c.industryDirection || "产业应用"}走向真实场景时，最需要警惕哪些风险边界？`,
-  ].filter(Boolean);
+  const discussionQuestions = cleanItems(c.guideQuestions);
   const readingDirections = [
     c.recommendedKeywords.slice(0, 3).join(" / "),
     c.relatedKnowledgePoints.slice(0, 3).join(" / "),
     c.references[0]?.title || "",
   ].filter(Boolean);
+  const migrationPath = {
+    textbookBase: cleanItems(c.migrationPath.textbookBase),
+    researchFrontier: cleanItems(c.migrationPath.researchFrontier),
+    industryApplication: cleanItems(c.migrationPath.industryApplication),
+  };
+  const hasMigrationPath = hasItems(migrationPath.textbookBase) || hasItems(migrationPath.researchFrontier) || hasItems(migrationPath.industryApplication);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto pt-12 pb-12">
@@ -65,36 +84,43 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
 
         <div className="p-5 space-y-6">
           {/* 案例背景 */}
-          <section>
-            <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-blue-500" />
-              案例背景
-            </h3>
-            <p className="text-sm text-brand-muted font-body leading-relaxed">{c.background}</p>
-          </section>
+          {hasText(c.background) && (
+            <section>
+              <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-blue-500" />
+                案例背景
+              </h3>
+              <p className="text-sm text-brand-muted font-body leading-relaxed whitespace-pre-line">{c.background}</p>
+            </section>
+          )}
 
           {/* 科研基础 */}
-          <section>
-            <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-amber-500" />
-              科研基础
-            </h3>
-            <p className="text-sm text-brand-muted font-body leading-relaxed">{c.researchFoundation}</p>
-          </section>
+          {hasText(c.researchFoundation) && (
+            <section>
+              <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-amber-500" />
+                科研基础
+              </h3>
+              <p className="text-sm text-brand-muted font-body leading-relaxed whitespace-pre-line">{c.researchFoundation}</p>
+            </section>
+          )}
 
           {/* 核心科学问题 */}
-          <section>
-            <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
-              <Target className="w-4 h-4 text-rose-500" />
-              核心科学问题
-            </h3>
-            <p className="text-sm text-brand-muted font-body leading-relaxed">{c.coreProblem}</p>
-          </section>
+          {hasText(c.coreProblem) && (
+            <section>
+              <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
+                <Target className="w-4 h-4 text-rose-500" />
+                核心科学问题
+              </h3>
+              <p className="text-sm text-brand-muted font-body leading-relaxed whitespace-pre-line">{c.coreProblem}</p>
+            </section>
+          )}
 
           {/* 知识迁移路径 */}
+          {hasMigrationPath && (
           <section>
             <h3 className="font-display text-sm font-bold text-brand-ink mb-3 flex items-center gap-2">
-              <span className="text-lg">🔗</span>
+              <BookOpen className="w-4 h-4 text-cyan-500" />
               知识迁移路径
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -104,7 +130,7 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
                   <span className="text-xs font-bold text-blue-700">课本基础</span>
                 </div>
                 <ul className="space-y-1">
-                  {c.migrationPath.textbookBase.map((item, i) => (
+                  {migrationPath.textbookBase.map((item, i) => (
                     <li key={i} className="text-xs text-brand-muted font-body flex items-start gap-1.5">
                       <span className="w-1 h-1 rounded-full bg-blue-400 mt-1.5 shrink-0" />
                       {item}
@@ -118,7 +144,7 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
                   <span className="text-xs font-bold text-cyan-700">科研前沿</span>
                 </div>
                 <ul className="space-y-1">
-                  {c.migrationPath.researchFrontier.map((item, i) => (
+                  {migrationPath.researchFrontier.map((item, i) => (
                     <li key={i} className="text-xs text-brand-muted font-body flex items-start gap-1.5">
                       <span className="w-1 h-1 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
                       {item}
@@ -132,7 +158,7 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
                   <span className="text-xs font-bold text-amber-700">产业应用</span>
                 </div>
                 <ul className="space-y-1">
-                  {c.migrationPath.industryApplication.map((item, i) => (
+                  {migrationPath.industryApplication.map((item, i) => (
                     <li key={i} className="text-xs text-brand-muted font-body flex items-start gap-1.5">
                       <span className="w-1 h-1 rounded-full bg-amber-400 mt-1.5 shrink-0" />
                       {item}
@@ -142,65 +168,80 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
               </div>
             </div>
           </section>
+          )}
 
           {/* 应用场景 */}
-          <section>
-            <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
-              <Factory className="w-4 h-4 text-orange-500" />
-              应用场景
-            </h3>
-            <p className="text-sm text-brand-muted font-body leading-relaxed">{c.applicationScenario}</p>
-          </section>
+          {hasText(c.applicationScenario) && (
+            <section>
+              <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
+                <Factory className="w-4 h-4 text-orange-500" />
+                应用场景
+              </h3>
+              <p className="text-sm text-brand-muted font-body leading-relaxed whitespace-pre-line">{c.applicationScenario}</p>
+            </section>
+          )}
 
           {/* 应用价值 */}
-          <section>
-            <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
-              <Target className="w-4 h-4 text-rose-500" />
-              应用价值
-            </h3>
-            <p className="text-sm text-brand-muted font-body leading-relaxed">{c.applicationValue}</p>
-          </section>
+          {hasText(c.applicationValue) && (
+            <section>
+              <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
+                <Target className="w-4 h-4 text-rose-500" />
+                应用价值
+              </h3>
+              <p className="text-sm text-brand-muted font-body leading-relaxed whitespace-pre-line">{c.applicationValue}</p>
+            </section>
+          )}
 
           {/* 展示重点 */}
+          {hasText(c.displayFocus) && (
           <section>
             <div className="rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50/50 p-4">
               <h3 className="font-display text-xs font-bold text-brand-ink mb-1.5 uppercase tracking-wider">推荐展示重点</h3>
               <p className="text-sm text-brand-muted font-body">{c.displayFocus}</p>
             </div>
           </section>
+          )}
 
           {/* 标签区：知识点 + 能力 + 关键词 */}
           <section className="space-y-4">
+            {hasItems(c.relatedKnowledgePoints) && (
             <div>
               <h3 className="font-display text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">相关知识点</h3>
               <div className="flex flex-wrap gap-1.5">
-                {c.relatedKnowledgePoints.map((kp, i) => (
+                {cleanItems(c.relatedKnowledgePoints).map((kp, i) => (
                   <span key={i} className="badge badge-cyan text-[11px]">{kp}</span>
                 ))}
               </div>
             </div>
+            )}
+            {hasItems(c.requiredAbilities) && (
             <div>
               <h3 className="font-display text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">适合训练能力</h3>
               <div className="flex flex-wrap gap-1.5">
-                {c.requiredAbilities.map((ab, i) => (
+                {cleanItems(c.requiredAbilities).map((ab, i) => (
                   <span key={i} className="badge badge-amber text-[11px]">{ab}</span>
                 ))}
               </div>
             </div>
+            )}
+            {hasItems(c.recommendedKeywords) && (
             <div>
               <h3 className="font-display text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">推荐检索关键词</h3>
               <div className="flex flex-wrap gap-1.5">
-                {c.recommendedKeywords.map((kw, i) => (
+                {cleanItems(c.recommendedKeywords).map((kw, i) => (
                   <code key={i} className="text-[10px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
                     {kw}
                   </code>
                 ))}
               </div>
             </div>
+            )}
           </section>
 
           {/* 讨论与阅读 */}
+          {(discussionQuestions.length > 0 || readingDirections.length > 0) && (
           <section className="grid gap-3 md:grid-cols-2">
+            {discussionQuestions.length > 0 && (
             <div className="rounded-xl bg-white/60 border border-black/5 p-4">
               <h3 className="font-display text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">可讨论问题</h3>
               <ul className="space-y-1.5">
@@ -212,6 +253,8 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
                 ))}
               </ul>
             </div>
+            )}
+            {readingDirections.length > 0 && (
             <div className="rounded-xl bg-white/60 border border-black/5 p-4">
               <h3 className="font-display text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">推荐阅读方向</h3>
               <ul className="space-y-1.5">
@@ -223,9 +266,21 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
                 ))}
               </ul>
             </div>
+            )}
           </section>
+          )}
+
+          {hasText(c.notes) && (
+            <section>
+              <div className="rounded-xl bg-slate-50/70 border border-slate-200/70 p-4">
+                <h3 className="font-display text-xs font-bold text-brand-ink mb-1.5 uppercase tracking-wider">备注</h3>
+                <p className="text-xs text-brand-muted font-body leading-relaxed whitespace-pre-line">{c.notes}</p>
+              </div>
+            </section>
+          )}
 
           {/* 可关联训练任务 */}
+          {hasText(c.linkedResearchTask) && (
           <section className="border-t border-black/5 pt-5">
             <h3 className="font-display text-sm font-bold text-brand-ink mb-2 flex items-center gap-2">
               <Search className="w-4 h-4 text-blue-500" />
@@ -245,8 +300,10 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
               </Link>
             </div>
           </section>
+          )}
 
           {/* 参考来源 */}
+          {c.references.length > 0 && (
           <section className="border-t border-black/5 pt-5">
             <h3 className="font-display text-sm font-bold text-brand-ink mb-3 flex items-center gap-2">
               <ExternalLink className="w-4 h-4 text-brand-faint" />
@@ -262,7 +319,7 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[0.02] transition-colors group"
                 >
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase ${refTypeStyles[ref.type] || refTypeStyles.Other}`}>
-                    {ref.type}
+                    {refTypeLabels[ref.type] || ref.type}
                   </span>
                   <span className="text-xs text-brand-muted font-body group-hover:text-blue-600 transition-colors flex-1 leading-snug">
                     {ref.title}
@@ -272,6 +329,7 @@ export function IndustryCaseDetailModal({ caseData, onClose }: IndustryCaseDetai
               ))}
             </div>
           </section>
+          )}
         </div>
       </div>
     </div>

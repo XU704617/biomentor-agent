@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { isQuizAnswerCorrect } from "@/lib/quiz-answer";
+
 interface Question {
   id: number;
   type: "choice" | "judge" | "fill";
@@ -120,26 +122,13 @@ export default function QuizPage() {
   };
 
   if (showResult) {
-    const correctCount = questions.filter((q) => {
-      if (!q.userAnswer || !q.correctAnswer) return false;
-      const userAnswer = String(q.userAnswer).trim().toUpperCase();
-      const correctAnswer = String(q.correctAnswer).trim().toUpperCase();
-      return userAnswer === correctAnswer || 
-             userAnswer.startsWith(correctAnswer.charAt(0)) || 
-             correctAnswer.startsWith(userAnswer.charAt(0));
-    }).length;
+    const correctCount = questions.filter((q) => isQuizAnswerCorrect(q)).length;
     const score = Math.round((correctCount / questions.length) * 100);
 
     const resultData = {
       questions: questions.map(q => ({
         ...q,
-        isCorrect: !q.userAnswer ? false : (() => {
-          const userAnswer = String(q.userAnswer).trim().toUpperCase();
-          const correctAnswer = String(q.correctAnswer).trim().toUpperCase();
-          return userAnswer === correctAnswer || 
-                 userAnswer.startsWith(correctAnswer.charAt(0)) || 
-                 correctAnswer.startsWith(userAnswer.charAt(0));
-        })()
+        isCorrect: isQuizAnswerCorrect(q)
       })),
       correctCount,
       score,
@@ -150,14 +139,7 @@ export default function QuizPage() {
     localStorage.setItem("quizResult", JSON.stringify(resultData));
 
     const existingWrongQuestions = JSON.parse(localStorage.getItem("wrongQuestions") || "[]");
-    const newWrongQuestions = questions.filter(q => {
-      if (!q.userAnswer) return false;
-      const userAnswer = String(q.userAnswer).trim().toUpperCase();
-      const correctAnswer = String(q.correctAnswer).trim().toUpperCase();
-      return !(userAnswer === correctAnswer || 
-               userAnswer.startsWith(correctAnswer.charAt(0)) || 
-               correctAnswer.startsWith(userAnswer.charAt(0)));
-    });
+    const newWrongQuestions = questions.filter((q) => q.userAnswer && !isQuizAnswerCorrect(q));
 
     const mergedWrongQuestions = [...existingWrongQuestions, ...newWrongQuestions];
     const uniqueWrongQuestions = mergedWrongQuestions.filter((q, index, self) => 
@@ -195,18 +177,20 @@ export default function QuizPage() {
               答题详情
             </h3>
             <div className="space-y-6">
-              {questions.map((q, index) => (
+              {questions.map((q, index) => {
+                const isCorrect = isQuizAnswerCorrect(q);
+                return (
                 <div
                   key={q.id}
                   className={`rounded-xl p-5 border transition-all ${
-                    q.userAnswer === q.correctAnswer
+                    isCorrect
                       ? "bg-accent-cyan/5 border-accent-cyan/20"
                       : "bg-accent-rose/5 border-accent-rose/20"
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${
-                      q.userAnswer === q.correctAnswer ? "bg-accent-cyan text-white" : "bg-accent-rose text-white"
+                      isCorrect ? "bg-accent-cyan text-white" : "bg-accent-rose text-white"
                     }`}>
                       {index + 1}
                     </span>
@@ -214,7 +198,7 @@ export default function QuizPage() {
                       {getQuestionIcon(q.type)}
                       {getQuestionTypeName(q.type)}
                     </span>
-                    {q.userAnswer === q.correctAnswer ? (
+                    {isCorrect ? (
                       <CheckCircle className="w-4 h-4 text-accent-cyan ml-auto" />
                     ) : (
                       <XCircle className="w-4 h-4 text-accent-rose ml-auto" />
@@ -222,7 +206,7 @@ export default function QuizPage() {
                   </div>
                   <p className="text-sm font-body text-brand-ink mb-3">{q.question}</p>
                   <div className="space-y-2 text-sm">
-                    {q.userAnswer !== q.correctAnswer && (
+                    {!isCorrect && (
                       <>
                         <p className="flex items-center gap-2">
                           <span className="text-brand-muted">你的答案：</span>
@@ -244,7 +228,8 @@ export default function QuizPage() {
                     </p>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

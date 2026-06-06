@@ -15,7 +15,6 @@ import {
 import { IndustryCaseCard } from "@/components/IndustryCaseCard";
 import { IndustryCaseDetailModal } from "@/components/IndustryCaseDetailModal";
 import { IndustryAskPanel } from "@/components/IndustryAskPanel";
-import { industryCases as localCases } from "@/data/industryCases";
 import { getIndustryAnswer, convertApiCaseToFrontend } from "@/lib/industryApi";
 import type { IndustryCase } from "@/data/industryCases";
 import type { ApiIndustryCase } from "@/lib/industryApi";
@@ -47,14 +46,14 @@ export default function CasesPage() {
           }
         }
         if (!cancelled) {
-          setAllCases(localCases);
+          setAllCases([]);
           setApiFailed(true);
           setDisplayLimit(24);
           setLoading(false);
         }
       } catch {
         if (!cancelled) {
-          setAllCases(localCases);
+          setAllCases([]);
           setApiFailed(true);
           setDisplayLimit(24);
           setLoading(false);
@@ -118,6 +117,19 @@ export default function CasesPage() {
   const hasMore = !isSearching && displayLimit < sortedCases.length;
 
   const recommendedCaseIds = ["case-004", "case-002", "case-005", "case-001", "case-003"];
+
+  const categoryStats = useMemo(() => {
+    return categories.map((cat) => {
+      const items = allCases.filter((c) => c.category === cat);
+      const abilities = Array.from(new Set(items.flatMap((c) => c.requiredAbilities || []))).slice(0, 3);
+      return {
+        category: cat,
+        count: items.length,
+        representatives: items.slice(0, 3).map((item) => item.title),
+        abilities,
+      };
+    });
+  }, [allCases, categories]);
 
   useEffect(() => {
     if (searchQuery.trim() !== "" || selectedCategory !== "") {
@@ -238,13 +250,6 @@ export default function CasesPage() {
                 精选案例优先展示，可通过搜索和筛选查看完整案例库。
               </p>
 
-              <div className="rounded-xl bg-gradient-to-r from-amber-50/60 to-orange-50/40 border border-amber-200/40 p-4 mb-5">
-                <p className="text-xs text-amber-800 font-body mb-1">
-                  <span className="font-semibold">优先体验推荐</span>
-                  <span className="text-amber-700/80 ml-1">带「优先体验」标签的案例为推荐演示案例，覆盖 mRNA 疫苗、CAR-T、CRISPR、细胞凋亡、PD-1 等核心技术，文献丰富度高，演示效果稳定。</span>
-                </p>
-              </div>
-
               <div className="flex items-center justify-between mb-5">
                 <p className="text-xs text-brand-faint font-body">
                   共 <span className="font-semibold text-brand-ink">{sortedCases.length}</span> 个产业案例{selectedCategory && ` · ${selectedCategory}`}{searchQuery && ` · 搜索"${searchQuery}"`}{!isSearching && displayedCases.length < sortedCases.length && ` · 显示 ${displayedCases.length} 个精选`}
@@ -335,26 +340,42 @@ export default function CasesPage() {
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {categories.map((cat) => {
-                const count = allCases.filter((c) => c.category === cat).length;
+              {categoryStats.map((stat) => {
                 return (
                   <button
-                    key={cat}
+                    key={stat.category}
                     onClick={() => {
-                      setSelectedCategory(selectedCategory === cat ? "" : cat);
+                      setSelectedCategory(selectedCategory === stat.category ? "" : stat.category);
                       scrollToSection("cases-section");
                     }}
-                    className={`glass-card rounded-xl p-5 text-center cursor-pointer transition-all hover:shadow-md ${
-                      selectedCategory === cat ? "ring-2 ring-blue-400/30" : ""
+                    className={`glass-card rounded-xl p-5 text-left cursor-pointer transition-all hover:shadow-md ${
+                      selectedCategory === stat.category ? "ring-2 ring-blue-400/30" : ""
                     }`}
                   >
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/8 flex items-center justify-center mx-auto mb-3">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/8 flex items-center justify-center mb-3">
                       <Building2 className="w-5 h-5 text-blue-600" />
                     </div>
-                    <h4 className="font-display text-sm font-bold text-brand-ink mb-1.5">{cat}</h4>
-                    <p className="text-[10px] text-brand-faint font-body leading-relaxed">
-                      {count} 个案例
+                    <h4 className="font-display text-sm font-bold text-brand-ink mb-1.5">{stat.category}</h4>
+                    <p className="text-[10px] text-brand-faint font-body leading-relaxed mb-2">
+                      {stat.count} 个案例
                     </p>
+                    {stat.representatives.length > 0 && (
+                      <div className="space-y-1 mb-2">
+                        {stat.representatives.map((title) => (
+                          <p key={title} className="text-[10px] text-brand-muted line-clamp-1">· {title}</p>
+                        ))}
+                      </div>
+                    )}
+                    {stat.abilities.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {stat.abilities.map((ability) => (
+                          <span key={ability} className="text-[9px] rounded-full bg-blue-50 text-blue-700 px-1.5 py-0.5">
+                            {ability}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <span className="text-[10px] font-semibold text-accent-electric">查看该方向案例</span>
                   </button>
                 );
               })}
