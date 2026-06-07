@@ -160,6 +160,178 @@ PHOTO_ANALYSIS_USER = """请分析以下PDF学习材料，文件名为：{fileNa
 请按照指定的JSON格式返回分析结果。"""
 
 PHOTO_ANALYSIS_SCHEMA = {
+    "type": "object","""
+Prompt registry for BioMentor Agent.
+
+This file keeps the production prompts readable and UTF-8 clean so the
+backend does not feed mojibake into GLM.
+"""
+
+# Question generation
+
+QUESTION_GENERATION_SYSTEM = """你是一名生命科学教育出题助手。
+
+请基于给定知识点和参考材料生成高质量中文题目。
+要求：
+1. 题目必须严格依据材料，不要编造材料中没有的事实。
+2. 选择题必须提供 4 个选项，且只有 1 个最优答案。
+3. 判断题必须明确给出"正确"或"错误"答案。
+4. 填空题需要在题目中用下划线"___"标出空缺位置。
+5. 每道题都必须给出准确答案和清晰解析。
+6. 输出必须是一个合法 JSON 对象，不要输出 Markdown。
+7. 必须覆盖所有提供的知识点，确保每个知识点至少被一道题目考察。"""
+
+QUESTION_GENERATION_USER = """请根据以下信息生成 10 道题目。
+
+知识点：{knowledge_points}
+参考材料：{evidence}
+题型：选择题、判断题、填空题
+难度：{difficulty}
+
+题目分布要求：
+- 6道选择题（choice）
+- 2道判断题（truefalse）
+- 2道填空题（short_answer）
+
+确保所有知识点都被考察到。
+
+返回 JSON，字段为：
+- questions: 数组
+- 每道题包含 type, stem, options, answer, explanation, bloom_level, difficulty, knowledge_points, rubric"""
+
+QUESTION_GENERATION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "questions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": ["choice", "truefalse", "short_answer"],
+                    },
+                    "stem": {"type": "string"},
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "label": {"type": "string"},
+                                "text": {"type": "string"},
+                            },
+                            "required": ["label", "text"],
+                            "additionalProperties": False,
+                        },
+                    },
+                    "answer": {"type": "string"},
+                    "explanation": {"type": "string"},
+                    "bloom_level": {
+                        "type": "string",
+                        "enum": ["remember", "understand", "apply", "analyze", "evaluate", "create"],
+                    },
+                    "difficulty": {"type": "string", "enum": ["easy", "medium", "hard"]},
+                    "knowledge_points": {"type": "array", "items": {"type": "string"}},
+                    "rubric": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "dimension": {"type": "string"},
+                                "max_score": {"type": "number"},
+                                "description": {"type": "string"},
+                            },
+                            "required": ["dimension", "max_score", "description"],
+                            "additionalProperties": False,
+                        },
+                    },
+                },
+                "required": ["type", "stem", "answer", "explanation", "difficulty"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["questions"],
+    "additionalProperties": False,
+}
+
+# Grading
+
+GRADING_SYSTEM = """你是一名生命科学课程评分助手。
+请严格按照评分标准评分，给出分项得分、总分、缺失点和反馈。
+输出必须是合法 JSON，不要输出 Markdown。"""
+
+GRADING_USER = """题目：{question_stem}
+参考答案：{reference_answer}
+评分标准：{rubric}
+学生答案：{student_answer}
+
+请返回结构化评分结果。"""
+
+GRADING_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "score_breakdown": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "dimension": {"type": "string"},
+                    "score": {"type": "number"},
+                    "max_score": {"type": "number"},
+                    "comment": {"type": "string"},
+                },
+                "required": ["dimension", "score", "max_score", "comment"],
+                "additionalProperties": False,
+            },
+        },
+        "total_score": {"type": "number"},
+        "max_score": {"type": "number"},
+        "missing_points": {"type": "array", "items": {"type": "string"}},
+        "feedback": {"type": "string"},
+        "confidence": {"type": "number"},
+        "needs_review": {"type": "boolean"},
+    },
+    "required": ["score_breakdown", "total_score", "max_score", "feedback", "confidence", "needs_review"],
+    "additionalProperties": False,
+}
+
+# RAG answer synthesis
+
+RAG_SYNTHESIS_SYSTEM = """你是一名生命科学学习助手。
+请只基于提供的参考材料回答，不要编造来源。
+如果材料不足以支持结论，请明确说明证据不足。"""
+
+RAG_SYNTHESIS_USER = """学生问题：{query}
+
+参考材料：
+{context}
+
+请基于这些材料回答学生问题。"""
+
+# Photo learning / material analysis
+
+PHOTO_ANALYSIS_SYSTEM = """你是一位专业的{subject}大学课程导师，擅长深入分析专业教材内容，提取核心知识点，提供专业学习建议。请使用专业、严谨的学术语言。
+
+返回格式要求：
+1. 必须返回一个合法的JSON对象
+2. 不要输出markdown格式
+3. 所有内容基于上传的材料
+
+JSON字段说明：
+- knowledge_points: 从内容中提炼5-10个独立的核心知识点数组，每个知识点包含name（名称）和description（详细解释，50-150字）
+- keywords: 提取内容中最关键的8-12个专业术语和核心概念，用数组形式返回
+- learning_suggestions: 3-4条学习建议数组，每条建议包含error_point（错误知识点）、error_reason（错误原因分析）、training_method（针对性训练方法）
+- questions: 10道题目（6道选择题、2道判断题、2道简答题），每道题包含type（题型）、stem（题目内容）、options（选项，仅选择题需要）、answer（答案）、explanation（解析）"""
+
+PHOTO_ANALYSIS_USER = """请分析以下PDF学习材料，文件名为：{fileName}。
+
+材料内容：
+{pdfText}
+
+请按照指定的JSON格式返回分析结果。"""
+
+PHOTO_ANALYSIS_SCHEMA = {
     "type": "object",
     "properties": {
         "knowledge_points": {
