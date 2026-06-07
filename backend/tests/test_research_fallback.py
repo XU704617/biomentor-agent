@@ -68,6 +68,23 @@ def test_generate_task_returns_four_tasks_when_llm_unavailable():
     _assert_stable_fallback_response(data)
 
 
+def test_generate_task_request_accepts_topic_only():
+    data = ResearchTaskGenerateRequest(topic="mRNA 疫苗为什么需要 LNP？", case_key=None, mode="independent")
+
+    assert data.topic == "mRNA 疫苗为什么需要 LNP？"
+
+
+def test_generate_task_request_fills_topic_from_case_title_or_core_question():
+    from_title = ResearchTaskGenerateRequest(case_key="case-036", case_title="UPSIDE Foods 培养细胞食品")
+    from_core = ResearchTaskGenerateRequest(
+        case_key="case-036",
+        core_question="如何评价由培养动物细胞制成食品原料的生产过程、安全性和产业化边界？",
+    )
+
+    assert from_title.topic == "UPSIDE Foods 培养细胞食品"
+    assert from_core.topic == "如何评价由培养动物细胞制成食品原料的生产过程、安全性和产业化边界？"
+
+
 def test_generate_task_returns_four_tasks_when_deepseek_balance_error():
     with patch("app.services.research_service.get_llm", return_value=FakeFailingLLM("402 Insufficient Balance")):
         data = _post_generate_task()

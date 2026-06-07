@@ -4,7 +4,7 @@ import enum
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -789,9 +789,27 @@ class TaskItem(BaseModel):
 
 
 class ResearchTaskGenerateRequest(BaseModel):
-    topic: str
+    topic: str = ""
     case_key: str | None = None
+    case_title: str | None = None
+    core_question: str | None = None
     mode: str = "independent"
+
+    @model_validator(mode="before")
+    @classmethod
+    def fill_topic_from_case_fields(cls, data: Any):
+        if not isinstance(data, dict):
+            return data
+        topic = data.get("topic")
+        if isinstance(topic, str) and topic.strip():
+            data["topic"] = topic.strip()
+            return data
+        for key in ("case_title", "caseTitle", "core_question", "coreQuestion", "query"):
+            value = data.get(key)
+            if isinstance(value, str) and value.strip():
+                data["topic"] = value.strip()
+                break
+        return data
 
 
 class ResearchTaskGenerateResponse(BaseModel):

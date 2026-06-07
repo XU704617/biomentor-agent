@@ -9,16 +9,30 @@ const FASTAPI_BACKEND =
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => null);
-    if (!body || typeof body.topic !== "string") {
+    const topicCandidate = [
+      body?.topic,
+      body?.case_title,
+      body?.caseTitle,
+      body?.core_question,
+      body?.coreQuestion,
+      body?.query,
+    ].find((value) => typeof value === "string" && value.trim().length > 0);
+
+    if (!body || typeof topicCandidate !== "string") {
       return NextResponse.json({ error: "缺少 topic 参数" }, { status: 400 });
     }
 
-    const topic = body.topic.trim();
+    const topic = topicCandidate.trim();
     if (!topic) {
       return NextResponse.json({ error: "topic 不能为空" }, { status: 400 });
     }
-    const mode = body.mode === "case_driven" ? "case_driven" : "independent";
-    const caseKey = typeof body.case_key === "string" && body.case_key.trim() ? body.case_key.trim() : null;
+    const caseKey =
+      typeof body.case_key === "string" && body.case_key.trim()
+        ? body.case_key.trim()
+        : typeof body.caseId === "string" && body.caseId.trim()
+        ? body.caseId.trim()
+        : null;
+    const mode = body.mode === "case_driven" || caseKey ? "case_driven" : "independent";
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
@@ -30,6 +44,8 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           topic,
           case_key: caseKey,
+          case_title: typeof body.case_title === "string" ? body.case_title : typeof body.caseTitle === "string" ? body.caseTitle : undefined,
+          core_question: typeof body.core_question === "string" ? body.core_question : typeof body.coreQuestion === "string" ? body.coreQuestion : undefined,
           mode,
         }),
         signal: controller.signal,

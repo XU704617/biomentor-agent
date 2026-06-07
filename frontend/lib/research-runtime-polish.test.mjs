@@ -51,6 +51,24 @@ test("local fallback tasks are tailored to case 004, 035 and 036", () => {
   assert.match(api, /模型置信度与结构功能关系分析/);
 });
 
+test("generate-task route fills topic from case fields before forwarding", () => {
+  const route = readFrontend("app/api/research/generate-task/route.ts");
+  const api = readFrontend("lib/researchApi.ts");
+
+  assert.match(route, /topicCandidate/);
+  assert.match(route, /body\?\.case_title/);
+  assert.match(route, /body\?\.core_question/);
+  assert.match(route, /body\?\.caseTitle/);
+  assert.match(route, /body\?\.coreQuestion/);
+  assert.match(route, /case_title:/);
+  assert.match(route, /core_question:/);
+  assert.doesNotMatch(route, /typeof body\.topic !== "string"/);
+
+  assert.match(api, /resolveResearchTopic/);
+  assert.match(api, /params\.case_title/);
+  assert.match(api, /params\.core_question/);
+});
+
 test("evidence panel shows grouped literature counts and external expansion", () => {
   const panel = readFrontend("components/EvidenceLinkPanel.tsx");
 

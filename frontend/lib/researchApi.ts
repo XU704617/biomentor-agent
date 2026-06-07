@@ -49,8 +49,13 @@ export interface ResearchTaskGenerateResponse {
 }
 
 export interface ResearchTaskGenerateRequest {
-  topic: string;
+  topic?: string;
   case_key: string | null;
+  case_title?: string;
+  caseTitle?: string;
+  core_question?: string;
+  coreQuestion?: string;
+  query?: string;
   mode: "independent" | "case_driven";
 }
 
@@ -354,19 +359,37 @@ export function generateLocalResearchTask(
   };
 }
 
+function resolveResearchTopic(params: ResearchTaskGenerateRequest): string {
+  return [
+    params.topic,
+    params.case_title,
+    params.caseTitle,
+    params.core_question,
+    params.coreQuestion,
+    params.query,
+  ].find((value) => typeof value === "string" && value.trim().length > 0)?.trim() || "";
+}
+
 export async function generateResearchTask(params: ResearchTaskGenerateRequest): Promise<ResearchTaskGenerateResponse> {
+  const topic = resolveResearchTopic(params);
+  const mode = params.mode === "case_driven" || params.case_key ? "case_driven" : "independent";
+  const body = {
+    ...params,
+    topic,
+    mode,
+  };
   try {
     const data = await apiFetch<ResearchTaskGenerateResponse>("/api/research/generate-task", {
       method: "POST",
-      body: JSON.stringify(params),
+      body: JSON.stringify(body),
     });
     if (data) {
       return data;
     }
   } catch {
-    return generateLocalResearchTask(params.topic, params.case_key, params.mode);
+    return generateLocalResearchTask(topic, params.case_key, mode);
   }
-  return generateLocalResearchTask(params.topic, params.case_key, params.mode);
+  return generateLocalResearchTask(topic, params.case_key, mode);
 }
 
 export interface ResearchTutorResponse {
