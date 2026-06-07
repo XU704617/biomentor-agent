@@ -28,7 +28,7 @@ export function buildKnowledgePromptMessages(context) {
     {
       role: "system",
       content: [
-        `你是 BioMentor Agent 的${modeName}。`,
+        `你是 BioMentor Agent 的${modeName}，也是科研助手。`,
         modeGuidance,
         "只能基于用户传入的 currentContext 和 history 回答。",
         "如果上下文里没有给出年份、作者、机构、实验结论或应用细节，就明确说当前材料未提供，不要自行补充。",
@@ -51,6 +51,7 @@ export function buildKnowledgePromptMessages(context) {
           },
           latestUserQuestion,
           history: (context.history || []).slice(-8),
+          responseType: "JSON",
           outputFormat: {
             title: "简短标题",
             answer: "180-320 字中文解释",
@@ -71,7 +72,7 @@ export function buildKnowledgePromptMessages(context) {
   ];
 }
 
-export function normalizeKnowledgeAiResponse(raw) {
+export function normalizeKnowledgeAiResponse(raw, context = {}) {
   const parsed = safeParseJson(raw);
   if (!parsed || typeof parsed !== "object") {
     throw new Error("Knowledge AI returned invalid JSON");
@@ -79,10 +80,19 @@ export function normalizeKnowledgeAiResponse(raw) {
 
   const title = cleanString(parsed.title);
   const answer = cleanString(parsed.answer);
-  const keyPoints = normalizeStringArray(parsed.keyPoints);
-  const nextSteps = normalizeStringArray(parsed.nextSteps);
-  const suggestedQuestions = normalizeStringArray(parsed.suggestedQuestions);
-  const moduleLinks = normalizeLinks(parsed.moduleLinks);
+  const keyPoints = withFallbackList(normalizeStringArray(parsed.keyPoints), normalizeStringArray(context?.node?.keyPoints), [
+    "梳理核心概念",
+    "连接相关实验或工具",
+  ]);
+  const nextSteps = withFallbackList(normalizeStringArray(parsed.nextSteps), [
+    `继续阅读${context?.node?.name || "当前节点"}的相关资料`,
+    "整理一个可检验的问题",
+    "记录证据边界",
+  ]);
+  const suggestedQuestions = withFallbackList(normalizeStringArray(parsed.suggestedQuestions), defaultQuestions);
+  const moduleLinks = normalizeLinks(parsed.moduleLinks).length
+    ? normalizeLinks(parsed.moduleLinks)
+    : normalizeLinks(context?.node?.moduleLinks);
 
   if (!title || !answer) {
     throw new Error("Knowledge AI returned incomplete content");
@@ -146,6 +156,13 @@ function normalizeStringArray(value) {
     .map((item) => cleanString(item))
     .filter(Boolean)
     .slice(0, 6);
+}
+
+function withFallbackList(primary, ...fallbacks) {
+  for (const list of [primary, ...fallbacks]) {
+    if (Array.isArray(list) && list.length > 0) return list;
+  }
+  return [];
 }
 
 function normalizeLinks(value) {

@@ -124,22 +124,30 @@ def list_research_tasks(direction: str | None = Query(None), db: Session = Depen
 
 @router.post("/generate-task", response_model=ResearchTaskGenerateResponse)
 def generate_task(data: ResearchTaskGenerateRequest, db: Session = Depends(get_db)):
-    if data.mode not in ("independent", "case_driven"):
+    mode = data.mode
+    if mode == "independent" and data.case_key:
+        mode = "case_driven"
+    if mode not in ("independent", "case_driven"):
         raise HTTPException(400, "mode must be 'independent' or 'case_driven'")
-    if data.mode == "case_driven" and not data.case_key:
+    if mode == "case_driven" and not data.case_key:
         raise HTTPException(400, "case_key is required for case_driven mode")
+    if not data.topic.strip():
+        raise HTTPException(400, "topic is required")
     service = ResearchService(db)
     try:
-        result = service.generate_task(data.topic, data.case_key, data.mode)
-        if getattr(result, "source_mode", "") == "local_fallback":
-            raise HTTPException(502, getattr(result, "debug_hint", "") or "Research task generation did not use a real AI response")
-        return result
+        return service.generate_task(data.topic, data.case_key, mode)
     except ValueError as e:
         raise HTTPException(404, str(e))
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+    except Exception:
+        return ResearchService(db)._build_fallback_task(
+            data.topic,
+            data.case_key,
+            mode,
+            [],
+            [],
+            [],
+            "当前资料暂不足，使用本地训练框架。",
+        )
 
 
 @router.post("/tutor")

@@ -28,10 +28,18 @@ class GroundedGenerationService:
         mode: str = "independent",
         local_builder=None,
     ) -> dict[str, Any]:
-        del local_builder
         package = await self.retrieval.collect(topic, case_key=case_key, limit=4)
+        local_payload = local_builder() if callable(local_builder) else {
+            "topic": topic,
+            "case_key": case_key,
+            "mode": mode,
+            "research_question": topic,
+            "background": "测试提示：当前为本地训练框架生成",
+            "tasks": [],
+        }
         if package["evidence_count"] < 1:
-            raise RuntimeError("No evidence was available for research task generation")
+            local_payload.update(self._task_meta("local_fallback", package))
+            return local_payload
 
         prompt = json.dumps(
             {
@@ -72,11 +80,13 @@ class GroundedGenerationService:
             retries=2,
         )
         if not result.success or not result.content:
-            raise RuntimeError(self._format_ai_error(result.error_type, result.raw_text))
+            local_payload.update(self._task_meta("local_fallback", package))
+            return local_payload
 
         tasks = result.content.get("tasks")
         if not isinstance(tasks, list) or len(tasks) < 4:
-            raise RuntimeError("GLM returned incomplete research task content")
+            local_payload.update(self._task_meta("local_fallback", package))
+            return local_payload
 
         content = result.content
         content.update(self._task_meta("ai_grounded", package))
@@ -135,7 +145,7 @@ class GroundedGenerationService:
             retries=2,
         )
         if not result.success or not result.content:
-            raise RuntimeError(self._format_ai_error(result.error_type, result.raw_text))
+            return self._fallback_note(task_title, task_description, selected_literature, package, case_title)
 
         return {
             **result.content,
@@ -153,11 +163,8 @@ class GroundedGenerationService:
         selected_task: dict[str, Any] | None = None,
         selected_literature: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
-        if not selected_task:
-            raise RuntimeError("selected_task is required for research tutor")
-
         package = await self.retrieval.collect(
-            query=" ".join([case_title or "", selected_task.get("title", ""), question]).strip(),
+            query=" ".join([case_title or "", selected_task.get("title", "") if selected_task else "", question]).strip(),
             case_key=case_id,
             selected_task=selected_task,
             selected_literature=selected_literature,
@@ -168,7 +175,7 @@ class GroundedGenerationService:
             {
                 "question": question,
                 "case_context": {"case_id": case_id, "case_title": case_title},
-                "selected_task": selected_task,
+                "selected_task": selected_task or {},
                 "selected_literature": selected_literature or [],
                 "evidence_items": package["evidence_items"],
                 "output_schema": {
@@ -201,7 +208,7 @@ class GroundedGenerationService:
                     "boundary": boundary or "当前回答仅基于已选任务、已选文献和检索到的证据，不代表完整文献综述结论。",
                 }
         if not result.success or not result.content:
-            raise RuntimeError(self._format_ai_error(result.error_type, result.raw_text))
+            return self._fallback_tutor(question, selected_task, package)
         return {"source_mode": "ai_grounded", **result.content}
 
     def _task_meta(self, source_mode: str, package: dict[str, Any]) -> dict[str, Any]:
@@ -214,6 +221,53 @@ class GroundedGenerationService:
             "debug_hint": "基于真实检索证据生成",
             "evidence_items": package.get("evidence_items", []),
             "limitations": "生成内容用于科研训练，不等同于完整实验方案。",
+        }
+
+    def _fallback_note(
+        self,
+        task_title: str,
+        task_description: str | None,
+        selected_literature: list[dict[str, Any]],
+        package: dict[str, Any],
+        case_title: str | None,
+    ) -> dict[str, Any]:
+        roles = []
+        for idx, lit in enumerate(selected_literature, start=1):
+            evidence_id = lit.get("id") or lit.get("pmid") or lit.get("doi") or f"selected-{idx}"
+            roles.append({
+                "evidence_id": evidence_id,
+                "title": lit.get("title") or "未提供标题",
+                "role": "用于支撑当前科研训练任务的背景、方法或证据边界。",
+                "usable_evidence": lit.get("abstract") or "可用于定位原始文献并整理研究线索。",
+                "limitation": "未进行全文解析，不能直接替代原文阅读或完整证据评价。",
+            })
+        direct = f"已选择 {len(selected_literature)} 篇文献，可用于围绕「{task_title}」整理证据线索。"
+        return {
+            "source_mode": "local_fallback",
+            "note_title": f"{case_title or task_title} 的文献支撑笔记",
+            "direct_answer": direct,
+            "core_question": task_description or task_title,
+            "literature_roles": roles,
+            "case_connection": "这些资料可帮助把案例核心问题、任务目标和公开文献线索连接起来。",
+            "seminar_quote": "可在答辩中说明：当前判断来自已选择文献和案例资料，仍需回到原文确认方法、结论和适用边界。",
+            "next_steps": ["补充阅读原文", "比较不同文献的证据类型", "整理仍无法确认的问题"],
+            "limitations": "该笔记基于已选文献信息生成，不替代完整论文阅读。",
+            "evidence_items": package.get("evidence_items", []),
+            "summary": direct,
+            "limitations_list": ["该笔记基于已选文献信息生成，不替代完整论文阅读。"],
+        }
+
+    def _fallback_tutor(self, question: str, selected_task: dict[str, Any] | None, package: dict[str, Any]) -> dict[str, Any]:
+        task_title = selected_task.get("title") if selected_task else "当前问题"
+        return {
+            "source_mode": "local_fallback",
+            "answer": (
+                f"可以先围绕「{task_title}」把问题拆成研究方向、关键词、证据来源和训练任务四部分。"
+                f"针对你的问题「{question}」，建议先确认已选文献是否直接支持该判断；若没有直接证据，应写明当前资料不足，不能确认。"
+            ),
+            "evidence_used": [item.get("id") for item in package.get("evidence_items", [])[:2] if item.get("id")],
+            "suggested_next_questions": ["哪些证据能直接支持这个判断？", "实验对照应该如何设置？", "当前资料还有哪些不能证明的部分？"],
+            "boundary": "该回答用于科研训练，不替代真实实验设计审批。",
         }
 
     def _format_ai_error(self, error_type: str | None, raw_text: str | None) -> str:

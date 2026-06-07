@@ -49,8 +49,13 @@ export interface ResearchTaskGenerateResponse {
 }
 
 export interface ResearchTaskGenerateRequest {
-  topic: string;
+  topic?: string;
   case_key: string | null;
+  case_title?: string;
+  caseTitle?: string;
+  core_question?: string;
+  coreQuestion?: string;
+  query?: string;
   mode: "independent" | "case_driven";
 }
 
@@ -84,6 +89,72 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
+function buildCaseTaskCopy(topic: string, caseDetail: (typeof industryCases)[number] | undefined) {
+  const searchable = [
+    topic,
+    caseDetail?.id,
+    caseDetail?.title,
+    caseDetail?.subtitle,
+    caseDetail?.coreProblem,
+    caseDetail?.industryDirection,
+    caseDetail?.realProductOrTechnology,
+    ...(caseDetail?.relatedKnowledgePoints || []),
+    ...(caseDetail?.recommendedKeywords || []),
+    caseDetail?.displayFocus,
+    caseDetail?.applicationScenario,
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  if (caseDetail?.id === "case-036" || /培养细胞食品|cultured meat|cell-cultured|upside/.test(searchable)) {
+    return {
+      literatureTitle: "培养细胞食品生产流程梳理",
+      literatureGoal: "梳理培养动物细胞制成食品原料的生产流程、关键控制点和公开证据边界。",
+      experimentTitle: "食品安全性评价路径分析",
+      experimentGoal: "围绕成分、污染控制、细胞培养过程和成品检测，设计食品安全性评价路径。",
+      mechanismTitle: "规模化生产与质量控制方案",
+      mechanismGoal: "分析细胞扩增、培养基、收获加工和质量一致性之间的关系。",
+      evidenceTitle: "产业化边界与监管证据分析",
+      evidenceGoal: "评估培养细胞食品从工艺可行性走向产业化时的监管、成本和证据边界。",
+    };
+  }
+
+  if (caseDetail?.id === "case-035" || /alphafold|蛋白结构预测|structure prediction|蛋白工程/.test(searchable)) {
+    return {
+      literatureTitle: "AlphaFold DB 结构预测证据解读",
+      literatureGoal: "梳理 AlphaFold DB 在蛋白结构预测中的证据来源、适用场景和使用边界。",
+      experimentTitle: "结构预测结果实验验证方案",
+      experimentGoal: "设计实验验证思路，比较预测结构、置信度指标和功能实验结果。",
+      mechanismTitle: "模型置信度与结构功能关系分析",
+      mechanismGoal: "解释 pLDDT、结构域、活性位点和蛋白功能假设之间的关系。",
+      evidenceTitle: "蛋白工程应用与证据边界分析",
+      evidenceGoal: "评估结构预测如何服务蛋白工程设计，并识别仍需实验确认的关键问题。",
+    };
+  }
+
+  if (caseDetail?.id === "case-004" || /mrna|lnp|脂质纳米|递送|内体逃逸/.test(searchable)) {
+    return {
+      literatureTitle: "mRNA/LNP 递送机制文献梳理",
+      literatureGoal: "围绕 mRNA 稳定性、LNP 递送、细胞摄取和免疫反应梳理核心文献。",
+      experimentTitle: "LNP 递送效率与安全性评价设计",
+      experimentGoal: "设计比较 LNP 组分、递送效率和安全性指标的训练性实验框架。",
+      mechanismTitle: "内体逃逸与免疫反应机制解释",
+      mechanismGoal: "解释 LNP 保护 mRNA、促进细胞摄取、内体逃逸和抗原表达之间的关系。",
+      evidenceTitle: "递送系统证据边界与产业转化分析",
+      evidenceGoal: "评估 LNP 递送证据能支持哪些判断，以及哪些结论仍需更多资料确认。",
+    };
+  }
+
+  return {
+    literatureTitle: "文献调研",
+    literatureGoal: `系统检索和分析与「${topic}」相关的核心文献，梳理研究现状与知识空白`,
+    experimentTitle: "实验设计",
+    experimentGoal: `围绕「${topic}」设计严谨的验证性实验方案`,
+    mechanismTitle: "机制解释",
+    mechanismGoal: `深入分析「${topic}」涉及的分子机制和原理`,
+    evidenceTitle: "研究引导 / 产业转化分析",
+    evidenceGoal: `系统评估「${topic}」相关研究的证据质量，并梳理从机制理解到产业应用的转化路径`,
+  };
+}
+
 export function generateLocalResearchTask(
   topic: string,
   caseKey: string | null,
@@ -107,6 +178,7 @@ export function generateLocalResearchTask(
   const defaultKeywords = caseKeywords.length > 0
     ? caseKeywords
     : ["生物制造", "实验设计", "文献调研", "数据分析", "机制研究", "产业应用", "科研方法", "证据评估"];
+  const taskCopy = buildCaseTaskCopy(topic, caseDetail);
   const caseEvidence = caseDetail
     ? [{
       id: `case-detail-${caseDetail.id}`,
@@ -140,8 +212,8 @@ export function generateLocalResearchTask(
     tasks: [
       {
         type: "literature_review",
-        title: "文献调研",
-        goal: `系统检索和分析与「${topic}」相关的核心文献，梳理研究现状与知识空白`,
+        title: taskCopy.literatureTitle,
+        goal: taskCopy.literatureGoal,
         steps: [
           {
             title: "确定检索策略",
@@ -175,8 +247,8 @@ export function generateLocalResearchTask(
       },
       {
         type: "experiment_design",
-        title: "实验设计",
-        goal: `围绕「${topic}」设计严谨的验证性实验方案`,
+        title: taskCopy.experimentTitle,
+        goal: taskCopy.experimentGoal,
         steps: [
           {
             title: "明确实验假设",
@@ -210,8 +282,8 @@ export function generateLocalResearchTask(
       },
       {
         type: "mechanism_explanation",
-        title: "机制解释",
-        goal: `深入分析「${topic}」涉及的分子机制和原理`,
+        title: taskCopy.mechanismTitle,
+        goal: taskCopy.mechanismGoal,
         steps: [
           {
             title: "梳理已知机制",
@@ -240,8 +312,8 @@ export function generateLocalResearchTask(
       },
       {
         type: "evidence_judgement",
-        title: "研究引导 / 产业转化分析",
-        goal: `系统评估「${topic}」相关研究的证据质量，并梳理从机制理解到产业应用的转化路径`,
+        title: taskCopy.evidenceTitle,
+        goal: taskCopy.evidenceGoal,
         steps: [
           {
             title: "证据分级评估",
@@ -284,11 +356,37 @@ export function generateLocalResearchTask(
   };
 }
 
+function resolveResearchTopic(params: ResearchTaskGenerateRequest): string {
+  return [
+    params.topic,
+    params.case_title,
+    params.caseTitle,
+    params.core_question,
+    params.coreQuestion,
+    params.query,
+  ].find((value) => typeof value === "string" && value.trim().length > 0)?.trim() || "";
+}
+
 export async function generateResearchTask(params: ResearchTaskGenerateRequest): Promise<ResearchTaskGenerateResponse> {
-  return apiFetch<ResearchTaskGenerateResponse>("/api/research/generate-task", {
-    method: "POST",
-    body: JSON.stringify(params),
-  });
+  const topic = resolveResearchTopic(params);
+  const mode = params.mode === "case_driven" || params.case_key ? "case_driven" : "independent";
+  const body = {
+    ...params,
+    topic,
+    mode,
+  };
+  try {
+    const data = await apiFetch<ResearchTaskGenerateResponse>("/api/research/generate-task", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    if (data) {
+      return data;
+    }
+  } catch {
+    return generateLocalResearchTask(topic, params.case_key, mode);
+  }
+  return generateLocalResearchTask(topic, params.case_key, mode);
 }
 
 export interface ResearchTutorResponse {
@@ -306,8 +404,32 @@ export async function askResearchTutor(input: {
   selected_literature?: Array<Record<string, unknown>>;
   question: string;
 }): Promise<ResearchTutorResponse> {
-  return apiFetch<ResearchTutorResponse>("/api/research/tutor", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  try {
+    const data = await apiFetch<ResearchTutorResponse>("/api/research/tutor", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    if (data?.answer) {
+      return data;
+    }
+  } catch {
+    // Keep the tutor usable when the evidence/AI service is temporarily unavailable.
+  }
+
+  const taskTitle = input.selected_task?.title;
+  const answer = taskTitle
+    ? `可以先围绕「${taskTitle}」把问题拆成研究目标、证据来源、方法设计和局限性四部分。当前问题是「${input.question}」，建议先明确要验证的核心假设，再选择可支撑判断的文献或案例证据。`
+    : `可以先把你的问题「${input.question}」拆成研究方向、关键词、证据来源和可生成的训练任务。建议先确定核心概念，再补充本地精选文献或公开文献，最后形成一个可讨论的科研训练问题。`;
+
+  return {
+    source_mode: "local_fallback",
+    answer,
+    evidence_used: [],
+    suggested_next_questions: [
+      "这个问题适合先查哪些关键词？",
+      "可以拆成哪几类科研训练任务？",
+      "当前资料还不能支持哪些结论？",
+    ],
+    boundary: "该回答用于科研训练，不替代真实实验设计审批。",
+  };
 }

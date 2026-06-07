@@ -1071,6 +1071,8 @@ function CaseDrivenResearchPage({ caseData, caseKey }: { caseData: IndustryCase;
         const data = await generateResearchTask({
           topic: cd.coreProblem || cd.title,
           case_key: caseKey,
+          case_title: cd.title,
+          core_question: cd.coreProblem,
           mode: "case_driven",
         });
         if (!cancelled) {
