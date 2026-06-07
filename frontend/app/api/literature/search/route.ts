@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const upstream = new URL(
       `/api/literature/search?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(limit)}`,
-      FASTAPI_BACKEND
+      FASTAPI_BACKEND,
     );
 
     const controller = new AbortController();
@@ -27,14 +27,13 @@ export async function GET(request: NextRequest) {
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
       });
-
       clearTimeout(timeout);
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => "unknown");
         return NextResponse.json(
-          { error: `后端返回错误 ${response.status}: ${errorText.slice(0, 200)}` },
-          { status: response.status }
+          { error: `Literature search backend error ${response.status}: ${errorText.slice(0, 300)}` },
+          { status: response.status || 502 },
         );
       }
 
@@ -42,20 +41,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data);
     } catch (fetchError) {
       clearTimeout(timeout);
-      console.error(
-        "[literature/search] 转发失败:",
-        fetchError instanceof Error ? fetchError.message : fetchError
-      );
-      return NextResponse.json(
-        { error: "文献检索服务不可用，请稍后重试" },
-        { status: 502 }
-      );
+      const message = fetchError instanceof Error ? fetchError.message : "Literature search request failed";
+      return NextResponse.json({ error: message }, { status: 502 });
     }
   } catch (err) {
-    console.error(
-      "[literature/search] 未预期错误:",
-      err instanceof Error ? err.message : err
-    );
-    return NextResponse.json({ error: "内部服务错误" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

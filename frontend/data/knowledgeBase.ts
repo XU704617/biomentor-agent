@@ -1144,7 +1144,7 @@ export const knowledgeResearchTasks: KnowledgeResearchTask[] = [
     expectedOutput:
       "一份评估报告：包括基准数据集构建方案、基因重要性提取方法、与金标准（DepMap、CRISPR筛选数据）的对比分析、模型在不同细胞类型中的表现差异",
     steps: [
-      "选择一个公开的单细胞基础模型（如scGPT、Geneformer或scFoundation）",
+      "选择一个公开的单细胞基础模型（如Geneformer、scFoundation等）",
       "确定评估策略：从模型的注意力权重或特征归因中提取基因重要性评分",
       "从DepMap等数据库构建金标准：选择3种以上细胞系的必需基因和非必需基因列表",
       "设计评估指标：AUROC、精确率-召回率曲线、top-k重叠率",

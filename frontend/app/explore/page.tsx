@@ -230,7 +230,7 @@ export default function ExplorePage() {
             <div className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-blue-500" />
               <h2 className="font-semibold text-gray-800">上传学习资料</h2>
-              <span className="text-sm text-gray-500">支持图片、PDF、Office 文档、表格、文本</span>
+              <span className="text-sm text-gray-500">支持PDF、Office 文档、文本</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Loader2 className={`w-4 h-4 ${isProcessing ? "animate-spin text-blue-500" : "text-gray-400"}`} />
@@ -345,9 +345,25 @@ export default function ExplorePage() {
 
             {backendResult ? (
               <div className="space-y-6">
-                <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 p-5">
-                  <p className="text-sm text-gray-700 leading-7 whitespace-pre-wrap">{backendResult.summary}</p>
-                  {backendResult.domain && <p className="text-xs text-blue-700 mt-3">领域判断：{backendResult.domain}</p>}
+                <div className="p-4 bg-white/70 rounded-xl border border-gray-100">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-3">
+                    <Sparkles className="w-5 h-5 text-blue-500" /> 核心知识点
+                  </h3>
+                  <div className="space-y-3">
+                    {Array.isArray(backendResult.knowledge_points) && backendResult.knowledge_points.length > 0 ? (
+                      backendResult.knowledge_points.map((point, index) => (
+                        <div key={index} className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+                          <p className="font-medium text-gray-800">{point.name}</p>
+                          <p className="text-sm text-gray-600 mt-1 leading-6">{point.description}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+                        <p className="text-sm text-gray-700 leading-7 whitespace-pre-wrap">{backendResult.summary}</p>
+                        {backendResult.domain && <p className="text-xs text-blue-700 mt-3">领域判断：{backendResult.domain}</p>}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="p-4 bg-white/70 rounded-xl border border-gray-100">
@@ -369,9 +385,17 @@ export default function ExplorePage() {
                       <Lightbulb className="w-5 h-5 text-orange-500" /> 学习建议
                     </h3>
                     <div className="space-y-3">
-                      {backendResult.learning_suggestions.map((tip, index) => (
-                        <div key={`${tip}-${index}`} className="p-3 bg-gradient-to-br from-slate-50 to-blue-50 rounded-lg text-sm text-gray-700 leading-7">
-                          {tip}
+                      {backendResult.learning_suggestions.map((suggestion, index) => (
+                        <div key={index} className="p-3 bg-gradient-to-br from-slate-50 to-blue-50 rounded-lg">
+                          {typeof suggestion === 'object' ? (
+                            <>
+                              <p className="text-sm font-medium text-gray-800">错误知识点：{suggestion.error_point}</p>
+                              <p className="text-sm text-gray-600 mt-1">错误原因分析：{suggestion.error_reason}</p>
+                              <p className="text-sm text-gray-600 mt-1">针对性训练方法：{suggestion.training_method}</p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-700 leading-7">{suggestion}</p>
+                          )}
                         </div>
                       ))}
                     </div>

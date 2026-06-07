@@ -41,17 +41,15 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 120
 
     # ---- LLM / Embedding ----
-    OPENAI_API_KEY: str = ""
-    OPENAI_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
-    LLM_MODEL: str = "glm-4.7-flash"
+    EMBEDDING_MODEL: str = "local-all-MiniLM-L6-v2"
+    LLM_MODEL: str = "glm-4-flash"
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 4096
 
     # ---- GLM evidence-grounded generation ----
     GLM_API_KEY: str = ""
     GLM_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
-    GLM_MODEL: str = "glm-4.7-flash"
+    GLM_MODEL: str = "glm-4-flash"
     GLM_VISION_MODEL: str = "glm-4.6v-flash"
     GLM_FILE_PARSER_TOOL: str = "prime-sync"
     GLM_TIMEOUT_SECONDS: int = 30
@@ -62,8 +60,8 @@ class Settings(BaseSettings):
     RAG_SIMILARITY_THRESHOLD: float = 0.65
 
     # ---- Agent ----
-    AGENT_MAX_RETRIES: int = 2
-    AGENT_TIMEOUT_SECONDS: int = 120
+    AGENT_MAX_RETRIES: int = 1
+    AGENT_TIMEOUT_SECONDS: int = 45
 
     # ---- Assessment ----
     QUESTION_AUTO_PUBLISH: bool = False
@@ -92,11 +90,11 @@ class Settings(BaseSettings):
         return self.GLM_API_KEY.strip()
 
     def resolved_llm_base_url(self) -> str:
-        value = (self.GLM_BASE_URL or self.OPENAI_BASE_URL or "").strip().rstrip("/")
+        value = (self.GLM_BASE_URL or "").strip().rstrip("/")
         return value or "https://open.bigmodel.cn/api/paas/v4"
 
     def resolved_llm_model(self) -> str:
-        return (self.GLM_MODEL or self.LLM_MODEL or "glm-4.7-flash").strip()
+        return (self.GLM_MODEL or self.LLM_MODEL or "glm-4-flash").strip()
 
 
 @lru_cache

@@ -135,6 +135,7 @@ def generate_task(data: ResearchTaskGenerateRequest, db: Session = Depends(get_d
         raise HTTPException(400, "topic is required")
     service = ResearchService(db)
     try:
+<<<<<<< HEAD
         return service.generate_task(data.topic, data.case_key, mode)
     except ValueError as e:
         raise HTTPException(404, str(e))
@@ -148,18 +149,33 @@ def generate_task(data: ResearchTaskGenerateRequest, db: Session = Depends(get_d
             [],
             "当前资料暂不足，使用本地训练框架。",
         )
+=======
+        result = service.generate_task(data.topic, data.case_key, data.mode)
+        if getattr(result, "source_mode", "") == "local_fallback":
+            raise HTTPException(502, getattr(result, "debug_hint", "") or "Research task generation did not use a real AI response")
+        return result
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(502, str(exc)) from exc
+>>>>>>> upstream/master
 
 
 @router.post("/tutor")
 async def research_tutor(body: dict, db: Session = Depends(get_db)):
     service = GroundedGenerationService(db)
-    return await service.answer_tutor(
-        question=str(body.get("question") or ""),
-        case_id=body.get("case_id"),
-        case_title=body.get("case_title"),
-        selected_task=body.get("selected_task") if isinstance(body.get("selected_task"), dict) else None,
-        selected_literature=body.get("selected_literature") if isinstance(body.get("selected_literature"), list) else [],
-    )
+    try:
+        return await service.answer_tutor(
+            question=str(body.get("question") or ""),
+            case_id=body.get("case_id"),
+            case_title=body.get("case_title"),
+            selected_task=body.get("selected_task") if isinstance(body.get("selected_task"), dict) else None,
+            selected_literature=body.get("selected_literature") if isinstance(body.get("selected_literature"), list) else [],
+        )
+    except RuntimeError as exc:
+        raise HTTPException(502, str(exc)) from exc
 
 
 def _default_steps(name: str, category: str) -> list[str]:

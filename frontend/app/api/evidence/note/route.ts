@@ -10,14 +10,10 @@ const FASTAPI_BACKEND =
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-
-    const upstream = new URL(
-      `/api/evidence/note`,
-      FASTAPI_BACKEND
-    );
+    const upstream = new URL("/api/evidence/note", FASTAPI_BACKEND);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
     try {
       const response = await fetch(upstream.toString(), {
@@ -26,19 +22,13 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify(body),
         signal: controller.signal,
       });
-
       clearTimeout(timeout);
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => "unknown");
         return NextResponse.json(
-          {
-            note: "",
-            selected_count: 0,
-            error: `evidence note 后端返回错误 ${response.status}`,
-            message: `后端服务异常: ${errorText.slice(0, 200)}`,
-          },
-          { status: 200 }
+          { error: `Evidence note backend error ${response.status}: ${errorText.slice(0, 300)}` },
+          { status: response.status || 502 },
         );
       }
 
@@ -46,33 +36,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data);
     } catch (fetchError) {
       clearTimeout(timeout);
-      console.error(
-        "[evidence/note] 转发失败:",
-        fetchError instanceof Error ? fetchError.message : fetchError
-      );
-      return NextResponse.json(
-        {
-          note: "",
-          selected_count: 0,
-          error: "evidence note 服务不可用",
-          message: "evidence note 生成服务暂不可用，请稍后重试",
-        },
-        { status: 200 }
-      );
+      const message = fetchError instanceof Error ? fetchError.message : "Evidence note request failed";
+      return NextResponse.json({ error: message }, { status: 502 });
     }
   } catch (err) {
-    console.error(
-      "[evidence/note] 未预期错误:",
-      err instanceof Error ? err.message : err
-    );
-    return NextResponse.json(
-      {
-        note: "",
-        selected_count: 0,
-        error: "内部服务错误",
-        message: "evidence note 内部错误",
-      },
-      { status: 200 }
-    );
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

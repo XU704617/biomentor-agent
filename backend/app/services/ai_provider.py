@@ -32,14 +32,14 @@ class AIResult:
 
 
 class GLMAIProvider:
-    """Small OpenAI-compatible GLM client with defensive error mapping."""
+    """Small GLM chat client with defensive error mapping."""
 
     def __init__(self) -> None:
         settings = get_settings()
         self.api_key = settings.resolved_llm_api_key()
         self.base_url = settings.resolved_llm_base_url().rstrip("/")
-        self.model = settings.resolved_llm_model() or "glm-4.7-flash"
-        self.timeout = settings.GLM_TIMEOUT_SECONDS
+        self.model = settings.resolved_llm_model() or "glm-4-flash"
+        self.timeout = max(settings.GLM_TIMEOUT_SECONDS, 120)
 
     async def generate_json(
         self,
@@ -47,10 +47,11 @@ class GLMAIProvider:
         user_prompt: str,
         required_fields: list[str],
         temperature: float = 0.2,
+        max_tokens: int = 1800,
+        retries: int = 2,
     ) -> AIResult:
         if not self.api_key:
             return AIResult(False, None, "not_configured", "local_fallback")
-
         payload = {
             "model": self.model,
             "messages": [
@@ -58,57 +59,98 @@ class GLMAIProvider:
                 {"role": "user", "content": user_prompt},
             ],
             "temperature": temperature,
+            "max_tokens": max_tokens,
             "response_format": {"type": "json_object"},
+            "thinking": {"type": "disabled"},
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
         }
 
-        try:
-            async with httpx.AsyncClient(timeout=self.timeout, trust_env=False) as client:
-                response = await client.post(
-                    f"{self.base_url}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json=payload,
-                )
-        except httpx.TimeoutException:
-            return AIResult(False, None, "timeout", "local_fallback")
-        except httpx.NetworkError:
-            return AIResult(False, None, "network_error", "local_fallback")
-        except httpx.HTTPError:
-            return AIResult(False, None, "network_error", "local_fallback")
-        except Exception:
-            return AIResult(False, None, "unknown_error", "local_fallback")
+        last_error: AIResult | None = None
+        async with httpx.AsyncClient(timeout=self.timeout, trust_env=False) as client:
+            for attempt in range(retries + 1):
+                try:
+                    response = await client.post(
+                        f"{self.base_url}/chat/completions",
+                        headers=headers,
+                        json=payload,
+                    )
+                except httpx.TimeoutException:
+                    last_error = AIResult(False, None, "timeout", "local_fallback")
+                    if attempt < retries:
+                        await _sleep_retry(attempt)
+                        continue
+                    return last_error
+                except httpx.NetworkError:
+                    last_error = AIResult(False, None, "network_error", "local_fallback")
+                    if attempt < retries:
+                        await _sleep_retry(attempt)
+                        continue
+                    return last_error
+                except httpx.HTTPError:
+                    last_error = AIResult(False, None, "network_error", "local_fallback")
+                    if attempt < retries:
+                        await _sleep_retry(attempt)
+                        continue
+                    return last_error
+                except Exception:
+                    last_error = AIResult(False, None, "unknown_error", "local_fallback")
+                    if attempt < retries:
+                        await _sleep_retry(attempt)
+                        continue
+                    return last_error
 
-        if response.status_code in (401, 403):
-            return AIResult(False, None, "auth_error", "local_fallback", response.text[:1000])
-        if response.status_code == 402 or _looks_like_balance_error(response.text):
-            return AIResult(False, None, "insufficient_balance", "local_fallback", response.text[:1000])
-        if response.status_code == 429:
-            return AIResult(False, None, "rate_limited", "local_fallback", response.text[:1000])
-        if response.status_code >= 400:
-            return AIResult(False, None, "unknown_error", "local_fallback", response.text[:1000])
+                if response.status_code in (401, 403):
+                    return AIResult(False, None, "auth_error", "local_fallback", response.text[:1000])
+                if response.status_code == 402 or _looks_like_balance_error(response.text):
+                    return AIResult(False, None, "insufficient_balance", "local_fallback", response.text[:1000])
+                if response.status_code == 429 or _looks_like_rate_limit_error(response.text):
+                    last_error = AIResult(False, None, "rate_limited", "local_fallback", response.text[:1000])
+                    if attempt < retries:
+                        await _sleep_retry(attempt, response.text)
+                        continue
+                    return last_error
+                if response.status_code >= 400:
+                    return AIResult(False, None, "unknown_error", "local_fallback", response.text[:1000])
 
-        try:
-            data = response.json()
-            raw_text = data["choices"][0]["message"]["content"]
-        except Exception:
-            return AIResult(False, None, "invalid_json", "local_fallback", response.text[:1000])
+                try:
+                    data = response.json()
+                    raw_text = _extract_message_content(data)
+                except Exception:
+                    return AIResult(False, None, "invalid_json", "local_fallback", response.text[:1000])
 
-        try:
-            parsed = _extract_json_object(raw_text)
-        except Exception:
-            return AIResult(False, None, "invalid_json", "local_fallback", raw_text[:2000])
+                if not raw_text:
+                    last_error = AIResult(False, None, "invalid_json", "local_fallback", response.text[:1000])
+                    if attempt < retries:
+                        await _sleep_retry(attempt, response.text)
+                        continue
+                    return last_error
 
-        if not _has_required_fields(parsed, required_fields):
-            return AIResult(False, parsed, "schema_invalid", "local_fallback", raw_text[:2000])
+                try:
+                    parsed = _extract_json_object(raw_text)
+                except Exception:
+                    return AIResult(False, None, "invalid_json", "local_fallback", raw_text[:2000])
 
-        return AIResult(True, parsed, None, "ai_grounded", raw_text)
+                parsed = _unwrap_structured_payload(parsed, required_fields)
+
+                if not _has_required_fields(parsed, required_fields):
+                    return AIResult(False, parsed, "schema_invalid", "local_fallback", raw_text[:2000])
+
+                return AIResult(True, parsed, None, "ai_grounded", raw_text)
+
+        return last_error or AIResult(False, None, "unknown_error", "local_fallback")
 
 
 def _looks_like_balance_error(text: str) -> bool:
     lowered = (text or "").lower()
     return any(token in lowered for token in ("insufficient balance", "balance", "quota"))
+
+
+def _looks_like_rate_limit_error(text: str) -> bool:
+    lowered = (text or "").lower()
+    return any(token in lowered for token in ("1302", "1305", "rate limit", "访问量过大", "速率限制"))
 
 
 def _extract_json_object(text: str) -> dict[str, Any]:
@@ -142,3 +184,36 @@ def _has_required_fields(value: dict[str, Any], required_fields: list[str]) -> b
         if isinstance(item, list) and len(item) == 0:
             return False
     return True
+
+
+def _unwrap_structured_payload(value: dict[str, Any], required_fields: list[str]) -> dict[str, Any]:
+    if _has_required_fields(value, required_fields):
+        return value
+
+    for key in ("answer", "data", "result", "payload"):
+        nested = value.get(key)
+        if isinstance(nested, dict) and _has_required_fields(nested, required_fields):
+            return nested
+
+    return value
+
+
+def _extract_message_content(data: dict[str, Any]) -> str:
+    message = (((data.get("choices") or [{}])[0]).get("message") or {})
+    content = message.get("content")
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        return "".join(
+            item.get("text", "") if isinstance(item, dict) else str(item or "")
+            for item in content
+        ).strip()
+    return ""
+
+
+async def _sleep_retry(attempt: int, text: str = "") -> None:
+    import asyncio
+
+    lowered = (text or "").lower()
+    base = 6 if any(token in lowered for token in ("1302", "1305", "rate limit")) else 2
+    await asyncio.sleep(base * (attempt + 1))

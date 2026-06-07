@@ -13,7 +13,7 @@ ocr_service = OcrService()
 
 @router.post("/ocr")
 async def ocr_upload(file: UploadFile = File(...)):
-    """Upload image/PDF/DOCX/text and extract text on the backend."""
+    """Upload a file and extract text via the backend GLM pipeline."""
     if not file.filename:
         raise HTTPException(400, "文件名不能为空")
 
@@ -27,7 +27,7 @@ async def ocr_upload(file: UploadFile = File(...)):
 
     result = ocr_service.extract(data, mime, file.filename)
     if not result.get("success"):
-        raise HTTPException(502, str(result.get("error", "OCR failed")))
+        raise HTTPException(502, str(result.get("error", "GLM extraction failed")))
     return result
 
 
@@ -45,7 +45,7 @@ def analyze_photo(data: PhotoLearningRequest, db: Session = Depends(get_db)):
 
 @router.post("/full-pipeline", response_model=PhotoLearningResponse)
 async def full_pipeline(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Complete server-side pipeline: extract/analyze/generate questions."""
+    """Complete GLM pipeline: extract, analyze, and generate questions."""
     if not file.filename:
         raise HTTPException(400, "文件名不能为空")
 

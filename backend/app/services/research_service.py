@@ -63,20 +63,18 @@ class ResearchService:
                 return self._case_driven_task(topic, case_key)
             return self._independent_task(topic)
 
-        try:
-            payload = asyncio.run(
-                GroundedGenerationService(self.db).generate_research_tasks(
-                    topic=topic,
-                    case_key=case_key,
-                    mode=mode,
-                    local_builder=lambda: local_builder().model_dump(),
-                )
+        payload = asyncio.run(
+            GroundedGenerationService(self.db).generate_research_tasks(
+                topic=topic,
+                case_key=case_key,
+                mode=mode,
+                local_builder=lambda: local_builder().model_dump(),
             )
-            return self._response_from_grounded_payload(topic, case_key, mode, payload, local_builder)
-        except ValueError:
-            raise
-        except Exception:
-            return local_builder()
+        )
+        response = self._response_from_grounded_payload(topic, case_key, mode, payload, local_builder)
+        if getattr(response, "source_mode", "") != "ai_grounded":
+            raise RuntimeError(getattr(response, "debug_hint", "") or "Research task generation did not use a real AI response")
+        return response
 
     def _case_driven_task(self, topic: str, case_key: str) -> ResearchTaskGenerateResponse:
         case = self.db.query(IndustryCase).filter(IndustryCase.case_key == case_key).first()

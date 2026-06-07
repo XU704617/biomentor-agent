@@ -26,7 +26,7 @@ BioMentor Agent 是面向生物科学教育的 AI 辅助学习与科研训练平
 | 可视化 | SVG, Cytoscape.js, 3Dmol.js, Recharts |
 | AI 接口 | Next.js Route Handlers |
 | 文档解析 | PDF, DOCX, PPTX, TXT/MD 文本导入 |
-| 部署 | Vercel |
+| 部署 | 云服务器 / 自托管服务 |
 
 ## 快速启动
 

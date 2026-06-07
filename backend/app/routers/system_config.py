@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -24,13 +23,13 @@ class LLMConfigView(BaseModel):
 class LLMConfigUpdate(BaseModel):
     api_key: str
     base_url: str = "https://open.bigmodel.cn/api/paas/v4"
-    model: str = "glm-4.7-flash"
+    model: str = "glm-4-flash"
 
 
 class LLMTestRequest(BaseModel):
     api_key: str
     base_url: str = "https://open.bigmodel.cn/api/paas/v4"
-    model: str = "glm-4.7-flash"
+    model: str = "glm-4-flash"
 
 
 class LLMTestResponse(BaseModel):
@@ -44,11 +43,22 @@ class LLMTestResponse(BaseModel):
     error: str = ""
 
 
-def _normalize_base_urls(base_url: str) -> tuple[str, str]:
+def _normalize_base_url(base_url: str) -> str:
     clean = (base_url or "").strip().rstrip("/")
-    if not clean:
-        clean = "https://open.bigmodel.cn/api/paas/v4"
-    return clean, clean
+    return clean or "https://open.bigmodel.cn/api/paas/v4"
+
+
+def _build_chat_completions_url(base_url: str) -> str:
+    normalized = _normalize_base_url(base_url)
+    if normalized.lower().endswith("/api/paas/v4"):
+        return f"{normalized}/chat/completions"
+    if normalized.lower().endswith("/v1"):
+        return f"{normalized}/chat/completions"
+    return f"{normalized}/v1/chat/completions"
+
+
+def _is_glm_base_url(base_url: str) -> bool:
+    return "bigmodel.cn" in (base_url or "").lower()
 
 
 def _env_path() -> Path:
@@ -59,8 +69,7 @@ def _frontend_env_path() -> Path:
     return Path(__file__).resolve().parents[3] / "frontend" / ".env.local"
 
 
-def _read_env_lines() -> list[str]:
-    path = _env_path()
+def _read_env_lines(path: Path) -> list[str]:
     if not path.exists():
         return []
     return path.read_text(encoding="utf-8").splitlines()
@@ -86,16 +95,27 @@ def _reload_runtime_config() -> None:
     reset_llm()
 
 
-def _write_frontend_env(api_key: str, base_url: str, model: str) -> None:
-    api_root, _openai_base = _normalize_base_urls(base_url)
-    path = _frontend_env_path()
-    lines: list[str] = []
-    if path.exists():
-        lines = path.read_text(encoding="utf-8").splitlines()
+def _write_backend_env(api_key: str, base_url: str, model: str) -> None:
+    path = _env_path()
+    lines = _read_env_lines(path)
+    for key, value in (
+        ("GLM_API_KEY", api_key),
+        ("GLM_BASE_URL", base_url),
+        ("GLM_MODEL", model),
+    ):
+        lines = _write_env_value(lines, key, value)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    lines = _write_env_value(lines, "DEEPSEEK_API_KEY", api_key)
-    lines = _write_env_value(lines, "DEEPSEEK_BASE_URL", api_root)
-    lines = _write_env_value(lines, "DEEPSEEK_MODEL", model)
+
+def _write_frontend_env(api_key: str, base_url: str, model: str) -> None:
+    path = _frontend_env_path()
+    lines = _read_env_lines(path)
+    for key, value in (
+        ("GLM_API_KEY", api_key),
+        ("GLM_BASE_URL", base_url),
+        ("GLM_MODEL", model),
+    ):
+        lines = _write_env_value(lines, key, value)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -104,7 +124,7 @@ def get_llm_config() -> LLMConfigView:
     settings = get_settings()
     return LLMConfigView(
         api_key_set=bool(settings.resolved_llm_api_key()),
-        api_key=settings.resolved_llm_api_key(),
+        api_key="",
         base_url=settings.resolved_llm_base_url(),
         model=settings.resolved_llm_model(),
     )
@@ -113,8 +133,9 @@ def get_llm_config() -> LLMConfigView:
 @router.post("/config", response_model=LLMConfigView)
 def save_llm_config(payload: LLMConfigUpdate) -> LLMConfigView:
     api_key = payload.api_key.strip()
-    base_url = payload.base_url.strip().rstrip("/")
+    base_url = _normalize_base_url(payload.base_url)
     model = payload.model.strip()
+
     if not api_key:
         raise HTTPException(status_code=400, detail="API key is required")
     if not base_url:
@@ -122,21 +143,14 @@ def save_llm_config(payload: LLMConfigUpdate) -> LLMConfigView:
     if not model:
         raise HTTPException(status_code=400, detail="Model is required")
 
-    lines = _read_env_lines()
-    lines = _write_env_value(lines, "OPENAI_API_KEY", api_key)
-    lines = _write_env_value(lines, "OPENAI_BASE_URL", base_url)
-    lines = _write_env_value(lines, "LLM_MODEL", model)
-    lines = _write_env_value(lines, "GLM_API_KEY", api_key)
-    lines = _write_env_value(lines, "GLM_BASE_URL", base_url)
-    lines = _write_env_value(lines, "GLM_MODEL", model)
-    _env_path().write_text("\n".join(lines) + "\n", encoding="utf-8")
+    _write_backend_env(api_key, base_url, model)
     _write_frontend_env(api_key, base_url, model)
     _reload_runtime_config()
 
     settings = get_settings()
     return LLMConfigView(
         api_key_set=bool(settings.resolved_llm_api_key()),
-        api_key=settings.resolved_llm_api_key(),
+        api_key="",
         base_url=settings.resolved_llm_base_url(),
         model=settings.resolved_llm_model(),
     )
@@ -145,8 +159,9 @@ def save_llm_config(payload: LLMConfigUpdate) -> LLMConfigView:
 @router.post("/test", response_model=LLMTestResponse)
 def test_llm_config(payload: LLMTestRequest) -> LLMTestResponse:
     api_key = payload.api_key.strip()
-    base_url = payload.base_url.strip().rstrip("/")
+    base_url = _normalize_base_url(payload.base_url)
     model = payload.model.strip()
+
     if not api_key:
         raise HTTPException(status_code=400, detail="API key is required")
     if not base_url:
@@ -154,7 +169,6 @@ def test_llm_config(payload: LLMTestRequest) -> LLMTestResponse:
     if not model:
         raise HTTPException(status_code=400, detail="Model is required")
 
-    api_root, openai_base = _normalize_base_urls(base_url)
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Accept": "application/json",
@@ -168,17 +182,23 @@ def test_llm_config(payload: LLMTestRequest) -> LLMTestResponse:
     errors: list[str] = []
 
     with httpx.Client(timeout=30.0, trust_env=False) as client:
-        try:
-            balance_res = client.get(f"{api_root}/user/balance", headers=headers)
-            balance_res.raise_for_status()
-            balance_data = balance_res.json()
-            balance_ok = True
-        except Exception as exc:
-            errors.append(f"balance: {exc}")
+        if _is_glm_base_url(base_url):
+            balance_data = {
+                "supported": False,
+                "message": "GLM 当前未公开余额查询接口，已跳过余额测试。",
+            }
+        else:
+            try:
+                balance_res = client.get(f"{base_url}/user/balance", headers=headers)
+                balance_res.raise_for_status()
+                balance_data = balance_res.json()
+                balance_ok = True
+            except Exception as exc:
+                errors.append(f"balance: {exc}")
 
         try:
             chat_res = client.post(
-                f"{openai_base}/chat/completions",
+                _build_chat_completions_url(base_url),
                 headers=headers,
                 json={
                     "model": model,
@@ -187,17 +207,21 @@ def test_llm_config(payload: LLMTestRequest) -> LLMTestResponse:
                     "max_tokens": 8,
                 },
             )
-            chat_res.raise_for_status()
-            chat_json = chat_res.json()
-            chat_summary = (
-                (((chat_json.get("choices") or [{}])[0]).get("message") or {}).get("content") or ""
-            ).strip()
-            chat_ok = True
+            if chat_res.status_code == 429:
+                chat_ok = True
+                chat_summary = "Provider returned 429. The key, base URL, and model path are reachable, but the account is currently rate-limited or quota-limited."
+            else:
+                chat_res.raise_for_status()
+                chat_json = chat_res.json()
+                chat_summary = (
+                    (((chat_json.get("choices") or [{}])[0]).get("message") or {}).get("content") or ""
+                ).strip()
+                chat_ok = True
         except Exception as exc:
             errors.append(f"chat: {exc}")
 
     return LLMTestResponse(
-        ok=balance_ok and chat_ok,
+        ok=chat_ok,
         balance_ok=balance_ok,
         chat_ok=chat_ok,
         base_url=base_url,

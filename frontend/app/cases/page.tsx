@@ -15,7 +15,6 @@ import {
 import { IndustryCaseCard } from "@/components/IndustryCaseCard";
 import { IndustryCaseDetailModal } from "@/components/IndustryCaseDetailModal";
 import { IndustryAskPanel } from "@/components/IndustryAskPanel";
-import { industryCases as localCases } from "@/data/industryCases";
 import { getIndustryAnswer, convertApiCaseToFrontend } from "@/lib/industryApi";
 import type { IndustryCase } from "@/data/industryCases";
 import type { ApiIndustryCase } from "@/lib/industryApi";
@@ -47,14 +46,14 @@ export default function CasesPage() {
           }
         }
         if (!cancelled) {
-          setAllCases(localCases);
+          setAllCases([]);
           setApiFailed(true);
           setDisplayLimit(24);
           setLoading(false);
         }
       } catch {
         if (!cancelled) {
-          setAllCases(localCases);
+          setAllCases([]);
           setApiFailed(true);
           setDisplayLimit(24);
           setLoading(false);

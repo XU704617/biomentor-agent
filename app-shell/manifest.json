@@ -1,0 +1,55 @@
+{
+  "name": "BioMentor Agent",
+  "appid": "__UNI__BIOMENTR",
+  "description": "BioMentor Agent Android and iOS app shell for the hosted learning platform.",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "locale": "zh-Hans",
+  "h5": {
+    "title": "BioMentor Agent",
+    "router": {
+      "mode": "hash"
+    }
+  },
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "safearea": {
+      "background": "#f7fbff",
+      "bottom": {
+        "offset": "none"
+      }
+    },
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "modules": {},
+    "distribute": {
+      "android": {
+        "packagename": "io.biomentor.agent",
+        "minSdkVersion": 23,
+        "targetSdkVersion": 35,
+        "abiFilters": [
+          "armeabi-v7a",
+          "arm64-v8a"
+        ],
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.CAMERA\"/>",
+          "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
+          "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>"
+        ]
+      },
+      "ios": {
+        "appid": "io.biomentor.agent",
+        "devices": "universal",
+        "deploymentTarget": "12.0"
+      }
+    }
+  }
+}

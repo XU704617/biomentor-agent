@@ -185,7 +185,7 @@ export function buildDefenseOutlineFromSelectedPapers(paperIds: string[]): strin
     "八、后续如何扩展为 RAG 或真实智能体",
     "  · 接入 PubMed / Semantic Scholar API 实现实时文献检索",
     "  · 对接向量数据库（Milvus/Pinecone）实现语义检索",
-    "  · 接入 LLM（Claude/GPT）实现文献智能摘要和问答",
+    "  · 接入国产大模型实现文献智能摘要和问答",
     "  · 扩展知识图谱到更多生物医学实体和关系",
     "  · 支持自定义文献上传和团队协作",
   ];

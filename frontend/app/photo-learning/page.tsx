@@ -15,7 +15,6 @@ import {
   Loader2,
   Microscope,
   ScanLine,
-  Sparkles,
   Upload,
   X,
 } from "lucide-react";
@@ -84,7 +83,6 @@ export default function PhotoLearningPage() {
   const [ocrText, setOcrText] = useState("");
   const [ocrEngine, setOcrEngine] = useState("");
   const [isRecognizing, setIsRecognizing] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [statusText, setStatusText] = useState("等待上传图片或文档");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PhotoLearningAnalysis | null>(null);
@@ -135,113 +133,41 @@ export default function PhotoLearningPage() {
   const handleStartOcr = async () => {
     if (!uploadedFile) return;
 
-    if (uploadedKind !== "image") {
-      setIsRecognizing(true);
-      setError(null);
-      setStatusText(
-        uploadedKind === "pdf"
-          ? "正在调用后端 PDF LLM 识别"
-          : "正在调用后端文档解析"
-      );
-
-      try {
-        const form = new FormData();
-        form.append("file", uploadedFile);
-
-        const response = await fetch(`${PHOTO_PIPELINE_BACKEND}/api/photo-learning/full-pipeline`, {
-          method: "POST",
-          body: form,
-        });
-
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({ detail: "解析失败" }));
-          throw new Error(payload.detail || "解析失败");
-        }
-
-        const payload = (await response.json()) as PhotoLearningAnalysis;
-        setOcrText(payload.raw_text || "");
-        setOcrEngine(payload.processing_engine || payload.ocr_engine || "");
-        setResult(payload);
-        setStatusText(uploadedKind === "pdf" ? "PDF LLM 解析完成" : "文档解析完成");
-      } catch (caughtError) {
-        const message = caughtError instanceof Error ? caughtError.message : "解析失败";
-        setError(message);
-        setStatusText(uploadedKind === "pdf" ? "PDF LLM 解析失败" : "文档解析失败");
-      } finally {
-        setIsRecognizing(false);
-      }
-      return;
-    }
-
     setIsRecognizing(true);
     setError(null);
-      setStatusText("正在调用后端 GLM 图片解析");
+    setStatusText(
+      uploadedKind === "pdf"
+        ? "正在调用后端 GLM 解析 PDF"
+        : uploadedKind === "image"
+          ? "正在调用后端 GLM 解析图片"
+          : "正在调用后端 GLM 解析文档"
+    );
 
     try {
       const form = new FormData();
       form.append("file", uploadedFile);
 
-      const response = await fetch(`${PHOTO_PIPELINE_BACKEND}/api/photo-learning/ocr`, {
+      const response = await fetch(`${PHOTO_PIPELINE_BACKEND}/api/photo-learning/full-pipeline`, {
         method: "POST",
         body: form,
       });
 
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({ detail: "OCR 失败" }));
-        throw new Error(payload.detail || "OCR 失败");
-      }
-
-      const payload = (await response.json()) as {
-        text: string;
-        engine: string;
-        char_count: number;
-      };
-
-      setOcrText(payload.text);
-      setOcrEngine(payload.engine);
-      setStatusText(`GLM 解析完成，提取到 ${payload.char_count} 字`);
-    } catch (caughtError) {
-      const message = caughtError instanceof Error ? caughtError.message : "OCR 失败";
-      setError(message);
-      setStatusText("OCR 失败");
-    } finally {
-      setIsRecognizing(false);
-    }
-  };
-
-  const handleAnalyze = async () => {
-    if (uploadedKind !== "image" || !ocrText.trim()) return;
-
-    setIsAnalyzing(true);
-    setError(null);
-      setStatusText("正在调用后端 GLM 分析解析文本");
-
-    try {
-      const response = await fetch(`${PHOTO_PIPELINE_BACKEND}/api/photo-learning/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: ocrText }),
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({ detail: "LLM 解析失败" }));
-        throw new Error(payload.detail || "LLM 解析失败");
+        const payload = await response.json().catch(() => ({ detail: "解析失败" }));
+        throw new Error(payload.detail || "解析失败");
       }
 
       const payload = (await response.json()) as PhotoLearningAnalysis;
-      setResult({
-        ...payload,
-        ocr_engine: ocrEngine || payload.ocr_engine,
-        processing_engine: payload.processing_engine || ocrEngine || payload.ocr_engine,
-        source_kind: payload.source_kind || "image",
-      });
-      setStatusText("后端 GLM 解析完成");
+      setOcrText(payload.raw_text || "");
+      setOcrEngine(payload.processing_engine || payload.ocr_engine || "");
+      setResult(payload);
+      setStatusText(`GLM 解析完成，提取到 ${payload.processing_char_count || payload.raw_text.length} 字`);
     } catch (caughtError) {
-      const message = caughtError instanceof Error ? caughtError.message : "LLM 解析失败";
+      const message = caughtError instanceof Error ? caughtError.message : "解析失败";
       setError(message);
-      setStatusText("LLM 解析失败");
+      setStatusText("GLM 解析失败");
     } finally {
-      setIsAnalyzing(false);
+      setIsRecognizing(false);
     }
   };
 
@@ -326,13 +252,6 @@ export default function PhotoLearningPage() {
                       ? "开始图片解析"
                       : "开始文档解析"}
               </button>
-              {uploadedKind === "image" && (
-                <button onClick={handleAnalyze} disabled={!ocrText.trim() || isAnalyzing}
-                  className="btn-hero-secondary cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {isAnalyzing ? "LLM 解析中" : "开始后端 LLM 解析"}
-                </button>
-              )}
               <button onClick={handleClear}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 border border-black/5 text-brand-ink hover:bg-white transition-all cursor-pointer">
                 <X className="w-4 h-4" /> 清空

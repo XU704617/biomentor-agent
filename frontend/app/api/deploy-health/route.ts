@@ -28,7 +28,7 @@ export async function GET() {
   const FASTAPI_BACKEND =
     process.env.FASTAPI_BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_BASE_URL ||
-    "http://127.0.0.1:9090";
+    "http://127.0.0.1:10087";
 
   const backendConfigured = Boolean(
     process.env.FASTAPI_BACKEND_URL ||
@@ -42,7 +42,7 @@ export async function GET() {
 
   if (backendBaseUrlLooksLocal) {
     warnings.push(
-      "Backend URL is localhost or 127.0.0.1, which is not reachable from Vercel deployment. Set FASTAPI_BACKEND_URL to a public address."
+      "Backend URL is localhost or 127.0.0.1. This is only suitable when the frontend server and backend run on the same host."
     );
   }
 

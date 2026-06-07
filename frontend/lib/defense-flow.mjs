@@ -97,8 +97,10 @@ export function normalizeDefenseBrief(raw = {}, source = {}) {
   };
 }
 
-export function buildDefensePromptMessages({ action, brief, difficulty = "standard", turnLimit = 5, transcript = [] }) {
+export function buildDefensePromptMessages({ action, brief, difficulty = "standard", turnLimit = 5, turnIndex = 0, transcript = [] }) {
   const style = DIFFICULTY_LABELS[difficulty] || DIFFICULTY_LABELS.standard;
+  const targetCommitteeRole = COMMITTEE_ROLES[turnIndex % COMMITTEE_ROLES.length];
+  const targetQuestionSeed = buildDefenseQuestionSeed(brief, targetCommitteeRole.id, difficulty);
   const roleGuidance =
     difficulty === "basic"
       ? "温和导师：问题更清晰，允许提示方向。"
@@ -125,13 +127,16 @@ export function buildDefensePromptMessages({ action, brief, difficulty = "standa
           action,
           difficultyStyle: style,
           turnLimit,
+          turnIndex,
+          targetCommitteeRole,
+          targetQuestionSeed,
           committeeRoles: COMMITTEE_ROLES,
           defenseBrief: brief,
           transcript: transcript.slice(-12),
           instruction:
             action === "report"
               ? "生成闭环报告：totalScore、dimensions(6项)、committeeFeedback、weakPoints、moduleRecommendations、nextDefenseTopics。"
-              : "生成下一位委员的问题：committeeRole、question、intent、hiddenRubric。不要显示逐轮评分。",
+              : `生成下一位委员的问题：committeeRole、question、intent、hiddenRubric。当前必须由「${targetCommitteeRole.label}」发问，question 必须与该委员关注点一致，并紧扣 targetQuestionSeed 的提问方向。不要显示逐轮评分。`,
         },
         null,
         2,
@@ -140,8 +145,26 @@ export function buildDefensePromptMessages({ action, brief, difficulty = "standa
   ];
 }
 
+function buildDefenseQuestionSeed(brief, roleId, difficulty) {
+  const title = brief?.title || "当前课题";
+  const questionPool = {
+    mechanism: `请你用一到两句话说明"${title}"背后的核心机制链路：关键变量如何影响表型或结论？`,
+    method: "你的方法设计如何排除替代解释？请说明至少一个关键对照、一个读出指标和一个失败风险。",
+    evidence: "目前哪些证据最能支持你的结论？如果出现相反结果，你会优先检查哪一环？",
+    application: "这个研究如果要进入应用或产业场景，最大的转化价值和风险边界分别是什么？",
+  };
+  const challengeTail = difficulty === "challenge" ? " 请特别注意不要只给结论，要说明证据边界。" : "";
+  return `${questionPool[roleId] || questionPool.mechanism}${challengeTail}`;
+}
+
 export function generateLocalDefenseQuestion({ brief, difficulty = "standard", turnIndex = 0 } = {}) {
   const role = COMMITTEE_ROLES[turnIndex % COMMITTEE_ROLES.length];
+  return {
+    committeeRole: role.label,
+    question: "LLM 当前不可用，请检查 API Key、模型权限和余额后重试。",
+    intent: "system_error",
+    hiddenRubric: [],
+  };
   const title = brief?.title || "当前课题";
   const questionPool = {
     mechanism: `请你用一到两句话说明"${title}"背后的核心机制链路：关键变量如何影响表型或结论？`,

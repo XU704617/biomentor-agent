@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { isQuizAnswerCorrect } from "@/lib/quiz-answer";
+
 interface Question {
   id: number;
   type: string;
@@ -42,13 +44,13 @@ export default function ReportPage() {
     const storedResult = localStorage.getItem("quizResult");
     if (storedResult) {
       const data = JSON.parse(storedResult);
-      setQuizResult({
-        ...data,
-        questions: data.questions.map((q: Question) => ({
-          ...q,
-          isCorrect: q.userAnswer === q.correctAnswer,
-        })),
-      });
+        setQuizResult({
+          ...data,
+          questions: data.questions.map((q: Question) => ({
+            ...q,
+            isCorrect: isQuizAnswerCorrect(q),
+          })),
+        });
     }
 
     const storedWrongQuestions = localStorage.getItem("wrongQuestions");

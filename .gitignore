@@ -40,5 +40,15 @@ docs/
 !README.md
 *.db-shm
 *.db-wal
+*.db-journal
 backend/.venv-conda/
 hanwen-dev-temp/
+backend/chroma_data/
+chroma_data/
+.claude/
+tmp_*/
+tmp_*.tar.gz
+tmp_*.png
+tmp_*.pdf
+tmp_*.txt
+tmp_*.json
