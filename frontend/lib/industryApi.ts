@@ -1,4 +1,4 @@
-import type { IndustryAnswer, IndustryCase } from "@/data/industryCases";
+import { industryCases as mockCases, getMockAnswer, type IndustryAnswer, type IndustryCase } from "@/data/industryCases";
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -12,6 +12,46 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+const industryAliasMap: Record<string, string[]> = {
+  "case-002": ["car-t", "cart", "嵌合抗原受体", "t 细胞", "t细胞"],
+  "case-004": ["mrna", "lnp", "脂质纳米", "递送"],
+  "case-003": ["crispr", "基因编辑"],
+  "case-006": ["pd-1", "pd-l1", "免疫检查点"],
+  "case-001": ["venetoclax", "bcl-2", "细胞凋亡"],
+  "case-035": ["alphafold", "蛋白结构预测", "结构预测"],
+  "case-036": ["培养细胞食品", "cultured meat", "upside", "培养动物细胞"],
+};
+
+function normalizeText(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function localCaseSearch(query: string): (IndustryCase & { _dataSource?: string })[] {
+  const normalizedQuery = normalizeText(query);
+  if (!normalizedQuery) {
+    return mockCases.map((item) => ({ ...item, _dataSource: "local_fallback" }));
+  }
+
+  return mockCases
+    .filter((item) => {
+      const aliases = industryAliasMap[item.id] || [];
+      const text = normalizeText([
+        item.title,
+        item.subtitle,
+        item.category,
+        item.industryDirection,
+        item.realProductOrTechnology,
+        item.coreProblem,
+        item.background,
+        ...(item.relatedKnowledgePoints || []),
+        ...(item.recommendedKeywords || []),
+        ...(item.guideQuestions || []),
+      ].filter(Boolean).join(" "));
+      return text.includes(normalizedQuery) || aliases.some((alias) => normalizedQuery.includes(alias) || text.includes(alias));
+    })
+    .map((item) => ({ ...item, _dataSource: "local_fallback" }));
 }
 
 export interface ApiIndustryCase {
@@ -56,6 +96,7 @@ function mapSourceType(value: string): IndustryCase["sourceType"] {
   if (value === "clinical_trial") return "临床试验";
   if (value === "patent") return "专利文献";
   if (value === "regulatory") return "监管文件";
+  if (value === "product_page") return "产品页";
   return "产业报告";
 }
 
@@ -89,11 +130,11 @@ export function convertApiCaseToFrontend(apiCase: ApiIndustryCase): IndustryCase
     displayFocus: apiCase.display_focus,
     notes: apiCase.analysis_text || "",
     migrationPath: apiCase.migration_path || { textbookBase: [], researchFrontier: [], industryApplication: [] },
-    references: Array.isArray(apiCase.references)
+        references: Array.isArray(apiCase.references)
       ? apiCase.references.map((item) => ({
           title: item.title,
           url: item.url,
-          type: item.type as "FDA" | "PubMed" | "DOI" | "NCI" | "Label" | "Review" | "Other",
+          type: item.type as "FDA" | "PubMed" | "DOI" | "NCI" | "Label" | "Review" | "ProductPage" | "Other",
         }))
       : [],
     sourceUrls: apiCase.source_urls || [],
@@ -101,47 +142,65 @@ export function convertApiCaseToFrontend(apiCase: ApiIndustryCase): IndustryCase
 }
 
 export async function fetchIndustryCases(): Promise<(IndustryCase & { _dataSource?: string })[]> {
-  const data = await apiFetch<{ items: ApiIndustryCase[] }>("/api/industry/cases?page_size=100");
-  return (data.items || []).map((item) => ({ ...convertApiCaseToFrontend(item), _dataSource: "api" }));
+  try {
+    const data = await apiFetch<{ items: ApiIndustryCase[] }>("/api/industry/cases?page_size=100");
+    if (Array.isArray(data.items) && data.items.length > 0) {
+      return (data.items || []).map((item) => ({ ...convertApiCaseToFrontend(item), _dataSource: "api" }));
+    }
+  } catch {
+    // Fall through to the curated local case library.
+  }
+  return mockCases.map((item) => ({ ...item, _dataSource: "local_fallback" }));
 }
 
 export async function searchIndustryCases(query: string): Promise<(IndustryCase & { _dataSource?: string })[]> {
-  const data = await apiFetch<ApiIndustryCase[]>(`/api/industry/cases/search?q=${encodeURIComponent(query)}`);
-  return (data || []).map((item) => ({ ...convertApiCaseToFrontend(item), _dataSource: "api" }));
+  try {
+    const data = await apiFetch<ApiIndustryCase[]>(`/api/industry/cases/search?q=${encodeURIComponent(query)}`);
+    if (Array.isArray(data) && data.length > 0) {
+      return (data || []).map((item) => ({ ...convertApiCaseToFrontend(item), _dataSource: "api" }));
+    }
+  } catch {
+    // Use local aliases and curated case fields when the backend search is unavailable.
+  }
+  return localCaseSearch(query);
 }
 
 export async function getIndustryAnswer(query: string): Promise<IndustryAnswer> {
-  const data = await apiFetch<{
-    query: string;
-    answer: string;
-    relatedKnowledgePoints?: string[];
-    researchFrontiers?: string[];
-    industryApplications?: string[];
-    requiredAbilities?: string[];
-    recommendedKeywords?: string[];
-    nextTasks?: string[];
-    sourceScope?: string;
-    disclaimer?: string;
-  }>("/api/industry/answer", {
-    method: "POST",
-    body: JSON.stringify({ query }),
-  });
+  try {
+    const data = await apiFetch<{
+      query: string;
+      answer: string;
+      relatedKnowledgePoints?: string[];
+      researchFrontiers?: string[];
+      industryApplications?: string[];
+      requiredAbilities?: string[];
+      recommendedKeywords?: string[];
+      nextTasks?: string[];
+      sourceScope?: string;
+      disclaimer?: string;
+    }>("/api/industry/answer", {
+      method: "POST",
+      body: JSON.stringify({ query }),
+    });
 
-  return {
-    query: data.query,
-    answer: data.answer,
-    relatedKnowledgePoints: data.relatedKnowledgePoints || [],
-    researchFrontiers: data.researchFrontiers || [],
-    industryApplications: data.industryApplications || [],
-    abilityDirections: [],
-    requiredAbilities: data.requiredAbilities || [],
-    recommendedKeywords: data.recommendedKeywords || [],
-    researchTasks: [],
-    nextTasks: data.nextTasks || [],
-    sourceScope: mapSourceScope(data.sourceScope),
-    disclaimer: data.disclaimer,
-    _dataSource: "api" as const,
-  };
+    return {
+      query: data.query,
+      answer: data.answer,
+      relatedKnowledgePoints: data.relatedKnowledgePoints || [],
+      researchFrontiers: data.researchFrontiers || [],
+      industryApplications: data.industryApplications || [],
+      abilityDirections: [],
+      requiredAbilities: data.requiredAbilities || [],
+      recommendedKeywords: data.recommendedKeywords || [],
+      researchTasks: [],
+      nextTasks: data.nextTasks || [],
+      sourceScope: mapSourceScope(data.sourceScope),
+      disclaimer: data.disclaimer,
+      _dataSource: "api" as const,
+    };
+  } catch {
+    return { ...getMockAnswer(query), _dataSource: "local_fallback" as const };
+  }
 }
 
 export async function getIndustryCaseById(caseId: string): Promise<(IndustryCase & { _dataSource?: string }) | null> {
@@ -149,11 +208,20 @@ export async function getIndustryCaseById(caseId: string): Promise<(IndustryCase
     const data = await apiFetch<ApiIndustryCase>(`/api/industry/cases/${caseId}`);
     return { ...convertApiCaseToFrontend(data), _dataSource: "api" as const };
   } catch {
-    return null;
+    const localCase = mockCases.find((item) => item.id === caseId);
+    return localCase ? { ...localCase, _dataSource: "local_fallback" as const } : null;
   }
 }
 
 export async function getRelatedResearchTasks(caseId: string): Promise<{ tasks: string[]; _dataSource?: string }> {
-  const data = await apiFetch<{ tasks: string[] }>(`/api/industry/cases/${caseId}/research-tasks`);
-  return { tasks: data.tasks || [], _dataSource: "api" as const };
+  try {
+    const data = await apiFetch<{ tasks: string[] }>(`/api/industry/cases/${caseId}/research-tasks`);
+    return { tasks: data.tasks || [], _dataSource: "api" as const };
+  } catch {
+    const localCase = mockCases.find((item) => item.id === caseId);
+    return {
+      tasks: localCase?.linkedResearchTask ? [localCase.linkedResearchTask] : [],
+      _dataSource: "local_fallback" as const,
+    };
+  }
 }

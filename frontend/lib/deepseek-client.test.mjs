@@ -10,7 +10,7 @@ test("resolveDeepSeekConfig accepts server-side key aliases without exposing the
   const config = resolveDeepSeekConfig({
     BIOMENTOR_DEEPSEEK_API_KEY: "server-key",
     DEEPSEEK_MODEL: "glm-4-flash",
-  });
+  }, { includeFileEnv: false });
 
   assert.equal(config.apiKey, "server-key");
   assert.equal(config.model, "glm-4-flash");
@@ -22,7 +22,7 @@ test("resolveDeepSeekConfig normalizes base URLs that already include the v1 pat
   const config = resolveDeepSeekConfig({
     DEEPSEEK_API_KEY: "server-key",
     DEEPSEEK_BASE_URL: "https://api.deepseek.com/v1/",
-  });
+  }, { includeFileEnv: false });
 
   assert.equal(config.baseUrl, "https://api.deepseek.com");
   assert.equal(config.chatCompletionsUrl, "https://api.deepseek.com/v1/chat/completions");
@@ -41,8 +41,8 @@ test("callDeepSeekJson sends messages to the chat completions API and parses JSO
       return {
         ok: true,
         status: 200,
-        async json() {
-          return {
+        async text() {
+          return JSON.stringify({
             choices: [
               {
                 message: {
@@ -50,7 +50,7 @@ test("callDeepSeekJson sends messages to the chat completions API and parses JSO
                 },
               },
             ],
-          };
+          });
         },
       };
     },
@@ -74,6 +74,6 @@ test("callDeepSeekJson reports missing key instead of pretending remote AI was u
       },
       messages: [{ role: "user", content: "测试" }],
     }),
-    /DEEPSEEK_API_KEY/,
+    /GLM API key is not configured/,
   );
 });

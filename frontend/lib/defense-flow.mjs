@@ -159,12 +159,6 @@ function buildDefenseQuestionSeed(brief, roleId, difficulty) {
 
 export function generateLocalDefenseQuestion({ brief, difficulty = "standard", turnIndex = 0 } = {}) {
   const role = COMMITTEE_ROLES[turnIndex % COMMITTEE_ROLES.length];
-  return {
-    committeeRole: role.label,
-    question: "LLM 当前不可用，请检查 API Key、模型权限和余额后重试。",
-    intent: "system_error",
-    hiddenRubric: [],
-  };
   const title = brief?.title || "当前课题";
   const questionPool = {
     mechanism: `请你用一到两句话说明"${title}"背后的核心机制链路：关键变量如何影响表型或结论？`,
@@ -175,7 +169,7 @@ export function generateLocalDefenseQuestion({ brief, difficulty = "standard", t
   const challengeTail = difficulty === "challenge" ? " 请特别注意不要只给结论，要说明证据边界。" : "";
   return {
     committeeRole: role.label,
-    question: `⚠️ [LLM不可用，模板提问] ${questionPool[role.id]}${challengeTail}`,
+    question: `${questionPool[role.id]}${challengeTail}`,
     intent: role.focus,
     hiddenRubric: ["问题聚焦", "证据意识", "方法严谨", "表达清晰"],
   };

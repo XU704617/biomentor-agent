@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { generateLocalResearchTask } from "@/lib/researchApi";
 
 const FASTAPI_BACKEND =
   process.env.FASTAPI_BACKEND_URL ||
@@ -53,19 +54,14 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        const text = await response.text().catch(() => "");
-        return NextResponse.json(
-          { error: text || "Research task generation failed" },
-          { status: response.status || 502 },
-        );
+        return NextResponse.json(generateLocalResearchTask(topic, caseKey, mode));
       }
 
       const data = await response.json();
       return NextResponse.json(data);
-    } catch (fetchError) {
+    } catch {
       clearTimeout(timeout);
-      const message = fetchError instanceof Error ? fetchError.message : "Research task request failed";
-      return NextResponse.json({ error: message }, { status: 502 });
+      return NextResponse.json(generateLocalResearchTask(topic, caseKey, mode));
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";

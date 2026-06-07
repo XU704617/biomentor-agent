@@ -24,12 +24,24 @@ interface IndustryAnswerResponse {
   _source?: "glm";
 }
 
+const industryAliasMap: Record<string, string[]> = {
+  "case-002": ["car-t", "cart", "嵌合抗原受体", "t 细胞", "t细胞"],
+  "case-004": ["mrna", "lnp", "脂质纳米", "递送"],
+  "case-003": ["crispr", "基因编辑"],
+  "case-006": ["pd-1", "pd-l1", "免疫检查点"],
+  "case-001": ["venetoclax", "bcl-2", "细胞凋亡"],
+  "case-035": ["alphafold", "蛋白结构预测", "结构预测"],
+  "case-036": ["培养细胞食品", "cultured meat", "upside", "培养动物细胞"],
+};
+
 function buildCasesContext(): string {
   return industryCases
     .map((item, index) => {
+      const aliases = industryAliasMap[item.id] || [];
       return [
         `Case ${index + 1}: [${item.id}] ${item.title}`,
         `Subtitle: ${item.subtitle}`,
+        aliases.length > 0 ? `Aliases: ${aliases.join(", ")}` : "",
         `Industry Direction: ${item.industryDirection}`,
         `Core Problem: ${item.coreProblem}`,
         `Knowledge Points: ${item.relatedKnowledgePoints.join(", ")}`,

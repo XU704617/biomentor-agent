@@ -150,7 +150,7 @@ test("AI response normalizer accepts fenced JSON and fills safe defaults", () =>
   const normalized = normalizeKnowledgeAiResponse(raw, context);
   assert.equal(normalized.title, "质粒载体学习脉络");
   assert.match(normalized.answer, /目标基因/);
-  assert.equal(normalized.source, "deepseek");
+  assert.equal(normalized.source, "glm");
   assert.ok(normalized.keyPoints.length >= 2);
   assert.ok(normalized.suggestedQuestions.length >= 4);
   assert.deepEqual(normalized.moduleLinks, [{ label: "质粒图谱工具", href: "/tools/plasmid" }]);

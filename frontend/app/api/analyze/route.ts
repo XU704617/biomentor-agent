@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { extractUploadedFileTextFromBuffer } from "@/lib/defense-file-text.mjs";
 
 const FASTAPI_BACKEND =
   process.env.FASTAPI_BACKEND_URL ||
@@ -67,6 +68,12 @@ async function analyzeText(text: string): Promise<BackendAnalysis> {
 
 async function analyzeUploadedDataUrl(dataUrl: string, fileName: string): Promise<BackendAnalysis> {
   const { mimeType, buffer } = decodeDataUrl(dataUrl);
+  if (mimeType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf")) {
+    const extractedText = await extractUploadedFileTextFromBuffer(fileName || "uploaded.pdf", buffer);
+    if (extractedText) {
+      return analyzeText(extractedText);
+    }
+  }
   const form = new FormData();
   form.append("file", new Blob([buffer], { type: mimeType }), fileName || guessFileName(mimeType));
   const response = await fetchWithTimeout(`${FASTAPI_BACKEND}/api/photo-learning/full-pipeline`, {

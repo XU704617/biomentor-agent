@@ -7,6 +7,21 @@ export async function extractUploadedFileTextFromBuffer(fileName, buffer) {
   const bytes = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || []);
   if (!bytes.length) return "";
 
+  if (String(fileName || "").toLowerCase().endsWith(".pdf")) {
+    const visible = extractVisiblePdfText(buffer);
+    if (visible) return visible;
+
+    try {
+      const pdfParseModule = await import("pdf-parse");
+      const pdfParse = pdfParseModule.default || pdfParseModule;
+      const parsed = await pdfParse(bytes);
+      const text = String(parsed?.text || "").trim();
+      if (text) return text;
+    } catch {
+      // Backend OCR remains the last resort for PDFs that local parsers cannot read.
+    }
+  }
+
   const form = new FormData();
   form.set("file", new Blob([bytes], { type: guessMimeType(fileName) }), fileName || "upload.bin");
 
@@ -34,6 +49,26 @@ export async function extractUploadedFileTextFromBuffer(fileName, buffer) {
   }
 
   return String(payload?.text || "").trim();
+}
+
+export function extractVisiblePdfText(buffer) {
+  const bytes = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || []);
+  if (!bytes.length) return "";
+  const source = bytes.toString("latin1");
+  const chunks = [];
+  const stringPattern = /\(([^()]*)\)\s*Tj/g;
+  let match;
+  while ((match = stringPattern.exec(source)) !== null) {
+    chunks.push(decodePdfString(match[1]));
+  }
+  return chunks.join(" ").replace(/\s+/g, " ").trim();
+}
+
+function decodePdfString(value) {
+  return String(value || "")
+    .replace(/\\\)/g, ")")
+    .replace(/\\\(/g, "(")
+    .replace(/\\\\/g, "\\");
 }
 
 function guessMimeType(fileName) {
